@@ -201,6 +201,7 @@ class GridWorldEnv(gym.Env):
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 
+# see https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 
 class ReplayMemory(object):
 
@@ -336,7 +337,7 @@ def optimize_model():
     optimizer.step()
 
 
-num_episodes = 50
+num_episodes = 150
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     env.reset()

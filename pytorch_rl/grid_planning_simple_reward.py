@@ -17,6 +17,8 @@ import gym
 from gym import spaces
 import pygame
 
+# see https://www.gymlibrary.dev/content/environment_creation/
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -95,18 +97,23 @@ class GridWorldEnv(gym.Env):
     def step(self, action):
         # Map the action (element of {0,1,2,3}) to the direction we walk in
         direction = self._action_to_direction[action]
-        # # We use `np.clip` to make sure we don't leave the grid
+        # We use `np.clip` to make sure we don't leave the grid
         # self._agent_location = np.clip(
         #     self._agent_location + direction, 0, self.size - 1
         # )
         self._agent_location = self._agent_location + direction
 
-        # An episode is done iff the agent has reached the target
-        terminated = np.array_equal(self._agent_location, self._target_location)
-        reward = 10 if terminated else -0.3  # Binary sparse rewards
+
         if self._agent_location[0] < 0 or self._agent_location[1] < 0 or \
                 self._agent_location[0] > self.size - 1 or self._agent_location[1] > self.size - 1:
-            terminated = True
+            terminated = True # collide with wall
+            reward = -1
+
+        # An episode is done iff the agent has reached the target
+        terminated = np.array_equal(self._agent_location, self._target_location)
+        if terminated:
+            reward = 10
+        else:
             reward = -1
         observation = self._get_obs()
         info = self._get_info()
