@@ -20,7 +20,11 @@ import pygame
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
+"""Used Sources
+https://www.gymlibrary.dev/content/environment_creation/
+https://github.com/Farama-Foundation/gym-examples/blob/main/gym_examples/envs/grid_world.py
+#https://github.com/philtabor/Youtube-Code-Repository/tree/master/ReinforcementLearning/PolicyGradient/SAC
+"""
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
