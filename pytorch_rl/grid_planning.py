@@ -1,3 +1,4 @@
+import os
 import math
 import random
 import numpy as np
@@ -11,7 +12,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-import torchvision.transforms as T
+from torch.distributions.normal import Normal
 
 import gym
 from gym import spaces
@@ -36,7 +37,7 @@ class GridWorldEnv(gym.Env):
             }
         )
 
-        # We have 4 actions, corresponding to "right", "up", "left", "down"
+        # TODO actionspace shoubled be continuous and bounded in [-3, 3]
         self.action_space = spaces.Discrete(4)
 
         """
@@ -92,31 +93,29 @@ class GridWorldEnv(gym.Env):
 
         return observation, info
 
-    def step(self, action):
-        # Map the action (element of {0,1,2,3}) to the direction we walk in
-        direction = self._action_to_direction[action]
-        # # We use `np.clip` to make sure we don't leave the grid
-        # self._agent_location = np.clip(
-        #     self._agent_location + direction, 0, self.size - 1
-        # )
-
-        original_position=self._agent_location
-        self._agent_location = self._agent_location + direction
-
+    def step(self, action_step):
+        action_step=np.round(2*action_step)
+        original_position = self._agent_location
+        self._agent_location = self._agent_location + action_step
 
         if self._agent_location[0] < 0 or self._agent_location[1] < 0 or \
                 self._agent_location[0] > self.size - 1 or self._agent_location[1] > self.size - 1:
-            terminated = True # collide with wall
-            reward = -1
+            terminated = True  # collide with wall
+            reward = -5
+            observation = self._get_obs()
+            info = self._get_info()
+            return observation, reward, terminated, False, info
 
         # An episode is done iff the agent has reached the target
         terminated = np.array_equal(self._agent_location, self._target_location)
         if terminated:
             reward = 10
         else:
-            original_distance=math.sqrt((original_position[0]-self._target_location[0])**2+(original_position[1]-self._target_location[1])**2)
-            distance=math.sqrt((self._agent_location[0]-self._target_location[0])**2+(self._agent_location[1]-self._target_location[1])**2)
-            reward = 0.2 * (original_distance-distance)
+            original_distance = math.sqrt((original_position[0] - self._target_location[0]) ** 2 + (
+                        original_position[1] - self._target_location[1]) ** 2)
+            distance = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2 + (
+                        self._agent_location[1] - self._target_location[1]) ** 2)
+            reward = 0.4 * (original_distance - distance) - 1
 
         observation = self._get_obs()
         info = self._get_info()
@@ -217,57 +216,170 @@ class ReplayMemory(object):
     def __len__(self):
         return len(self.memory)
 
+class CriticNetwork(nn.Module):
+    def __init__(self, beta, input_dims, n_actions, fc1_dims=16, fc2_dims=16,
+            name='critic', chkpt_dir='tmp/sac'):
+        super(CriticNetwork, self).__init__()
+        self.input_dims = input_dims
+        self.fc1_dims = fc1_dims
+        self.fc2_dims = fc2_dims
+        self.n_actions = n_actions
+        self.name = name
+        self.checkpoint_dir = chkpt_dir
+        self.checkpoint_file = os.path.join(self.checkpoint_dir, name+'_sac')
 
-class DQN(nn.Module):
+        self.fc1 = nn.Linear(self.input_dims+n_actions, self.fc1_dims)
+        self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
+        self.q = nn.Linear(self.fc2_dims, 1)
 
-    def __init__(self, inputs, outputs):
-        super(DQN, self).__init__()
-        hidden = 7
-        self.fc1 = nn.Linear(inputs, hidden)
-        self.fc2 = nn.Linear(hidden, hidden)
-        self.fc3 = nn.Linear(hidden, outputs)
+        self.optimizer = optim.Adam(self.parameters(), lr=beta)
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-    def forward(self, x):
-        x = x.to(device)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        return self.fc3(x)
+        self.to(self.device)
 
+    def forward(self, state, action):
+        action_value = self.fc1(torch.cat([state, action], dim=1))
+        action_value = F.relu(action_value)
+        action_value = self.fc2(action_value)
+        action_value = F.relu(action_value)
 
-env = GridWorldEnv()
+        q = self.q(action_value)
+
+        return q
+
+    def save_checkpoint(self):
+        torch.save(self.state_dict(), self.checkpoint_file)
+
+    def load_checkpoint(self):
+        self.load_state_dict(torch.load(self.checkpoint_file))
+
+class ValueNetwork(nn.Module):
+    def __init__(self, beta, input_dims, fc1_dims=16, fc2_dims=16,
+            name='value', chkpt_dir='tmp/sac'):
+        super(ValueNetwork, self).__init__()
+        self.input_dims = input_dims
+        self.fc1_dims = fc1_dims
+        self.fc2_dims = fc2_dims
+        self.name = name
+        self.checkpoint_dir = chkpt_dir
+        self.checkpoint_file = os.path.join(self.checkpoint_dir, name+'_sac')
+
+        self.fc1 = nn.Linear(self.input_dims, self.fc1_dims)
+        self.fc2 = nn.Linear(self.fc1_dims, fc2_dims)
+        self.v = nn.Linear(self.fc2_dims, 1)
+
+        self.optimizer = optim.Adam(self.parameters(), lr=beta)
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+        self.to(self.device)
+
+    def forward(self, state):
+        state_value = self.fc1(state)
+        state_value = F.relu(state_value)
+        state_value = self.fc2(state_value)
+        state_value = F.relu(state_value)
+
+        v = self.v(state_value)
+
+        return v
+
+    def save_checkpoint(self):
+        torch.save(self.state_dict(), self.checkpoint_file)
+
+    def load_checkpoint(self):
+        self.load_state_dict(torch.load(self.checkpoint_file))
+
+class ActorNetwork(nn.Module):
+    def __init__(self, alpha, input_dims, max_action, fc1_dims=16,
+            fc2_dims=16, n_actions=2, name='actor', chkpt_dir='tmp/sac'):
+        super(ActorNetwork, self).__init__()
+        self.input_dims = input_dims
+        self.fc1_dims = fc1_dims
+        self.fc2_dims = fc2_dims
+        self.n_actions = n_actions
+        self.name = name
+        self.checkpoint_dir = chkpt_dir
+        self.checkpoint_file = os.path.join(self.checkpoint_dir, name+'_sac')
+        self.max_action = max_action
+        self.reparam_noise = 1e-6
+
+        self.fc1 = nn.Linear(self.input_dims, self.fc1_dims)
+        self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
+        self.mu = nn.Linear(self.fc2_dims, self.n_actions)
+        self.sigma = nn.Linear(self.fc2_dims, self.n_actions)
+
+        self.optimizer = optim.Adam(self.parameters(), lr=alpha)
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+        self.to(self.device)
+
+    def forward(self, state):
+        prob = self.fc1(state)
+        prob = F.relu(prob)
+        prob = self.fc2(prob)
+        prob = F.relu(prob)
+
+        mu = self.mu(prob)
+        sigma = self.sigma(prob)
+
+        sigma = torch.clamp(sigma, min=self.reparam_noise, max=1)
+
+        return mu, sigma
+
+    def sample_normal(self, state, reparameterize=True):
+        mu, sigma = self.forward(state)
+        probabilities = Normal(mu, sigma)
+
+        if reparameterize:
+            actions = probabilities.rsample()
+        else:
+            actions = probabilities.sample()
+
+        action_sample = torch.tanh(actions)*torch.tensor(self.max_action).to(self.device)
+        log_probs = probabilities.log_prob(actions)
+        log_probs -= torch.log(1-action_sample.pow(2)+self.reparam_noise)
+        log_probs = log_probs.sum(1, keepdim=True)
+
+        return action_sample, log_probs
+
+    def save_checkpoint(self):
+        torch.save(self.state_dict(), self.checkpoint_file)
+
+    def load_checkpoint(self):
+        self.load_state_dict(torch.load(self.checkpoint_file))
+
+# initialize hyperparameters
+env = GridWorldEnv(render_mode=None, size=20)
+input_dims=4
 BATCH_SIZE = 512
 GAMMA = 0.999
-EPS_START = 0.9
-EPS_END = 0.05
-EPS_DECAY = 2000
 TARGET_UPDATE = 10
+alpha=0.0003
+beta=0.0003
+tau=0.005
 
-n_actions = env.action_space.n
-policy_net = DQN(4, n_actions).to(device)
-target_net = DQN(4, n_actions).to(device)
-target_net.load_state_dict(policy_net.state_dict())
-target_net.eval()
 
-optimizer = optim.RMSprop(policy_net.parameters())
+# initialize NN
+n_actions = 2 # velocity in 2 direction
+actorNet = ActorNetwork(alpha, input_dims, n_actions=n_actions,
+                        name='actor', max_action=[1,1]) # TODO max_action value and min_action value
+criticNet_1 = CriticNetwork(beta, input_dims, n_actions=n_actions,
+                            name='critic_1')
+criticNet_2 = CriticNetwork(beta, input_dims, n_actions=n_actions,
+                            name='critic_2')
+valueNet = ValueNetwork(beta, input_dims, name='value')
+target_valueNet = ValueNetwork(beta, input_dims, name='target_value')
+
 memory = ReplayMemory(10000)
 
 steps_done = 0
 
 
-def select_action(state, EPS_END=EPS_END, EPS_START=EPS_START, EPS_DECAY=EPS_DECAY):
-    global steps_done
-    sample = random.random()
-    eps_threshold = EPS_END + (EPS_START - EPS_END) * \
-                    math.exp(-1. * steps_done / EPS_DECAY)
-    steps_done += 1
-    if sample > eps_threshold:
-        with torch.no_grad():
-            # t.max(1) will return largest column value of each row.
-            # second column on max result is index of where max element was
-            # found, so we pick action with the larger expected reward.
-            return policy_net(state).max(1)[1].view(1, 1)
-    else:
-        return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long)
+def select_action(state):
+    #state = torch.Tensor([state]).to(actorNet.device)
+    actions, _ = actorNet.sample_normal(state, reparameterize=False)
+
+    return actions.cpu().detach().numpy()[0]
 
 
 episode_durations = []
@@ -309,34 +421,51 @@ def optimize_model():
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)
 
-    # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
-    # columns of actions taken. These are the actions which would've been taken
-    # for each batch state according to policy_net
-    state_action_values = policy_net(state_batch).gather(1, action_batch)
+    value = valueNet(state_batch).view(-1)
+    value_ = torch.zeros(BATCH_SIZE, device=device)
+    value_[non_final_mask] = target_valueNet(non_final_next_states).view(-1)
 
-    # Compute V(s_{t+1}) for all next states.
-    # Expected values of actions for non_final_next_states are computed based
-    # on the "older" target_net; selecting their best reward with max(1)[0].
-    # This is merged based on the mask, such that we'll have either the expected
-    # state value or 0 in case the state was final.
-    next_state_values = torch.zeros(BATCH_SIZE, device=device)
-    next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach()
-    # Compute the expected Q values
-    expected_state_action_values = (next_state_values * GAMMA) + reward_batch
+    actions, log_probs = actorNet.sample_normal(state_batch, reparameterize=False)
+    log_probs = log_probs.view(-1)
+    q1_new_policy = criticNet_1.forward(state_batch, actions)
+    q2_new_policy = criticNet_2.forward(state_batch, actions)
+    critic_value = torch.min(q1_new_policy, q2_new_policy)
+    critic_value = critic_value.view(-1)
 
-    # Compute Huber loss
-    criterion = nn.SmoothL1Loss()
-    loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
+    valueNet.optimizer.zero_grad()
+    value_target = critic_value - log_probs
+    value_loss = 0.5 * F.mse_loss(value, value_target)
+    value_loss.backward(retain_graph=True)
+    valueNet.optimizer.step()
 
-    # Optimize the model
-    optimizer.zero_grad()
-    loss.backward()
-    for param in policy_net.parameters():
-        param.grad.data.clamp_(-1, 1)
-    optimizer.step()
+    actions, log_probs = actorNet.sample_normal(state_batch, reparameterize=True)
+    log_probs = log_probs.view(-1)
+    q1_new_policy = criticNet_1.forward(state_batch, actions)
+    q2_new_policy = criticNet_2.forward(state_batch, actions)
+    critic_value = torch.min(q1_new_policy, q2_new_policy)
+    critic_value = critic_value.view(-1)
 
+    actor_loss = log_probs - critic_value
+    actor_loss = torch.mean(actor_loss)
+    print(actor_loss)
+    actorNet.optimizer.zero_grad()
+    actor_loss.backward(retain_graph=True)
+    actorNet.optimizer.step()
 
-num_episodes = 50
+    criticNet_1.optimizer.zero_grad()
+    criticNet_2.optimizer.zero_grad()
+    q_hat = reward_batch + GAMMA * value_
+    q1_old_policy = criticNet_1.forward(state_batch, action_batch).view(-1)
+    q2_old_policy = criticNet_2.forward(state_batch, action_batch).view(-1)
+    critic_1_loss = 0.5 * F.mse_loss(q1_old_policy, q_hat)
+    critic_2_loss = 0.5 * F.mse_loss(q2_old_policy, q_hat)
+
+    critic_loss = critic_1_loss + critic_2_loss
+    critic_loss.backward()
+    criticNet_1.optimizer.step()
+    criticNet_2.optimizer.step()
+
+num_episodes = 100
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     env.reset()
@@ -346,7 +475,7 @@ for i_episode in range(num_episodes):
     for t in count():
         # Select and perform an action
         action = select_action(state)
-        _, reward, done, _, _ = env.step(action.item())
+        _, reward, done, _, _ = env.step(action)
         reward = torch.tensor([reward], device=device)
 
         # Observe new state
@@ -358,6 +487,8 @@ for i_episode in range(num_episodes):
             next_state = None
 
         # Store the transition in memory
+        action=[action]
+        action=torch.tensor(action, dtype=torch.float).to(actorNet.device)
         memory.push(state, action, next_state, reward)
 
         # Move to the next state
@@ -366,28 +497,45 @@ for i_episode in range(num_episodes):
         # Perform one step of the optimization (on the policy network)
         optimize_model()
         if done:
-            episode_durations.append(t + 1)
-            plot_durations()
-            break
-    # Update the target network, copying all weights and biases in DQN
-    if i_episode % TARGET_UPDATE == 0:
-        target_net.load_state_dict(policy_net.state_dict())
+             episode_durations.append(t + 1)
+             plot_durations()
+             break
+    # Update the target network, using tau
+    target_value_params = target_valueNet.named_parameters()
+    value_params = valueNet.named_parameters()
+
+    target_value_state_dict = dict(target_value_params)
+    value_state_dict = dict(value_params)
+
+    for name in value_state_dict:
+        value_state_dict[name] = tau * value_state_dict[name].clone() + \
+                                 (1 - tau) * target_value_state_dict[name].clone()
+    target_valueNet.load_state_dict(value_state_dict)
 
 print('Complete')
 
 env.render_mode = "human"
 
 # env=GridWorldEnv(render_mode="human")
-
-while 1:
+i = 0
+while i < 3:
+    i += 1
     env.reset()
     obs = env._get_obs()
     state = torch.tensor([obs["agent"], obs["target"]], dtype=torch.float, device=device)
     state = state.view(1, -1)
     for t in count():
         # Select and perform an action
-        action = select_action(state,0.0,0.0,1)
-        _, reward, done, _, _ = env.step(action.item())
+        action = select_action(state)
+        _, reward, done, _, _ = env.step(action)
+
+        action_=torch.tensor(action, dtype=torch.float, device=device)
+        action_=action_.view(1,2)
+        print(actorNet(state))
+        print(criticNet_1(state, action_))
+        print(criticNet_2(state, action_))
+        print(target_valueNet(state))
+
         reward = torch.tensor([reward], device=device)
         env._render_frame()
         # Observe new state
