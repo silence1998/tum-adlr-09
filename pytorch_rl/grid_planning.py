@@ -115,7 +115,7 @@ class GridWorldEnv(gym.Env):
                         original_position[1] - self._target_location[1]) ** 2)
             distance = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2 + (
                         self._agent_location[1] - self._target_location[1]) ** 2)
-            reward = 0.4 * (original_distance - distance) - 1
+            reward = (original_distance - distance) - 1
 
         observation = self._get_obs()
         info = self._get_info()
@@ -322,7 +322,7 @@ class ActorNetwork(nn.Module):
         mu = self.mu(prob)
         sigma = self.sigma(prob)
 
-        sigma = torch.clamp(sigma, min=self.reparam_noise, max=1)
+        sigma = torch.clamp(sigma, min=self.reparam_noise, max=0.5)
 
         return mu, sigma
 
@@ -351,7 +351,7 @@ class ActorNetwork(nn.Module):
 # initialize hyperparameters
 env = GridWorldEnv(render_mode=None, size=20)
 input_dims=4
-BATCH_SIZE = 512
+BATCH_SIZE = 1024
 GAMMA = 0.999
 TARGET_UPDATE = 10
 alpha=0.0003
@@ -531,6 +531,7 @@ while i < 3:
 
         action_=torch.tensor(action, dtype=torch.float, device=device)
         action_=action_.view(1,2)
+        mu, sigma = actorNet(state)
         print(actorNet(state))
         print(criticNet_1(state, action_))
         print(criticNet_2(state, action_))
