@@ -116,6 +116,7 @@ class GridWorldEnv(gym.Env):
             distance = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2 + (
                         self._agent_location[1] - self._target_location[1]) ** 2)
             reward = (original_distance - distance) - 1
+            # 0.4 leads the agent to not learn the goal fast enough, -1 is to avoid the agent to stay at the same place and accumulates over time
 
         observation = self._get_obs()
         info = self._get_info()
