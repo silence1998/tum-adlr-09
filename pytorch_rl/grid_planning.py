@@ -567,7 +567,7 @@ while i < 3:  # run plot for 3 episodes to see what it learned
         # Observe new state
         obs = env._get_obs()
         if not done:
-            next_state = torch.tensor([obs["agent"], obs["target"]], dtype=torch.float, device=device)
+            next_state = torch.tensor(np.array([obs["agent"], obs["target"]]), dtype=torch.float, device=device)
             next_state = next_state.view(1, -1)
         else:
             next_state = None
