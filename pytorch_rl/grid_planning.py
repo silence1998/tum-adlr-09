@@ -16,7 +16,7 @@ import gym
 from gym import spaces
 import pygame
 
-device = "cpu" #torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 """
 Used Sources:
@@ -269,7 +269,7 @@ class CriticNetwork(nn.Module):
         self.q = nn.Linear(self.fc2_dims, 1)
 
         self.optimizer = optim.Adam(self.parameters(), lr=beta)
-        self.device = "cpu" #torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.device =torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
         self.to(self.device)
 
@@ -305,7 +305,7 @@ class ValueNetwork(nn.Module):
         self.v = nn.Linear(self.fc2_dims, 1)
 
         self.optimizer = optim.Adam(self.parameters(), lr=beta)
-        self.device = "cpu" #torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
         self.to(self.device)
 
@@ -345,7 +345,7 @@ class ActorNetwork(nn.Module):
         self.sigma = nn.Linear(self.fc2_dims, self.n_actions)
 
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
-        self.device = "cpu" #torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
         self.to(self.device)
 
@@ -452,7 +452,7 @@ def optimize_model():
 
 # initialize hyperparameters
 
-input_dims = 6  # original position of actor and target position
+input_dims = 6  # original position of actor, obstacle and target position
 BATCH_SIZE = 1024
 GAMMA = 0.999  # discount factor
 TARGET_UPDATE = 10  # update target network every 10 episodes

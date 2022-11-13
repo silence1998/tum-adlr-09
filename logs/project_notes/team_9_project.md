@@ -76,8 +76,9 @@ Here you will find some implementations of SAC which you can use as your startin
     - [ ] We can try to let NN predict the right amount of speed
     - [ ] Maybe use normalized so that the NN learns the scaling anyway
     - [ ] We may have to filter the outputs, as the smoothed result from policy might be in the wrong direction with wrong direction in exploration
-- [ ]  Exam date?
-- [ ]  Google Coupon Activation Code from Felix
+- [ ] Exam date?
+- [ ] Q&A is for 5th and 6th lesson this week? 
+- [ ] Google Coupon Activation Code from Felix
 - Current model: Potential Field MP
 - [ ]  Our example algo.
     - [ ]  Reparam noise?
