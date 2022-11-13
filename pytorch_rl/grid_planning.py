@@ -31,6 +31,7 @@ class GridWorldEnv(gym.Env):
         self.size = size  # The size of the square grid
         self.window_size = 512  # The size of the PyGame window
         self.reward_parameters = reward_parameters
+
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
         self.observation_space = spaces.Dict(
@@ -103,8 +104,8 @@ class GridWorldEnv(gym.Env):
 
         if self._agent_location[0] < 0 or self._agent_location[1] < 0 or \
                 self._agent_location[0] > self.size - 1 or self._agent_location[1] > self.size - 1:
-            terminated = True  # collision with wall
-            reward = self.reward_parameters['collision_value']
+            terminated = True
+            reward = self.reward_parameters['collision_value']  # collision with wall
             observation = self._get_obs()
             info = self._get_info()
             return observation, reward, terminated, False, info
@@ -115,13 +116,13 @@ class GridWorldEnv(gym.Env):
             reward = self.reward_parameters['goal_value'] # goal reached
         else:
             original_distance = math.sqrt((original_position[0] - self._target_location[0]) ** 2
-                                        + (original_position[1] - self._target_location[1]) ** 2)
-            distance = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2 
-                               + (self._agent_location[1] - self._target_location[1]) ** 2)
-            
-            reward = self.reward_parameters * (original_distance - distance) - 1 # moving closer to target
+                                          + (original_position[1] - self._target_location[1]) ** 2)
+            distance = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2
+                                 + (self._agent_location[1] - self._target_location[1]) ** 2)
+            reward = (self.reward_parameters['distance_weight'] * (original_distance - distance)  # moving to target
+                    - self.reward_parameters['time_value'])
             # e.g. 0.4 leads the agent to not learn the goal fast enough, 
-            # -1 is to avoid that the agent to stays at the same place (accumulates over time?)
+            # -1 is to avoid that the agent to stays at the same place
 
         observation = self._get_obs()
         info = self._get_info()
@@ -355,9 +356,9 @@ class ActorNetwork(nn.Module):
         self.load_state_dict(torch.load(self.checkpoint_file))
 
 def optimize_model():
-    if len(memory) < BATCH_SIZE: # if memory is not full enough to start traning, return
+    if len(memory) < BATCH_SIZE:  # if memory is not full enough to start traning, return
         return
-    transitions = memory.sample(BATCH_SIZE) # sample a batch of transitions from memory
+    transitions = memory.sample(BATCH_SIZE)  # sample a batch of transitions from memory
     # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
     # detailed explanation). This converts batch-array of Transitions
     # to Transition of batch-arrays.
@@ -373,7 +374,7 @@ def optimize_model():
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)
 
-    value = valueNet(state_batch).view(-1) # infer size of batch
+    value = valueNet(state_batch).view(-1)  # infer size of batch
     value_ = torch.zeros(BATCH_SIZE, device=device)
     value_[non_final_mask] = target_valueNet(non_final_next_states).view(-1)
 
@@ -417,23 +418,28 @@ def optimize_model():
     criticNet_1.optimizer.step()
     criticNet_2.optimizer.step()
 
+
+
+
 # initialize hyperparameters
 
-
-input_dims=4 # original position of actor and goal position
+input_dims = 4  # original position of actor and goal position
 BATCH_SIZE = 1024
-GAMMA = 0.999 # discount factor
-TARGET_UPDATE = 10 # update target network every 10 episodes
-alpha=0.0003 # learning rate for actor
-beta=0.0003 # learning rate for critic
-tau=0.005  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
+GAMMA = 0.999  # discount factor
+TARGET_UPDATE = 10  # update target network every 10 episodes
+alpha = 0.0003  # learning rate for actor
+beta = 0.0003  # learning rate for critic
+tau = 0.005  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
 
 reward_paramaters = {'action_step_scaling': 2,
-                     'goal_value': 10, 
-                     'collision_value': -5, 
+
+                     'goal_value': 10,
+                     'collision_value': -5,
+                     'time_value': -1,
+
                      'distance_weight': 1,
-                     'collision_weight': -1,
-                     'time_weight': -0.01} 
+                     'collision_weight': 1,
+                     'time_weight': 1}
 # TODO: reward function method (in the step def in env)
 
 env = GridWorldEnv(render_mode=None, size=20, reward_parameters=reward_paramaters)
@@ -449,7 +455,7 @@ criticNet_2 = CriticNetwork(beta, input_dims, n_actions=n_actions,
 valueNet = ValueNetwork(beta, input_dims, name='value')
 target_valueNet = ValueNetwork(beta, input_dims, name='target_value')
 
-memory = ReplayMemory(10000) # replay buffer size
+memory = ReplayMemory(10000)  # replay buffer size
 
 steps_done = 0
 
@@ -489,7 +495,7 @@ for i_episode in range(num_episodes):
     # Initialize the environment and state
     env.reset()
     obs = env._get_obs()
-    state = torch.tensor([obs["agent"], obs["target"]], dtype=torch.float, device=device)
+    state = torch.tensor(np.array([obs["agent"], obs["target"]]), dtype=torch.float, device=device)
     state = state.view(1, -1)
     for t in count():
         # Select and perform an action
@@ -500,13 +506,13 @@ for i_episode in range(num_episodes):
         # Observe new state
         obs = env._get_obs()
         if not done:
-            next_state = torch.tensor([obs["agent"], obs["target"]], dtype=torch.float, device=device)
+            next_state = torch.tensor(np.array([obs["agent"], obs["target"]]), dtype=torch.float, device=device)
             next_state = next_state.view(1, -1)
         else:
             next_state = None
 
         # Store the transition in memory
-        action=[action]
+        action=np.array([action])
         action=torch.tensor(action, dtype=torch.float).to(actorNet.device)
         memory.push(state, action, next_state, reward)
 
@@ -537,11 +543,11 @@ env.render_mode = "human"
 
 # env=GridWorldEnv(render_mode="human")
 i = 0
-while i < 3: # run plot for 3 episodes to see what it learned
+while i < 3:  # run plot for 3 episodes to see what it learned
     i += 1
     env.reset()
     obs = env._get_obs()
-    state = torch.tensor([obs["agent"], obs["target"]], dtype=torch.float, device=device)
+    state = torch.tensor(np.array([obs["agent"], obs["target"]]), dtype=torch.float, device=device)
     state = state.view(1, -1)
     for t in count():
         # Select and perform an action
