@@ -49,7 +49,8 @@ Here you will find some implementations of SAC which you can use as your startin
 - [ ] Start with no traj prediction,
     - [ ] Trajectory length later
 - [ ] Obstacles:
-    - [ ] Add obstacles in env, where ever the “agent is”
+    - [X] Added obstacle in env, where ever the “agent" is
+        - [ ] several obstacles
     - [ ] Collision detector in the env reward func
         - [ ] Dot product of agent_traj_grid * environment_traj_grid for 1 step
             - [ ] Possible improvement: Eg. if 1 step is 10 pixel movement only occupy pixel 6-10 for all agents as “prediction”
@@ -86,6 +87,7 @@ Here you will find some implementations of SAC which you can use as your startin
         - [ ]  10/-1 is this normal behavior for RL 
 - [ ]  SAC 
     - [ ]  algo depends too much on reward?
+        - [ ]  reward function is not good enough
     - [ ]  why 2 critic networks
 - [ ] Ideas
     - [ ] pretraining the actor network with a search algo like A* or Dijkstra
