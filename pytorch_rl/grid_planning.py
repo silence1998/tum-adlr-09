@@ -2,11 +2,9 @@ import os
 import math
 import random
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
 from collections import namedtuple, deque
 from itertools import count
-from PIL import Image
 
 import torch
 import torch.nn as nn
@@ -20,7 +18,8 @@ import pygame
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-"""Used Sources
+"""
+Used Sources:
 https://www.gymlibrary.dev/content/environment_creation/
 https://github.com/Farama-Foundation/gym-examples/blob/main/gym_examples/envs/grid_world.py
 #https://github.com/philtabor/Youtube-Code-Repository/tree/master/ReinforcementLearning/PolicyGradient/SAC
@@ -28,10 +27,10 @@ https://github.com/Farama-Foundation/gym-examples/blob/main/gym_examples/envs/gr
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, size=5):
+    def __init__(self, render_mode=None, size=5, reward_parameters=None):
         self.size = size  # The size of the square grid
         self.window_size = 512  # The size of the PyGame window
-
+        self.reward_parameters = reward_parameters
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
         self.observation_space = spaces.Dict(
@@ -98,14 +97,14 @@ class GridWorldEnv(gym.Env):
         return observation, info
 
     def step(self, action_step):
-        action_step=np.round(2*action_step)
+        action_step=np.round(self.reward_parameters["action_step_scaling"] * action_step) # scale action to e.g. [-2, 2]
         original_position = self._agent_location
         self._agent_location = self._agent_location + action_step
 
         if self._agent_location[0] < 0 or self._agent_location[1] < 0 or \
                 self._agent_location[0] > self.size - 1 or self._agent_location[1] > self.size - 1:
-            terminated = True  # collide with wall
-            reward = -5
+            terminated = True  # collision with wall
+            reward = self.reward_parameters['collision_value']
             observation = self._get_obs()
             info = self._get_info()
             return observation, reward, terminated, False, info
@@ -113,14 +112,16 @@ class GridWorldEnv(gym.Env):
         # An episode is done iff the agent has reached the target
         terminated = np.array_equal(self._agent_location, self._target_location)
         if terminated:
-            reward = 10
+            reward = self.reward_parameters['goal_value'] # goal reached
         else:
-            original_distance = math.sqrt((original_position[0] - self._target_location[0]) ** 2 + (
-                        original_position[1] - self._target_location[1]) ** 2)
-            distance = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2 + (
-                        self._agent_location[1] - self._target_location[1]) ** 2)
-            reward = (original_distance - distance) - 1
-            # 0.4 leads the agent to not learn the goal fast enough, -1 is to avoid the agent to stay at the same place and accumulates over time
+            original_distance = math.sqrt((original_position[0] - self._target_location[0]) ** 2
+                                        + (original_position[1] - self._target_location[1]) ** 2)
+            distance = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2 
+                               + (self._agent_location[1] - self._target_location[1]) ** 2)
+            
+            reward = self.reward_parameters * (original_distance - distance) - 1 # moving closer to target
+            # e.g. 0.4 leads the agent to not learn the goal fast enough, 
+            # -1 is to avoid that the agent to stays at the same place (accumulates over time?)
 
         observation = self._get_obs()
         info = self._get_info()
@@ -206,7 +207,7 @@ Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 
 
-class ReplayMemory(object):
+class ReplayMemory(object): # a memory buffer to store transitions
 
     def __init__(self, capacity):
         self.memory = deque([], maxlen=capacity)
@@ -325,9 +326,9 @@ class ActorNetwork(nn.Module):
         prob = F.relu(prob)
 
         mu = self.mu(prob)
-        sigma = self.sigma(prob)
+        sigma = self.sigma(prob) # log_std
 
-        sigma = torch.clamp(sigma, min=self.reparam_noise, max=0.5)
+        sigma = torch.clamp(sigma, min=self.reparam_noise, max=2)
 
         return mu, sigma
 
@@ -353,64 +354,10 @@ class ActorNetwork(nn.Module):
     def load_checkpoint(self):
         self.load_state_dict(torch.load(self.checkpoint_file))
 
-# initialize hyperparameters
-env = GridWorldEnv(render_mode=None, size=20)
-input_dims=4
-BATCH_SIZE = 1024
-GAMMA = 0.999
-TARGET_UPDATE = 10
-alpha=0.0003
-beta=0.0003
-tau=0.005
-
-
-# initialize NN
-n_actions = 2 # velocity in 2 direction
-actorNet = ActorNetwork(alpha, input_dims, n_actions=n_actions,
-                        name='actor', max_action=[1,1]) # TODO max_action value and min_action value
-criticNet_1 = CriticNetwork(beta, input_dims, n_actions=n_actions,
-                            name='critic_1')
-criticNet_2 = CriticNetwork(beta, input_dims, n_actions=n_actions,
-                            name='critic_2')
-valueNet = ValueNetwork(beta, input_dims, name='value')
-target_valueNet = ValueNetwork(beta, input_dims, name='target_value')
-
-memory = ReplayMemory(10000)
-
-steps_done = 0
-
-
-def select_action(state):
-    #state = torch.Tensor([state]).to(actorNet.device)
-    actions, _ = actorNet.sample_normal(state, reparameterize=False)
-
-    return actions.cpu().detach().numpy()[0]
-
-
-episode_durations = []
-
-
-def plot_durations():
-    plt.figure(1)
-    plt.clf()
-    durations_t = torch.tensor(episode_durations, dtype=torch.float)
-    plt.title('Training...')
-    plt.xlabel('Episode')
-    plt.ylabel('Duration')
-    plt.plot(durations_t.numpy())
-    # Take 100 episode averages and plot them too
-    if len(durations_t) >= 100:
-        means = durations_t.unfold(0, 100, 1).mean(1).view(-1)
-        means = torch.cat((torch.zeros(99), means))
-        plt.plot(means.numpy())
-
-    plt.pause(0.001)  # pause a bit so that plots are updated
-
-
 def optimize_model():
-    if len(memory) < BATCH_SIZE:
+    if len(memory) < BATCH_SIZE: # if memory is not full enough to start traning, return
         return
-    transitions = memory.sample(BATCH_SIZE)
+    transitions = memory.sample(BATCH_SIZE) # sample a batch of transitions from memory
     # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
     # detailed explanation). This converts batch-array of Transitions
     # to Transition of batch-arrays.
@@ -426,7 +373,7 @@ def optimize_model():
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)
 
-    value = valueNet(state_batch).view(-1)
+    value = valueNet(state_batch).view(-1) # infer size of batch
     value_ = torch.zeros(BATCH_SIZE, device=device)
     value_[non_final_mask] = target_valueNet(non_final_next_states).view(-1)
 
@@ -469,6 +416,73 @@ def optimize_model():
     critic_loss.backward()
     criticNet_1.optimizer.step()
     criticNet_2.optimizer.step()
+
+# initialize hyperparameters
+
+
+input_dims=4 # original position of actor and goal position
+BATCH_SIZE = 1024
+GAMMA = 0.999 # discount factor
+TARGET_UPDATE = 10 # update target network every 10 episodes
+alpha=0.0003 # learning rate for actor
+beta=0.0003 # learning rate for critic
+tau=0.005  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
+
+reward_paramaters = {'action_step_scaling': 2,
+                     'goal_value': 10, 
+                     'collision_value': -5, 
+                     'distance_weight': 1,
+                     'collision_weight': -1,
+                     'time_weight': -0.01} 
+# TODO: reward function method (in the step def in env)
+
+env = GridWorldEnv(render_mode=None, size=20, reward_parameters=reward_paramaters)
+
+# initialize NN
+n_actions = 2 # velocity in 2 directions
+actorNet = ActorNetwork(alpha, input_dims, n_actions=n_actions,
+                        name='actor', max_action=[1,1]) # TODO max_action value and min_action value
+criticNet_1 = CriticNetwork(beta, input_dims, n_actions=n_actions,
+                            name='critic_1')
+criticNet_2 = CriticNetwork(beta, input_dims, n_actions=n_actions,
+                            name='critic_2')
+valueNet = ValueNetwork(beta, input_dims, name='value')
+target_valueNet = ValueNetwork(beta, input_dims, name='target_value')
+
+memory = ReplayMemory(10000) # replay buffer size
+
+steps_done = 0
+
+
+def select_action(state):
+    #state = torch.Tensor([state]).to(actorNet.device)
+    actions, _ = actorNet.sample_normal(state, reparameterize=False)
+
+    return actions.cpu().detach().numpy()[0]
+
+
+episode_durations = []
+
+
+def plot_durations():
+    plt.figure(1)
+    plt.clf()
+    durations_t = torch.tensor(episode_durations, dtype=torch.float)
+    plt.title('Training...')
+    plt.xlabel('Episode')
+    plt.ylabel('Duration')
+    plt.plot(durations_t.numpy())
+    # Take X episode averages and plot them too
+    avg_every_X_episodes = 25
+    if len(durations_t) >= avg_every_X_episodes:
+        means = durations_t.unfold(0, avg_every_X_episodes, 1).mean(1).view(-1)
+        means = torch.cat((torch.zeros(avg_every_X_episodes - 1), means))
+        plt.plot(means.numpy())
+
+    plt.pause(0.001)  # pause a bit so that plots are updated
+
+
+
 
 num_episodes = 100
 for i_episode in range(num_episodes):
@@ -523,7 +537,7 @@ env.render_mode = "human"
 
 # env=GridWorldEnv(render_mode="human")
 i = 0
-while i < 3:
+while i < 3: # run plot for 3 episodes to see what it learned
     i += 1
     env.reset()
     obs = env._get_obs()
