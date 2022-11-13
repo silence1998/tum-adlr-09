@@ -55,7 +55,7 @@ Here you will find some implementations of SAC which you can use as your startin
             - [ ] Possible improvement: Eg. if 1 step is 10 pixel movement only occupy pixel 6-10 for all agents as “prediction”
     - [ ] OR for cont. Space only look at distance and size	
     - [ ] Add the obstacle info NN	
-    - [X] V: Add notes to Git-hub as issues?
+- [X] V: Add notes to Git-hub as issues?
 - [X] Change DQN of the examlpe code with an easy SAC (find an easier example and adapt to grid_planning)
     - From [SAC paper](https://arxiv.org/pdf/1812.05905.pdf) 
     - <img src="images/sac_paper_pseudo.png" alt="drawing" width="100%"/>
@@ -67,10 +67,6 @@ Here you will find some implementations of SAC which you can use as your startin
     - ![alt_text](images/Actor_Critic_architecture.png "image_tooltip")
   
 
-
-![alt_text](images/image3.png "image_tooltip")
-
-
 ## 22-11-14 Felix
 
 - [ ] SAC-X Paper Qs 
@@ -81,12 +77,18 @@ Here you will find some implementations of SAC which you can use as your startin
     - [ ] We may have to filter the outputs, as the smoothed result from policy might be in the wrong direction with wrong direction in exploration
 - [ ]  Exam date?
 - [ ]  Google Coupon Activation Code from Felix
-- [ ]  Reparam noise?
-- [ ]  Value loss 0.5??
+- Current model: Potential Field MP
+- [ ]  Our example algo.
+    - [ ]  Reparam noise?
+    - [ ]  Value loss 0.5??
 - [ ]  Desining the reward function
     - [ ]  Value comparison of goal and collision
         - [ ]  10/-1 is this normal behavior for RL 
-    - [ ]  SAC algo depens too much on reward?
+- [ ]  SAC 
+    - [ ]  algo depends too much on reward?
+    - [ ]  why 2 critic networks
+- [ ] Ideas
+    - [ ] pretraining the actor network with a search algo like A* or Dijkstra
 
 
 ## Notes for 

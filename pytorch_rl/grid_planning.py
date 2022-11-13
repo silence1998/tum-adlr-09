@@ -16,7 +16,7 @@ import gym
 from gym import spaces
 import pygame
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = "cpu" #torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 """
 Used Sources:
@@ -37,7 +37,8 @@ class GridWorldEnv(gym.Env):
         self.observation_space = spaces.Dict(
             {
                 "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-                "target": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+                "obstacle": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+                "target": spaces.Box(0, size - 1, shape=(2,), dtype=int)
             }
         )
 
@@ -70,10 +71,11 @@ class GridWorldEnv(gym.Env):
         self.clock = None
 
     def _get_obs(self):
-        return {"agent": self._agent_location, "target": self._target_location}
+        return {"agent": self._agent_location, "obstacle": self._obstacle_location, "target": self._target_location}
 
     def _get_info(self):
-        return {"distance": np.linalg.norm(self._agent_location - self._target_location, ord=1)}
+        return {"distance": np.linalg.norm(self._agent_location - self._target_location, ord=1),
+                "obstacle_distance": np.linalg.norm(self._agent_location - self._obstacle_location, ord=1)}
 
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
@@ -89,6 +91,14 @@ class GridWorldEnv(gym.Env):
                 0, self.size, size=2, dtype=int
             )
 
+        # We will sample the obstacle's location randomly until it does not coincide with the agent's/target's location
+        self._obstacle_location = self._agent_location
+        while np.array_equal(self._target_location, self._agent_location)\
+                or np.array_equal(self._target_location, self._obstacle_location):
+            self._obstacle_location = self.np_random.integers(
+                0, self.size, size=2, dtype=int
+            )
+
         observation = self._get_obs()
         info = self._get_info()
 
@@ -98,7 +108,7 @@ class GridWorldEnv(gym.Env):
         return observation, info
 
     def step(self, action_step):
-        action_step=np.round(self.reward_parameters["action_step_scaling"] * action_step) # scale action to e.g. [-2, 2]
+        action_step=np.round(self.reward_parameters["action_step_scaling"] * action_step)  # scale action to e.g. [-2, 2]
         original_position = self._agent_location
         self._agent_location = self._agent_location + action_step
 
@@ -111,17 +121,25 @@ class GridWorldEnv(gym.Env):
             return observation, reward, terminated, False, info
 
         # An episode is done iff the agent has reached the target
-        terminated = np.array_equal(self._agent_location, self._target_location)
+        terminated = np.array_equal(self._agent_location, self._target_location)  # target reached
         if terminated:
-            reward = self.reward_parameters['goal_value'] # goal reached
+            reward = self.reward_parameters['target_value']  # target reward
         else:
             original_distance = math.sqrt((original_position[0] - self._target_location[0]) ** 2
                                           + (original_position[1] - self._target_location[1]) ** 2)
             distance = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2
                                  + (self._agent_location[1] - self._target_location[1]) ** 2)
-            reward = (self.reward_parameters['distance_weight'] * (original_distance - distance)  # moving to target
-                    - self.reward_parameters['time_value'])
-            # e.g. 0.4 leads the agent to not learn the goal fast enough, 
+            obstacle_distance = math.sqrt((self._agent_location[0] - self._obstacle_location[0]) ** 2
+                                 + (self._agent_location[1] - self._obstacle_location[1]) ** 2)
+
+            diff_original_distance = np.abs(original_distance - distance)
+            diff_obstacle_distance = np.abs(original_distance - obstacle_distance)
+            max_distance = self.size * np.sqrt(2)
+
+            reward = (self.reward_parameters['distance_weight'] * (1 - np.sqrt(diff_original_distance / max_distance))  # moving to target # TODO: add sink for target in action reach
+                    - self.reward_parameters['obstacle_distance_weight'] * (1-np.sqrt(diff_obstacle_distance / max_distance)) # moving away from obstacle
+                    - self.reward_parameters['time_value'] * (1/max_distance))  # time penalty
+            # e.g. 0.4 leads the agent to not learn the target fast enough,
             # -1 is to avoid that the agent to stays at the same place
 
         observation = self._get_obs()
@@ -165,6 +183,15 @@ class GridWorldEnv(gym.Env):
             (0, 0, 255),
             (self._agent_location + 0.5) * pix_square_size,
             pix_square_size / 3,
+        )
+        # Now we draw the obstacle
+        pygame.draw.rect(
+            canvas,
+            (0, 0, 0),
+            pygame.Rect(
+                pix_square_size * self._obstacle_location,
+                (pix_square_size, pix_square_size),
+            ),
         )
 
         # Finally, add some gridlines
@@ -240,7 +267,7 @@ class CriticNetwork(nn.Module):
         self.q = nn.Linear(self.fc2_dims, 1)
 
         self.optimizer = optim.Adam(self.parameters(), lr=beta)
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.device = "cpu" #torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
         self.to(self.device)
 
@@ -276,7 +303,7 @@ class ValueNetwork(nn.Module):
         self.v = nn.Linear(self.fc2_dims, 1)
 
         self.optimizer = optim.Adam(self.parameters(), lr=beta)
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.device = "cpu" #torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
         self.to(self.device)
 
@@ -316,7 +343,7 @@ class ActorNetwork(nn.Module):
         self.sigma = nn.Linear(self.fc2_dims, self.n_actions)
 
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.device = "cpu" #torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
         self.to(self.device)
 
@@ -327,9 +354,9 @@ class ActorNetwork(nn.Module):
         prob = F.relu(prob)
 
         mu = self.mu(prob)
-        sigma = self.sigma(prob) # log_std
+        sigma = self.sigma(prob)  # log_std
 
-        sigma = torch.clamp(sigma, min=self.reparam_noise, max=2)
+        sigma = torch.clamp(sigma, min=self.reparam_noise, max=2)  # TODO: decaying sigma
 
         return mu, sigma
 
@@ -344,7 +371,7 @@ class ActorNetwork(nn.Module):
 
         action_sample = torch.tanh(actions)*torch.tensor(self.max_action).to(self.device)
         log_probs = probabilities.log_prob(actions)
-        log_probs -= torch.log(1-action_sample.pow(2)+self.reparam_noise)
+        log_probs -= torch.log(1-action_sample.pow(2)+self.reparam_noise)  # lower bound for probas
         log_probs = log_probs.sum(1, keepdim=True)
 
         return action_sample, log_probs
@@ -423,7 +450,7 @@ def optimize_model():
 
 # initialize hyperparameters
 
-input_dims = 4  # original position of actor and goal position
+input_dims = 6  # original position of actor and target position
 BATCH_SIZE = 1024
 GAMMA = 0.999  # discount factor
 TARGET_UPDATE = 10  # update target network every 10 episodes
@@ -433,12 +460,13 @@ tau = 0.005  # target network soft update parameter (parameters = tau*parameters
 
 reward_paramaters = {'action_step_scaling': 2,
 
-                     'goal_value': 10,
+                     'target_value': 10,
                      'collision_value': -5,
-                     'time_value': -1,
+                     'time_value': 1,
 
                      'distance_weight': 1,
-                     'collision_weight': 1,
+                     'obstacle_distance_weight': 0.5,
+                     'collision_weight': 3,
                      'time_weight': 1}
 # TODO: reward function method (in the step def in env)
 
@@ -495,7 +523,7 @@ for i_episode in range(num_episodes):
     # Initialize the environment and state
     env.reset()
     obs = env._get_obs()
-    state = torch.tensor(np.array([obs["agent"], obs["target"]]), dtype=torch.float, device=device)
+    state = torch.tensor(np.array([obs["agent"], obs["obstacle"], obs["target"]]), dtype=torch.float, device=device)
     state = state.view(1, -1)
     for t in count():
         # Select and perform an action
@@ -506,7 +534,7 @@ for i_episode in range(num_episodes):
         # Observe new state
         obs = env._get_obs()
         if not done:
-            next_state = torch.tensor(np.array([obs["agent"], obs["target"]]), dtype=torch.float, device=device)
+            next_state = torch.tensor(np.array([obs["agent"], obs["obstacle"], obs["target"]]), dtype=torch.float, device=device)
             next_state = next_state.view(1, -1)
         else:
             next_state = None
@@ -543,11 +571,11 @@ env.render_mode = "human"
 
 # env=GridWorldEnv(render_mode="human")
 i = 0
-while i < 3:  # run plot for 3 episodes to see what it learned
+while i < 10:  # run plot for 3 episodes to see what it learned
     i += 1
     env.reset()
     obs = env._get_obs()
-    state = torch.tensor(np.array([obs["agent"], obs["target"]]), dtype=torch.float, device=device)
+    state = torch.tensor(np.array([obs["agent"], obs["obstacle"], obs["target"]]), dtype=torch.float, device=device)
     state = state.view(1, -1)
     for t in count():
         # Select and perform an action
@@ -567,7 +595,7 @@ while i < 3:  # run plot for 3 episodes to see what it learned
         # Observe new state
         obs = env._get_obs()
         if not done:
-            next_state = torch.tensor(np.array([obs["agent"], obs["target"]]), dtype=torch.float, device=device)
+            next_state = torch.tensor(np.array([obs["agent"], obs["obstacle"], obs["target"]]), dtype=torch.float, device=device)
             next_state = next_state.view(1, -1)
         else:
             next_state = None
