@@ -505,76 +505,10 @@ def select_action(state):
     return actions.cpu().detach().numpy()[0]
 
 
-episode_durations = []
-
-
-def plot_durations():
-    plt.figure(1)
-    plt.clf()
-    durations_t = torch.tensor(episode_durations, dtype=torch.float)
-    plt.title('Training...')
-    plt.xlabel('Episode')
-    plt.ylabel('Duration')
-    plt.plot(durations_t.numpy())
-    # Take X episode averages and plot them too
-    avg_every_X_episodes = 25
-    if len(durations_t) >= avg_every_X_episodes:
-        means = durations_t.unfold(0, avg_every_X_episodes, 1).mean(1).view(-1)
-        means = torch.cat((torch.zeros(avg_every_X_episodes - 1), means))
-        plt.plot(means.numpy())
-
-    plt.pause(0.001)  # pause a bit so that plots are updated
-
-
-num_episodes = 200
-for i_episode in range(num_episodes):
-    # Initialize the environment and state
-    env.reset()
-    obs = env._get_obs()
-    state = torch.tensor(np.array([obs["agent"], obs["obstacle"], obs["target"]]), dtype=torch.float, device=device)
-    state = state.view(1, -1)
-    for t in count():
-        # Select and perform an action
-        action = select_action(state)
-        _, reward, done, _, _ = env.step(action)
-        reward = torch.tensor([reward], dtype=torch.float, device=device)
-
-        # Observe new state
-        obs = env._get_obs()
-        if not done:
-            next_state = torch.tensor(np.array([obs["agent"], obs["obstacle"], obs["target"]]), dtype=torch.float,
-                                      device=device)
-            next_state = next_state.view(1, -1)
-        else:
-            next_state = None
-
-        # Store the transition in memory
-        action = np.array([action])
-        action = torch.tensor(action, dtype=torch.float).to(actorNet.device)
-        memory.push(state, action, next_state, reward)
-
-        # Move to the next state
-        state = next_state
-
-        # Perform one step of the optimization (on the policy network)
-        optimize_model()
-        if done:
-            episode_durations.append(t + 1)
-            plot_durations()
-            break
-    # Update the target network, using tau
-    target_value_params = target_valueNet.named_parameters()
-    value_params = valueNet.named_parameters()
-
-    target_value_state_dict = dict(target_value_params)
-    value_state_dict = dict(value_params)
-
-    for name in value_state_dict:
-        value_state_dict[name] = tau * value_state_dict[name].clone() + \
-                                 (1 - tau) * target_value_state_dict[name].clone()
-    target_valueNet.load_state_dict(value_state_dict)
-
-print('Complete')
+actorNet.load_state_dict(torch.load("model/actor.pt"), strict=True)
+criticNet_1.load_state_dict(torch.load("model/criticNet_1.pt"), strict=True)
+criticNet_2.load_state_dict(torch.load("model/criticNet_2.pt"), strict=True)
+target_valueNet.load_state_dict(torch.load("model/target_valueNet.pt"), strict=True)
 
 env.render_mode = "human"
 
@@ -617,7 +551,3 @@ while i < 3:  # run plot for 3 episodes to see what it learned
         state = next_state
         if done:
             break
-torch.save(actorNet.state_dict(), "model/actor.pt")
-torch.save(criticNet_1.state_dict(), "model/criticNet_1.pt")
-torch.save(criticNet_2.state_dict(), "model/criticNet_2.pt")
-torch.save(target_valueNet.state_dict(), "model/target_valueNet.pt")

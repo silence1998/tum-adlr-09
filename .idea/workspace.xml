@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="8d5a0326-3043-492e-9dbb-df708c8e334d" name="Changes" comment="normalized reward func trial" />
+    <list default="true" id="8d5a0326-3043-492e-9dbb-df708c8e334d" name="Changes" comment="normalized reward func trial">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -16,10 +18,6 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
     <option name="RESET_MODE" value="HARD" />
   </component>
-  <component name="HighlightingSettingsPerFile">
-    <setting file="file://$USER_HOME$/anaconda3/envs/adlr/lib/python3.9/site-packages/torch/nn/modules/linear.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$USER_HOME$/anaconda3/envs/adlr/lib/python3.9/site-packages/torch/nn/modules/module.py" root0="SKIP_INSPECTION" />
-  </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
@@ -29,17 +27,17 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/volkan/31_Projects/adlr/tum-adlr-09/logs/project_notes&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.sourceCode.Markdown&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "last_opened_file_path": "/media/chenmo/新加卷/硕士课程/advanced deep learning for robotics/code/tum-adlr-09/pytorch_rl",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.sourceCode.Markdown"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/logs/project_notes" />
@@ -56,7 +54,7 @@
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="$USER_HOME$/anaconda3/envs/adlr/bin/python" />
+      <option name="SDK_HOME" value="$USER_HOME$/.conda/envs/rl/bin/python" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/pytorch_rl" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -91,6 +89,9 @@
       <workItem from="1668440153203" duration="293000" />
       <workItem from="1668440462842" duration="71000" />
       <workItem from="1668440547584" duration="69000" />
+      <workItem from="1668605500928" duration="38000" />
+      <workItem from="1668605546597" duration="15000" />
+      <workItem from="1668605562654" duration="11000" />
     </task>
     <task id="LOCAL-00001" summary="normalized reward func trial">
       <created>1668378844241</created>
