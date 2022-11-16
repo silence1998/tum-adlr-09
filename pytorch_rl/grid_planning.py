@@ -112,12 +112,11 @@ class GridWorldEnv(gym.Env):
         original_position = self._agent_location
         self._agent_location = self._agent_location + action_step
 
-        max_distance = self.size * np.sqrt(2)
-
+        # Check if the agent is out of bounds
         if self._agent_location[0] < 0 or self._agent_location[1] < 0 or \
                 self._agent_location[0] > self.size - 1 or self._agent_location[1] > self.size - 1:
             terminated = True
-            reward = -self.reward_parameters['collision_value'] # -(1 - np.sqrt(self.reward_parameters['collision_value'] / max_distance))  # collision with wall
+            reward = self.reward_parameters['collision_value']  # collision with wall
             observation = self._get_obs()
             info = self._get_info()
             return observation, reward, terminated, False, info
@@ -127,18 +126,33 @@ class GridWorldEnv(gym.Env):
         if terminated:
             reward = self.reward_parameters['target_value']  # target reward
         else:
+            # Distance to target
             original_distance = math.sqrt((original_position[0] - self._target_location[0]) ** 2
                                           + (original_position[1] - self._target_location[1]) ** 2)
             distance = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2
                                  + (self._agent_location[1] - self._target_location[1]) ** 2)
+
+            # Distance to obstacle
+            original_obstacle_distance = math.sqrt((original_position[0] - self._obstacle_location[0]) ** 2
+                                            + (original_position[1] - self._obstacle_location[1]) ** 2)
             obstacle_distance = math.sqrt((self._agent_location[0] - self._obstacle_location[0]) ** 2
                                  + (self._agent_location[1] - self._obstacle_location[1]) ** 2)
 
+            # Variables to target and obstacle
             diff_original_distance = np.abs(original_distance - distance)
-            diff_obstacle_distance = np.abs(original_distance - obstacle_distance)
+            diff_obstacle_distance = np.abs(original_obstacle_distance - obstacle_distance)
 
+            # Distance checkpoint rewards
+            reward = 0
+            checkpoint_reward_given = [False] * (reward_paramaters['checkpoint_number']+1)
+            for i in np.invert(range(1,reward_paramaters['checkpoint_number'])):
+                if (distance < i * reward_paramaters['checkpoint_distance_proportion'] * self.size)\
+                        and not checkpoint_reward_given[i]:
+                    checkpoint_reward_given[i] = True
+                    reward += self.reward_parameters['checkpoint_value']  # checkpoint reward
 
-            reward = (self.reward_parameters['distance_weight'] * (1 - np.sqrt(diff_original_distance / max_distance))  # moving to target # TODO: add sink for target in action reach
+            # TODO: Distance to target reward
+            reward += (self.reward_parameters['distance_weight'] * (1 - np.sqrt(diff_original_distance / max_distance))  # moving to target # TODO: add sink for target in action reach
                     - self.reward_parameters['obstacle_distance_weight'] * (1 - np.sqrt(diff_obstacle_distance / max_distance)) # moving away from obstacle
                     - self.reward_parameters['time_value'] * (1/max_distance))  # time penalty
             # e.g. 0.4 leads the agent to not learn the target fast enough,
@@ -461,11 +475,14 @@ beta = 0.0003  # learning rate for critic
 tau = 0.005  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
 
 reward_paramaters = {'action_step_scaling': 2,
+                     'target_value': 1,
+                     'checkpoint_distance_proportion': 0.2,
+                     'checkpoint_number': 5,
+                     'checkpoint_value': 0.2,  # as we put 5 checkpoints
+                     'collision_value': -1,
 
-                     'target_value': 10,
-                     'collision_value': 5,
+                     # the following are not used in the current version which is sparse reward based
                      'time_value': 1,
-
                      'distance_weight': 1,
                      'obstacle_distance_weight': 0.5,
                      'collision_weight': 3,
