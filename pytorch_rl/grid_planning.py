@@ -24,6 +24,8 @@ https://www.gymlibrary.dev/content/environment_creation/
 https://github.com/Farama-Foundation/gym-examples/blob/main/gym_examples/envs/grid_world.py
 #https://github.com/philtabor/Youtube-Code-Repository/tree/master/ReinforcementLearning/PolicyGradient/SAC
 """
+
+
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
@@ -37,7 +39,8 @@ class GridWorldEnv(gym.Env):
         self.observation_space = spaces.Dict(
             {
                 "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-                "target": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+                "obstacle": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+                "target": spaces.Box(0, size - 1, shape=(2,), dtype=int)
             }
         )
 
@@ -70,10 +73,11 @@ class GridWorldEnv(gym.Env):
         self.clock = None
 
     def _get_obs(self):
-        return {"agent": self._agent_location, "target": self._target_location}
+        return {"agent": self._agent_location, "obstacle": self._obstacle_location, "target": self._target_location}
 
     def _get_info(self):
-        return {"distance": np.linalg.norm(self._agent_location - self._target_location, ord=1)}
+        return {"distance": np.linalg.norm(self._agent_location - self._target_location, ord=1),
+                "obstacle_distance": np.linalg.norm(self._agent_location - self._obstacle_location, ord=1)}
 
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
@@ -89,6 +93,14 @@ class GridWorldEnv(gym.Env):
                 0, self.size, size=2, dtype=int
             )
 
+        # We will sample the obstacle's location randomly until it does not coincide with the agent's/target's location
+        self._obstacle_location = self._agent_location
+        while np.array_equal(self._target_location, self._agent_location) \
+                or np.array_equal(self._target_location, self._obstacle_location):
+            self._obstacle_location = self.np_random.integers(
+                0, self.size, size=2, dtype=int
+            )
+
         observation = self._get_obs()
         info = self._get_info()
 
@@ -98,30 +110,44 @@ class GridWorldEnv(gym.Env):
         return observation, info
 
     def step(self, action_step):
-        action_step=np.round(self.reward_parameters["action_step_scaling"] * action_step) # scale action to e.g. [-2, 2]
+        action_step = np.round(
+            self.reward_parameters["action_step_scaling"] * action_step)  # scale action to e.g. [-2, 2]
         original_position = self._agent_location
         self._agent_location = self._agent_location + action_step
 
+        max_distance = self.size * np.sqrt(2)
+        terminated = np.array_equal(self._agent_location, self._obstacle_location)
         if self._agent_location[0] < 0 or self._agent_location[1] < 0 or \
-                self._agent_location[0] > self.size - 1 or self._agent_location[1] > self.size - 1:
+                self._agent_location[0] > self.size - 1 or self._agent_location[1] > self.size - 1 or \
+                terminated:
             terminated = True
-            reward = self.reward_parameters['collision_value']  # collision with wall
+            reward = -self.reward_parameters['collision_value']  # collision with wall or obstacles
             observation = self._get_obs()
             info = self._get_info()
             return observation, reward, terminated, False, info
 
         # An episode is done iff the agent has reached the target
-        terminated = np.array_equal(self._agent_location, self._target_location)
+        terminated = np.array_equal(self._agent_location, self._target_location)  # target reached
         if terminated:
-            reward = self.reward_parameters['goal_value'] # goal reached
+            reward = self.reward_parameters['target_value']  # target reward
         else:
-            original_distance = math.sqrt((original_position[0] - self._target_location[0]) ** 2
-                                          + (original_position[1] - self._target_location[1]) ** 2)
-            distance = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2
-                                 + (self._agent_location[1] - self._target_location[1]) ** 2)
-            reward = (self.reward_parameters['distance_weight'] * (original_distance - distance)  # moving to target
-                    - self.reward_parameters['time_value'])
-            # e.g. 0.4 leads the agent to not learn the goal fast enough, 
+            original_distance_to_goal = math.sqrt((original_position[0] - self._target_location[0]) ** 2
+                                                  + (original_position[1] - self._target_location[1]) ** 2)
+            distance_to_goal = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2
+                                         + (self._agent_location[1] - self._target_location[1]) ** 2)
+            obstacle_distance = math.sqrt((self._agent_location[0] - self._obstacle_location[0]) ** 2
+                                          + (self._agent_location[1] - self._obstacle_location[1]) ** 2)
+            distance_to_wall = np.min(np.vstack((self._agent_location + 1, self.size - self._agent_location)))
+
+            min_collision_distance = np.min(np.array([obstacle_distance, distance_to_wall]))
+            penalty_distance_collision = np.max(np.array([3.0 - min_collision_distance, 0.0]))
+
+            diff_distance_to_goal = original_distance_to_goal - distance_to_goal
+
+            reward = self.reward_parameters['distance_weight'] * diff_distance_to_goal - \
+                     self.reward_parameters['obstacle_distance_weight'] * penalty_distance_collision - \
+                     self.reward_parameters['time_value']  # time penalty
+            # e.g. 0.4 leads the agent to not learn the target fast enough,
             # -1 is to avoid that the agent to stays at the same place
 
         observation = self._get_obs()
@@ -166,6 +192,15 @@ class GridWorldEnv(gym.Env):
             (self._agent_location + 0.5) * pix_square_size,
             pix_square_size / 3,
         )
+        # Now we draw the obstacle
+        pygame.draw.rect(
+            canvas,
+            (0, 0, 0),
+            pygame.Rect(
+                pix_square_size * self._obstacle_location,
+                (pix_square_size, pix_square_size),
+            ),
+        )
 
         # Finally, add some gridlines
         for x in range(self.size + 1):
@@ -208,7 +243,7 @@ Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 
 
-class ReplayMemory(object): # a memory buffer to store transitions
+class ReplayMemory(object):  # a memory buffer to store transitions
 
     def __init__(self, capacity):
         self.memory = deque([], maxlen=capacity)
@@ -223,9 +258,10 @@ class ReplayMemory(object): # a memory buffer to store transitions
     def __len__(self):
         return len(self.memory)
 
+
 class CriticNetwork(nn.Module):
     def __init__(self, beta, input_dims, n_actions, fc1_dims=16, fc2_dims=16,
-            name='critic', chkpt_dir='tmp/sac'):
+                 name='critic', chkpt_dir='tmp/sac'):
         super(CriticNetwork, self).__init__()
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
@@ -233,9 +269,9 @@ class CriticNetwork(nn.Module):
         self.n_actions = n_actions
         self.name = name
         self.checkpoint_dir = chkpt_dir
-        self.checkpoint_file = os.path.join(self.checkpoint_dir, name+'_sac')
+        self.checkpoint_file = os.path.join(self.checkpoint_dir, name + '_sac')
 
-        self.fc1 = nn.Linear(self.input_dims+n_actions, self.fc1_dims)
+        self.fc1 = nn.Linear(self.input_dims + n_actions, self.fc1_dims)
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
         self.q = nn.Linear(self.fc2_dims, 1)
 
@@ -260,16 +296,17 @@ class CriticNetwork(nn.Module):
     def load_checkpoint(self):
         self.load_state_dict(torch.load(self.checkpoint_file))
 
+
 class ValueNetwork(nn.Module):
     def __init__(self, beta, input_dims, fc1_dims=16, fc2_dims=16,
-            name='value', chkpt_dir='tmp/sac'):
+                 name='value', chkpt_dir='tmp/sac'):
         super(ValueNetwork, self).__init__()
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
         self.name = name
         self.checkpoint_dir = chkpt_dir
-        self.checkpoint_file = os.path.join(self.checkpoint_dir, name+'_sac')
+        self.checkpoint_file = os.path.join(self.checkpoint_dir, name + '_sac')
 
         self.fc1 = nn.Linear(self.input_dims, self.fc1_dims)
         self.fc2 = nn.Linear(self.fc1_dims, fc2_dims)
@@ -296,9 +333,10 @@ class ValueNetwork(nn.Module):
     def load_checkpoint(self):
         self.load_state_dict(torch.load(self.checkpoint_file))
 
+
 class ActorNetwork(nn.Module):
     def __init__(self, alpha, input_dims, max_action, fc1_dims=16,
-            fc2_dims=16, n_actions=2, name='actor', chkpt_dir='tmp/sac'):
+                 fc2_dims=16, n_actions=2, name='actor', chkpt_dir='tmp/sac'):
         super(ActorNetwork, self).__init__()
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
@@ -306,7 +344,7 @@ class ActorNetwork(nn.Module):
         self.n_actions = n_actions
         self.name = name
         self.checkpoint_dir = chkpt_dir
-        self.checkpoint_file = os.path.join(self.checkpoint_dir, name+'_sac')
+        self.checkpoint_file = os.path.join(self.checkpoint_dir, name + '_sac')
         self.max_action = max_action
         self.reparam_noise = 1e-6
 
@@ -327,9 +365,9 @@ class ActorNetwork(nn.Module):
         prob = F.relu(prob)
 
         mu = self.mu(prob)
-        sigma = self.sigma(prob) # log_std
+        sigma = self.sigma(prob)  # log_std
 
-        sigma = torch.clamp(sigma, min=self.reparam_noise, max=2)
+        sigma = torch.clamp(sigma, min=self.reparam_noise, max=2)  # TODO: decaying sigma
 
         return mu, sigma
 
@@ -342,9 +380,9 @@ class ActorNetwork(nn.Module):
         else:
             actions = probabilities.sample()
 
-        action_sample = torch.tanh(actions)*torch.tensor(self.max_action).to(self.device)
+        action_sample = torch.tanh(actions) * torch.tensor(self.max_action).to(self.device)
         log_probs = probabilities.log_prob(actions)
-        log_probs -= torch.log(1-action_sample.pow(2)+self.reparam_noise)
+        log_probs -= torch.log(1 - action_sample.pow(2) + self.reparam_noise)  # lower bound for probas
         log_probs = log_probs.sum(1, keepdim=True)
 
         return action_sample, log_probs
@@ -354,6 +392,7 @@ class ActorNetwork(nn.Module):
 
     def load_checkpoint(self):
         self.load_state_dict(torch.load(self.checkpoint_file))
+
 
 def optimize_model():
     if len(memory) < BATCH_SIZE:  # if memory is not full enough to start traning, return
@@ -419,12 +458,10 @@ def optimize_model():
     criticNet_2.optimizer.step()
 
 
-
-
 # initialize hyperparameters
 
-input_dims = 4  # original position of actor and goal position
-BATCH_SIZE = 1024
+input_dims = 6  # original position of actor, obstacle and target position
+BATCH_SIZE = 256
 GAMMA = 0.999  # discount factor
 TARGET_UPDATE = 10  # update target network every 10 episodes
 alpha = 0.0003  # learning rate for actor
@@ -433,21 +470,22 @@ tau = 0.005  # target network soft update parameter (parameters = tau*parameters
 
 reward_paramaters = {'action_step_scaling': 2,
 
-                     'goal_value': 10,
-                     'collision_value': -5,
-                     'time_value': -1,
+                     'target_value': 10,
+                     'collision_value': 5,
+                     'time_value': 1,
 
                      'distance_weight': 1,
-                     'collision_weight': 1,
+                     'obstacle_distance_weight': 1,
+                     'collision_weight': 0.3,
                      'time_weight': 1}
 # TODO: reward function method (in the step def in env)
 
 env = GridWorldEnv(render_mode=None, size=20, reward_parameters=reward_paramaters)
 
 # initialize NN
-n_actions = 2 # velocity in 2 directions
+n_actions = 2  # velocity in 2 directions
 actorNet = ActorNetwork(alpha, input_dims, n_actions=n_actions,
-                        name='actor', max_action=[1,1]) # TODO max_action value and min_action value
+                        name='actor', max_action=[1, 1])  # TODO max_action value and min_action value
 criticNet_1 = CriticNetwork(beta, input_dims, n_actions=n_actions,
                             name='critic_1')
 criticNet_2 = CriticNetwork(beta, input_dims, n_actions=n_actions,
@@ -461,7 +499,7 @@ steps_done = 0
 
 
 def select_action(state):
-    #state = torch.Tensor([state]).to(actorNet.device)
+    # state = torch.Tensor([state]).to(actorNet.device)
     actions, _ = actorNet.sample_normal(state, reparameterize=False)
 
     return actions.cpu().detach().numpy()[0]
@@ -488,32 +526,31 @@ def plot_durations():
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-
-
-num_episodes = 100
+num_episodes = 200
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     env.reset()
     obs = env._get_obs()
-    state = torch.tensor(np.array([obs["agent"], obs["target"]]), dtype=torch.float, device=device)
+    state = torch.tensor(np.array([obs["agent"], obs["obstacle"], obs["target"]]), dtype=torch.float, device=device)
     state = state.view(1, -1)
     for t in count():
         # Select and perform an action
         action = select_action(state)
         _, reward, done, _, _ = env.step(action)
-        reward = torch.tensor([reward], device=device)
+        reward = torch.tensor([reward], dtype=torch.float, device=device)
 
         # Observe new state
         obs = env._get_obs()
         if not done:
-            next_state = torch.tensor(np.array([obs["agent"], obs["target"]]), dtype=torch.float, device=device)
+            next_state = torch.tensor(np.array([obs["agent"], obs["obstacle"], obs["target"]]), dtype=torch.float,
+                                      device=device)
             next_state = next_state.view(1, -1)
         else:
             next_state = None
 
         # Store the transition in memory
-        action=np.array([action])
-        action=torch.tensor(action, dtype=torch.float).to(actorNet.device)
+        action = np.array([action])
+        action = torch.tensor(action, dtype=torch.float).to(actorNet.device)
         memory.push(state, action, next_state, reward)
 
         # Move to the next state
@@ -522,9 +559,9 @@ for i_episode in range(num_episodes):
         # Perform one step of the optimization (on the policy network)
         optimize_model()
         if done:
-             episode_durations.append(t + 1)
-             plot_durations()
-             break
+            episode_durations.append(t + 1)
+            plot_durations()
+            break
     # Update the target network, using tau
     target_value_params = target_valueNet.named_parameters()
     value_params = valueNet.named_parameters()
@@ -547,15 +584,15 @@ while i < 3:  # run plot for 3 episodes to see what it learned
     i += 1
     env.reset()
     obs = env._get_obs()
-    state = torch.tensor(np.array([obs["agent"], obs["target"]]), dtype=torch.float, device=device)
+    state = torch.tensor(np.array([obs["agent"], obs["obstacle"], obs["target"]]), dtype=torch.float, device=device)
     state = state.view(1, -1)
     for t in count():
         # Select and perform an action
         action = select_action(state)
         _, reward, done, _, _ = env.step(action)
 
-        action_=torch.tensor(action, dtype=torch.float, device=device)
-        action_=action_.view(1,2)
+        action_ = torch.tensor(action, dtype=torch.float, device=device)
+        action_ = action_.view(1, 2)
         mu, sigma = actorNet(state)
         print(actorNet(state))
         print(criticNet_1(state, action_))
@@ -567,7 +604,8 @@ while i < 3:  # run plot for 3 episodes to see what it learned
         # Observe new state
         obs = env._get_obs()
         if not done:
-            next_state = torch.tensor([obs["agent"], obs["target"]], dtype=torch.float, device=device)
+            next_state = torch.tensor(np.array([obs["agent"], obs["obstacle"], obs["target"]]), dtype=torch.float,
+                                      device=device)
             next_state = next_state.view(1, -1)
         else:
             next_state = None
