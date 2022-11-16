@@ -138,9 +138,9 @@ class GridWorldEnv(gym.Env):
         else:
 
             # Distance to target
-            original_distance_to_goal = math.sqrt((original_position[0] - self._target_location[0]) ** 2
+            original_distance_to_target = math.sqrt((original_position[0] - self._target_location[0]) ** 2
                                                   + (original_position[1] - self._target_location[1]) ** 2)
-            distance_to_goal = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2
+            distance_to_target = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2
                                          + (self._agent_location[1] - self._target_location[1]) ** 2)
 
             # Distance to obstacle
@@ -154,21 +154,20 @@ class GridWorldEnv(gym.Env):
 
 
             # Variables to target and obstacle
-            diff_distance_to_goal = original_distance_to_goal - distance_to_goal
+            diff_distance_to_goal = original_distance_to_target - distance_to_target
             diff_obstacle_distance = np.abs(original_obstacle_distance - obstacle_distance)
 
             # Distance checkpoint rewards
             reward = 0
             checkpoint_reward_given = [False] * (reward_paramaters['checkpoint_number']+1)
             for i in np.invert(range(1,reward_paramaters['checkpoint_number'])):
-                if (distance < i * reward_paramaters['checkpoint_distance_proportion'] * self.size)\
+                if (distance_to_target < i * reward_paramaters['checkpoint_distance_proportion'] * self.size)\
                         and not checkpoint_reward_given[i]:
                     checkpoint_reward_given[i] = True
                     reward += self.reward_parameters['checkpoint_value']  # checkpoint reward
 
             min_collision_distance = np.min(np.array([obstacle_distance, distance_to_wall]))
             penalty_distance_collision = np.max(np.array([1.0 - min_collision_distance, 0.0]))
-           
 
             reward = self.reward_parameters['distance_weight'] * diff_distance_to_goal - \
                      self.reward_parameters['obstacle_distance_weight'] * penalty_distance_collision - \
