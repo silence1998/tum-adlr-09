@@ -159,9 +159,9 @@ class GridWorldEnv(gym.Env):
 
             # Distance checkpoint rewards
             reward = 0
-            checkpoint_reward_given = [False] * (reward_paramaters['checkpoint_number']+1)
-            for i in np.invert(range(1,reward_paramaters['checkpoint_number'])):
-                if (distance_to_target < i * reward_paramaters['checkpoint_distance_proportion'] * self.size)\
+            checkpoint_reward_given = [False] * (reward_parameters['checkpoint_number']+1)
+            for i in np.invert(range(1,reward_parameters['checkpoint_number'])):
+                if (distance_to_target < i * reward_parameters['checkpoint_distance_proportion'] * self.size)\
                         and not checkpoint_reward_given[i]:
                     checkpoint_reward_given[i] = True
                     reward += self.reward_parameters['checkpoint_value']  # checkpoint reward
@@ -421,9 +421,9 @@ class ActorNetwork(nn.Module):
 
 
 def optimize_model():
-    if len(memory) < BATCH_SIZE:  # if memory is not full enough to start traning, return
+    if len(memory) < hyper_parameters["batch_size"]:  # if memory is not full enough to start traning, return
         return
-    transitions = memory.sample(BATCH_SIZE)  # sample a batch of transitions from memory
+    transitions = memory.sample(hyper_parameters["batch_size"])  # sample a batch of transitions from memory
     # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
     # detailed explanation). This converts batch-array of Transitions
     # to Transition of batch-arrays.
@@ -440,7 +440,7 @@ def optimize_model():
     reward_batch = torch.cat(batch.reward)
 
     value = valueNet(state_batch).view(-1)  # infer size of batch
-    value_ = torch.zeros(BATCH_SIZE, device=device)
+    value_ = torch.zeros(hyper_parameters["batch_size"], device=device)
     value_[non_final_mask] = target_valueNet(non_final_next_states).view(-1)
 
     actions, log_probs = actorNet.sample_normal(state_batch, reparameterize=False)
@@ -472,7 +472,7 @@ def optimize_model():
 
     criticNet_1.optimizer.zero_grad()
     criticNet_2.optimizer.zero_grad()
-    q_hat = reward_batch + GAMMA * value_
+    q_hat = reward_batch + hyper_parameters["gamma"] * value_
     q1_old_policy = criticNet_1.forward(state_batch, action_batch).view(-1)
     q2_old_policy = criticNet_2.forward(state_batch, action_batch).view(-1)
     critic_1_loss = 0.5 * F.mse_loss(q1_old_policy, q_hat)
@@ -485,42 +485,45 @@ def optimize_model():
 
 
 # initialize hyperparameters
+hyper_parameters = {
+    'input_dims': 6,  # original position of actor, obstacle and target position
+    'batch_size': 256,
+    'gamma': 0.999,  # discount factor
+    'target_update': 10,  # update target network every 10 episodes TODO: UNUSED?
+    'alpha': 0.0003,  # learning rate for actor
+    'beta': 0.0003,  # learning rate for critic
+    'tau': 0.005, # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
+    'num_episodes': 200
+}
 
-input_dims = 6  # original position of actor, obstacle and target position
-BATCH_SIZE = 256
-GAMMA = 0.999  # discount factor
-TARGET_UPDATE = 10  # update target network every 10 episodes
-alpha = 0.0003  # learning rate for actor
-beta = 0.0003  # learning rate for critic
-tau = 0.005  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
-
-reward_paramaters = {'action_step_scaling': 2,
-                     'target_value': 1,
-                     'checkpoint_distance_proportion': 0.2,
-                     'checkpoint_number': 5,
-                     'checkpoint_value': 0.2,  # as we put 5 checkpoints
-                     'collision_value': -1,
-
-                     # the following are not used in the current version which is sparse reward based
-                     'time_value': 1,
-                     'distance_weight': 1,
-                     'obstacle_distance_weight': 1,
-                     'collision_weight': 0.3,
-                     'time_weight': 1}
+reward_parameters = {
+    'action_step_scaling': 2,
+    'target_value': 1,
+    'checkpoint_distance_proportion': 0.2,
+    'checkpoint_number': 5,
+    'checkpoint_value': 0.2,  # as we put 5 checkpoints
+    'collision_value': -1,
+    # the following are not used in the current version which is sparse reward based
+    'time_value': 1,
+    'distance_weight': 1,
+    'obstacle_distance_weight': 1,
+    'collision_weight': 0.3,
+    'time_weight': 1
+}
 # TODO: reward function method (in the step def in env)
 
-env = GridWorldEnv(render_mode=None, size=20, reward_parameters=reward_paramaters)
+env = GridWorldEnv(render_mode=None, size=20, reward_parameters=reward_parameters)
 
 # initialize NN
 n_actions = 2  # velocity in 2 directions
-actorNet = ActorNetwork(alpha, input_dims, n_actions=n_actions,
+actorNet = ActorNetwork(hyper_parameters["alpha"], hyper_parameters["input_dims"], n_actions=n_actions,
                         name='actor', max_action=[1, 1])  # TODO max_action value and min_action value
-criticNet_1 = CriticNetwork(beta, input_dims, n_actions=n_actions,
+criticNet_1 = CriticNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], n_actions=n_actions,
                             name='critic_1')
-criticNet_2 = CriticNetwork(beta, input_dims, n_actions=n_actions,
+criticNet_2 = CriticNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], n_actions=n_actions,
                             name='critic_2')
-valueNet = ValueNetwork(beta, input_dims, name='value')
-target_valueNet = ValueNetwork(beta, input_dims, name='target_value')
+valueNet = ValueNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], name='value')
+target_valueNet = ValueNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], name='target_value')
 
 memory = ReplayMemory(10000)  # replay buffer size
 
@@ -555,8 +558,8 @@ def plot_durations():
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-num_episodes = 200
-for i_episode in range(num_episodes):
+
+for i_episode in range(hyper_parameters["num_episodes"]):
     # Initialize the environment and state
     env.reset()
     obs = env._get_obs()
@@ -599,8 +602,8 @@ for i_episode in range(num_episodes):
     value_state_dict = dict(value_params)
 
     for name in value_state_dict:
-        value_state_dict[name] = tau * value_state_dict[name].clone() + \
-                                 (1 - tau) * target_value_state_dict[name].clone()
+        value_state_dict[name] = hyper_parameters["tau"] * value_state_dict[name].clone() + \
+                                 (1 - hyper_parameters["tau"]) * target_value_state_dict[name].clone()
     target_valueNet.load_state_dict(value_state_dict)
 
 print('Complete')
@@ -646,6 +649,13 @@ while i < 3:  # run plot for 3 episodes to see what it learned
         state = next_state
         if done:
             break
+
+import json
+with open('model/hyper_parameters.txt', 'w') as file:
+    file.write(json.dumps(hyper_parameters)) # use `json.loads` to do the reverse
+with open('model/reward_parameters.txt', 'w') as file:
+    file.write(json.dumps(reward_parameters))  # use `json.loads` to do the reverse
+
 torch.save(actorNet.state_dict(), "model/actor.pt")
 torch.save(criticNet_1.state_dict(), "model/criticNet_1.pt")
 torch.save(criticNet_2.state_dict(), "model/criticNet_2.pt")
