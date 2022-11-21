@@ -169,6 +169,8 @@ class GridWorldEnv(gym.Env):
             min_collision_distance = np.min(np.array([obstacle_distance, distance_to_wall]))
             penalty_distance_collision = np.max(np.array([1.0 - min_collision_distance, 0.0]))
 
+
+            # Dense Reward function
             reward = self.reward_parameters['distance_weight'] * diff_distance_to_goal - \
                      self.reward_parameters['obstacle_distance_weight'] * penalty_distance_collision - \
                      self.reward_parameters['time_value']  # time penalty
