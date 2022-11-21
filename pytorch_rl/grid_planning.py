@@ -29,20 +29,19 @@ https://github.com/Farama-Foundation/gym-examples/blob/main/gym_examples/envs/gr
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, size=5, reward_parameters=None):
+    def __init__(self, render_mode=None, size=5, reward_parameters=None, num_obstacles=5):
         self.size = size  # The size of the square grid
         self.window_size = 512  # The size of the PyGame window
         self.reward_parameters = reward_parameters
+        self.num_obstacles = num_obstacles
 
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
-        self.observation_space = spaces.Dict(
-            {
-                "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-                "obstacle": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-                "target": spaces.Box(0, size - 1, shape=(2,), dtype=int)
-            }
-        )
+        elements = {"agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+                    "target": spaces.Box(0, size - 1, shape=(2,), dtype=int)}
+        for idx_obstacle in range(self.num_obstacles):
+            elements.update({"obstacle_{0}".format(idx_obstacle): spaces.Box(0, size - 1, shape=(2,), dtype=int)})
+        self.observation_space = spaces.Dict(elements)
 
         # TODO actionspace shoubled be continuous and bounded in [-3, 3]
         self.action_space = spaces.Discrete(4)
@@ -73,11 +72,19 @@ class GridWorldEnv(gym.Env):
         self.clock = None
 
     def _get_obs(self):
-        return {"agent": self._agent_location, "obstacle": self._obstacle_location, "target": self._target_location}
+        elements = {"agent": self._agent_location, "target": self._target_location}
+        for idx_obstacle in range(self.num_obstacles):
+            elements.update({"obstacle_{0}".format(idx_obstacle): self._obstacle_locations[idx_obstacle]})
+        return elements
 
     def _get_info(self):
-        return {"distance": np.linalg.norm(self._agent_location - self._target_location, ord=1),
-                "obstacle_distance": np.linalg.norm(self._agent_location - self._obstacle_location, ord=1)}
+        distances = {"distance_to_target":
+                     np.linalg.norm(self._agent_location - self._target_location, ord=1)} # ord=1: max(sum(abs(x), axis=0))
+        for idx_obstacle in range(self.num_obstacles):
+            distances.update({"distance_to_obstacle_{0}".format(idx_obstacle):
+                              np.linalg.norm(self._agent_location - self._obstacle_locations[idx_obstacle], ord=1)})
+        return distances
+
 
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
@@ -94,12 +101,22 @@ class GridWorldEnv(gym.Env):
             )
 
         # We will sample the obstacle's location randomly until it does not coincide with the agent's/target's location
-        self._obstacle_location = self._agent_location
-        while np.array_equal(self._target_location, self._agent_location) \
-                or np.array_equal(self._target_location, self._obstacle_location):
-            self._obstacle_location = self.np_random.integers(
-                0, self.size, size=2, dtype=int
-            )
+        self._obstacle_locations = {}
+        for idx_obstacle in range(self.num_obstacles):
+            self._obstacle_locations.update({"{0}".format(idx_obstacle): self._agent_location})
+            if idx_obstacle == 0:
+                while np.array_equal(self._obstacle_locations[idx_obstacle], self._agent_location) \
+                        or np.array_equal(self._obstacle_locations[idx_obstacle], self._target_location):
+                    self._obstacle_locations[idx_obstacle] = self.np_random.integers(
+                        0, self.size, size=2, dtype=int
+                    )
+                continue
+            while np.array_equal(self._obstacle_locations[idx_obstacle], self._agent_location) \
+                    or np.array_equal(self._obstacle_locations[idx_obstacle], self._target_location) \
+                    or np.array_equal(self._obstacle_locations[idx_obstacle], self._obstacle_locations[idx_obstacle-1]):
+                self._obstacle_locations[idx_obstacle] = self.np_random.integers(
+                    0, self.size, size=2, dtype=int
+                )
 
         observation = self._get_obs()
         info = self._get_info()
@@ -110,20 +127,25 @@ class GridWorldEnv(gym.Env):
         return observation, info
 
     def step(self, action_step):
+        global penalty_distance_collision
         action_step = np.round(
-            self.reward_parameters["action_step_scaling"] * action_step)  # scale action to e.g. [-2, 2]
-        original_position = self._agent_location
+            self.reward_parameters["action_step_scaling"] * action_step)  # scale action to e.g. [-2, 2] -> reach is 5x5 grid
+        previous_position = self._agent_location
         self._agent_location = self._agent_location + action_step
+        self._max_distance = math.sqrt(2) * self.size
 
-
+        ### COLLISION SPARSE REWARD ###
         # Check for obstacle collision
-        terminated = np.array_equal(self._agent_location, self._obstacle_location)
-
+        terminated = False
+        for idx_obstacle in range(self.num_obstacles):
+            terminated = np.array_equal(self._agent_location, self._obstacle_locations[idx_obstacle])
+            if terminated:
+                break
         # Check if the agent is out of bounds
         if self._agent_location[0] < 0 or self._agent_location[1] < 0 or \
                 self._agent_location[0] > self.size - 1 or self._agent_location[1] > self.size - 1 or \
                 terminated:
-            terminated = True
+            terminated = True  # agent is out of bounds but did not collide with obstacle
 
             reward = self.reward_parameters['collision_value']  # collision with wall or obstacles
 
@@ -131,51 +153,93 @@ class GridWorldEnv(gym.Env):
             info = self._get_info()
             return observation, reward, terminated, False, info
 
+        ### TARGET SPARSE REWARD ###
         # An episode is done iff the agent has reached the target
         terminated = np.array_equal(self._agent_location, self._target_location)  # target reached
         if terminated:
-            reward = self.reward_parameters['target_value']  # target reward
-        else:
+            reward = self.reward_parameters['target_value']  # sparse target reward
 
+        ### OTHER REWARDS ###
+        else:
+            ### Distances
             # Distance to target
-            original_distance_to_goal = math.sqrt((original_position[0] - self._target_location[0]) ** 2
-                                                  + (original_position[1] - self._target_location[1]) ** 2)
-            distance_to_goal = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2
+            previous_distance_to_target = math.sqrt((previous_position[0] - self._target_location[0]) ** 2
+                                                  + (previous_position[1] - self._target_location[1]) ** 2)
+            distance_to_target = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2
                                          + (self._agent_location[1] - self._target_location[1]) ** 2)
 
-            # Distance to obstacle
-            original_obstacle_distance = math.sqrt((original_position[0] - self._obstacle_location[0]) ** 2
-                                            + (original_position[1] - self._obstacle_location[1]) ** 2)
-            obstacle_distance = math.sqrt((self._agent_location[0] - self._obstacle_location[0]) ** 2
-                                          + (self._agent_location[1] - self._obstacle_location[1]) ** 2)
+            # Distances to obstacles
+            previous_distances_to_obstacles = np.array([])
+            distances_to_obstacles = np.array([])
+            for idx_obstacle in self._obstacle_locations:
+                previous_distance_to_obstacle = math.sqrt((previous_position[0] - self._obstacle_locations[idx_obstacle][0]) ** 2
+                                                        + (previous_position[1] - self._obstacle_locations[idx_obstacle][1]) ** 2)
+                distance_to_obstacle = math.sqrt((self._agent_location[0] - self._obstacle_locations[idx_obstacle][0]) ** 2
+                                               + (self._agent_location[1] - self._obstacle_locations[idx_obstacle][1]) ** 2)
+                np.append(previous_distances_to_obstacles, previous_distance_to_obstacle)
+                np.append(distances_to_obstacles, distance_to_obstacle)
 
-            # Distance to wall
-            distance_to_wall = np.min(np.vstack((self._agent_location + 1, self.size - self._agent_location)))
+            # Distance to the closest wall
+            previous_distance_to_wall = np.min(np.vstack(np.vstack(previous_position + 1), np.vstack(self.size - previous_position)))
+            # get the distance to the closest wall in the previous step
+            distance_to_wall = np.min(np.vstack(np.vstack(self._agent_location + 1), np.vstack(self.size - self._agent_location)))
+            # get the distance to the closest wall in the current step # TODO: check if this is correct (@Mo)
 
 
-            # Variables to target and obstacle
-            diff_distance_to_goal = original_distance_to_goal - distance_to_goal
-            diff_obstacle_distance = np.abs(original_obstacle_distance - obstacle_distance)
+            ### Distance differences
+            # Difference to target
+            diff_distance_to_target = np.abs(previous_distance_to_target - distance_to_target)
 
-            # Distance checkpoint rewards
+            # Difference to obstacles TODO: make this a parameter, is this a good idea?
+            distances_to_obstacles[distances_to_obstacles > 0.3 * self.size] = 0  # set distances to obstacles > 5 to 0
+            previous_distances_to_obstacles[distances_to_obstacles == 0] = 0
+            # set previous distances to obstacles 0 with the same indices as distances to obstacles
+            diff_obstacle_distances = np.abs(previous_distances_to_obstacles - distances_to_obstacles)  # TODO: make use of this
+
+            # Difference to wall
+            diff_distance_to_wall = np.abs(distance_to_wall - previous_distance_to_wall) # TODO: make use of this
+
+
             reward = 0
-            checkpoint_reward_given = [False] * (reward_paramaters['checkpoint_number']+1)
-            for i in np.invert(range(1,reward_paramaters['checkpoint_number'])):
-                if (distance < i * reward_paramaters['checkpoint_distance_proportion'] * self.size)\
-                        and not checkpoint_reward_given[i]:
-                    checkpoint_reward_given[i] = True
-                    reward += self.reward_parameters['checkpoint_value']  # checkpoint reward
+            ### DENSE REWARDS ###
+            # Reward for avoiding obstacles
+            if self.reward_parameters['obstacle_avoidance']:
+                min_collision_distance = np.min(np.append(distances_to_obstacles, [distance_to_wall]))
+                penalty_distance_collision = np.max(np.array([1.0 - min_collision_distance / self._max_distance, 0.0]))
+                reward += self.reward_parameters['obstacle_distance_weight'] * penalty_distance_collision
 
-            min_collision_distance = np.min(np.array([obstacle_distance, distance_to_wall]))
-            penalty_distance_collision = np.max(np.array([1.0 - min_collision_distance, 0.0]))
-           
+            if self.reward_parameters['target_seeking']:
+                reward += self.reward_parameters['target_distance_weight'] * distance_to_target / self._max_distance + \
+                          self.reward_parameters['obstacle_distance_weight'] * penalty_distance_collision
 
-            reward = self.reward_parameters['distance_weight'] * diff_distance_to_goal - \
-                     self.reward_parameters['obstacle_distance_weight'] * penalty_distance_collision - \
-                     self.reward_parameters['time_value']  # time penalty
+            ### SUB-SPARSE REWARDS ###
+            # Distance checkpoint rewards
+            if self.reward_parameters['checkpoints']:
+                checkpoint_reward_given = [False] * (reward_parameters['checkpoint_number'] + 1)
+                for i in np.invert(range(1, reward_parameters['checkpoint_number'] + 1)):
+                    if (distance_to_target < i * reward_parameters['checkpoint_distance_proportion'] * self.size) \
+                            and not checkpoint_reward_given[i]:
+                        checkpoint_reward_given[i] = True
+                        reward += self.reward_parameters['checkpoint_value']  # checkpoint reward
 
-            # e.g. 0.4 leads the agent to not learn the target fast enough,
-            # -1 is to avoid that the agent to stays at the same place
+            # Time penalty
+            if self.reward_parameters['time']:
+                reward += self.reward_parameters['time_penalty']  # time penalty
+
+            # last_x_positions = self._agent_location_history[-self.reward_parameters['history_size']:]
+            # # Waiting reward # TODO: add step history to check if the agent is waiting
+            # if self.reward_parameters['waiting']:
+            #     if last_x_positions.count(last_x_positions[0]) == len(last_x_positions):  # Checks if all postions are equal
+            #         reward += self.reward_parameters['waiting_value']
+            #
+            # # Consitency reward # TODO: add step history to check if the agent is waiting
+            # if self.reward_parameters['consistency']:
+            #     last_x_steps = []
+            #     for i in np.invert((range(1, self.reward_parameters['consistency_step_number'] + 1))):  # csn,...,1
+            #         last_x_steps.append(last_x_positions[i] - last_x_positions[i - 1])
+            #         if last_x_steps.count(last_x_steps[0]) == len(last_x_steps):  # Checks if all directions are equal
+            #             reward += self.reward_parameters['consistency_value']
+
 
         observation = self._get_obs()
         info = self._get_info()
@@ -219,15 +283,16 @@ class GridWorldEnv(gym.Env):
             (self._agent_location + 0.5) * pix_square_size,
             pix_square_size / 3,
         )
-        # Now we draw the obstacle
-        pygame.draw.rect(
-            canvas,
-            (0, 0, 0),
-            pygame.Rect(
-                pix_square_size * self._obstacle_location,
-                (pix_square_size, pix_square_size),
-            ),
-        )
+        # Now we draw the obstacles
+        for idx_obstacle in range(self.num_obstacles):
+            pygame.draw.rect(
+                canvas,
+                (0, 0, 0),
+                pygame.Rect(
+                    pix_square_size * self._obstacle_locations[idx_obstacle],
+                    (pix_square_size, pix_square_size),
+                ),
+            )
 
         # Finally, add some gridlines
         for x in range(self.size + 1):
@@ -487,30 +552,54 @@ def optimize_model():
 
 # initialize hyperparameters
 
-input_dims = 6  # original position of actor, obstacle and target position
+num_obstacles = 5
+input_dims = 4 + num_obstacles  # original position of actor, obstacles and target position
 BATCH_SIZE = 256
 GAMMA = 0.999  # discount factor
 TARGET_UPDATE = 10  # update target network every 10 episodes
 alpha = 0.0003  # learning rate for actor
 beta = 0.0003  # learning rate for critic
 tau = 0.005  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
+env_size = 20  # size of the environment
 
-reward_paramaters = {'action_step_scaling': 2,
-                     'target_value': 1,
-                     'checkpoint_distance_proportion': 0.2,
-                     'checkpoint_number': 5,
-                     'checkpoint_value': 0.2,  # as we put 5 checkpoints
-                     'collision_value': -1,
+reward_parameters = {
+    # 'field_of_view': 5,  # see min_collision_distance
+    # 'collision_weight': 0.3,
+    # 'time_weight': 1,
+    # the above are not used in the current version which is sparse reward based
 
-                     # the following are not used in the current version which is sparse reward based
-                     'time_value': 1,
-                     'distance_weight': 1,
-                     'obstacle_distance_weight': 1,
-                     'collision_weight': 0.3,
-                     'time_weight': 1}
-# TODO: reward function method (in the step def in env)
+    'action_step_scaling': 2,  # 1 step -> "2" grids of movement reach in x and y directions
+    ### DENSE REWARDS ###
+    'obstacle_avoidance': False,
+    'obstacle_distance_weight': -1,
+    'target_seeking': False,
+    'target_distance_weight': 1,
 
-env = GridWorldEnv(render_mode=None, size=20, reward_parameters=reward_paramaters)
+    ### SPARSE REWARDS ###
+    'target_value': 1,
+    'collision_value': -1,
+
+    ### SUB-SPARSE REWARDS ###
+    'checkpoints': True,  # if true, use checkpoints rewards
+    'checkpoint_distance_proportion': 0.2,
+    'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
+    'checkpoint_value': 0.1,  # make sure checkpoint_value * checkpoint_number < 1
+
+    'time': True,  # if true, use time rewards
+    'time_penalty': -0.01, # == penalty of -1 for "100" action steps
+
+    'history_size': 20,  # size of history to check for waiting and consistency
+
+    'waiting': False,  # if true, use waiting rewards # TODO: implement action history in step()
+    'waiting_value': 0.1,  # make sure waiting_value < 1
+    'max_waiting_steps': 20,  # make sure < history_size, punishment for waiting too long
+
+    'consistency': False,  # if true, use consistency rewards # TODO: implement action history in step()
+    'consistency_step_number': 5,  # make sure consistency_step_number < history_size
+    'consistency_value': 0.1,  # make sure consistency_value * consistency_step_number < 1
+}
+
+env = GridWorldEnv(render_mode=None, size=env_size, reward_parameters=reward_parameters, num_obstacles=num_obstacles)
 
 # initialize NN
 n_actions = 2  # velocity in 2 directions
@@ -556,12 +645,17 @@ def plot_durations():
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-num_episodes = 200
+num_episodes = 20
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     env.reset()
     obs = env._get_obs()
-    state = torch.tensor(np.array([obs["agent"], obs["obstacle"], obs["target"]]), dtype=torch.float, device=device)
+
+    obstacle_postions_array = np.array([])
+    for idx_obstacle in range(num_obstacles):
+        np.append(obstacle_postions_array, obs["obstacle_{0}".format(idx_obstacle)])
+    state = torch.tensor(np.array([obs["agent"], obstacle_postions_array, obs["target"]]), dtype=torch.float, device=device)
+
     state = state.view(1, -1)
     for t in count():
         # Select and perform an action
@@ -572,8 +666,11 @@ for i_episode in range(num_episodes):
         # Observe new state
         obs = env._get_obs()
         if not done:
-            next_state = torch.tensor(np.array([obs["agent"], obs["obstacle"], obs["target"]]), dtype=torch.float,
-                                      device=device)
+            obstacle_postions_array = np.array([])
+            for idx_obstacle in range(num_obstacles):
+                np.append(obstacle_postions_array, obs["obstacle_{0}".format(idx_obstacle)])
+            next_state = torch.tensor(np.array([obs["agent"], obstacle_postions_array, obs["target"]]), dtype=torch.float, device=device)
+
             next_state = next_state.view(1, -1)
         else:
             next_state = None
@@ -614,7 +711,10 @@ while i < 3:  # run plot for 3 episodes to see what it learned
     i += 1
     env.reset()
     obs = env._get_obs()
-    state = torch.tensor(np.array([obs["agent"], obs["obstacle"], obs["target"]]), dtype=torch.float, device=device)
+    obstacle_postions_array = np.array([])
+    for idx_obstacle in range(num_obstacles):
+        np.append(obstacle_postions_array, obs["obstacle_{0}".format(idx_obstacle)])
+    state = torch.tensor(np.array([obs["agent"], obstacle_postions_array, obs["target"]]), dtype=torch.float, device=device)
     state = state.view(1, -1)
     for t in count():
         # Select and perform an action
@@ -647,6 +747,7 @@ while i < 3:  # run plot for 3 episodes to see what it learned
         state = next_state
         if done:
             break
+
 torch.save(actorNet.state_dict(), "model/actor.pt")
 torch.save(criticNet_1.state_dict(), "model/criticNet_1.pt")
 torch.save(criticNet_2.state_dict(), "model/criticNet_2.pt")
