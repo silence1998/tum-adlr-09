@@ -601,7 +601,7 @@ hyper_parameters = {
 }
 
 reward_parameters = {
-    # 'field_of_view': 5,  # see min_collision_distance
+    # 'field_of_view': 5,  # see min_collision_distance?
     # 'collision_weight': 0.3,
     # 'time_weight': 1,
     # the above are not used in the current version which is sparse reward based
