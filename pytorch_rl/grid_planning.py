@@ -768,6 +768,7 @@ with open('model/hyper_parameters.txt', 'w') as file:
     file.write(json.dumps(hyper_parameters))  # use `json.loads` to do the reverse
 with open('model/reward_parameters.txt', 'w') as file:
     file.write(json.dumps(reward_parameters))  # use `json.loads` to do the reverse
+
 torch.save(actorNet.state_dict(), "model/actor.pt")
 torch.save(criticNet_1.state_dict(), "model/criticNet_1.pt")
 torch.save(criticNet_2.state_dict(), "model/criticNet_2.pt")
