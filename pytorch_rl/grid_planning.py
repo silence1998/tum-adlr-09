@@ -25,7 +25,6 @@ https://github.com/Farama-Foundation/gym-examples/blob/main/gym_examples/envs/gr
 #https://github.com/philtabor/Youtube-Code-Repository/tree/master/ReinforcementLearning/PolicyGradient/SAC
 """
 
-
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
