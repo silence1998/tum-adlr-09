@@ -1,1 +1,0 @@
-{"action_step_scaling": 2, "target_value": 1, "checkpoint_distance_proportion": 0.2, "checkpoint_number": 5, "checkpoint_value": 0.2, "collision_value": -1, "time_value": 1, "distance_weight": 1, "obstacle_distance_weight": 1, "collision_weight": 0.3, "time_weight": 1}
