@@ -74,7 +74,7 @@ class GridWorldEnv(gym.Env):
     def _get_obs(self):
         elements = {"agent": self._agent_location, "target": self._target_location}
         for idx_obstacle in range(self.num_obstacles):
-            elements.update({"obstacle_{0}".format(idx_obstacle): self._obstacle_locations[idx_obstacle]})
+            elements.update({"obstacle_{0}".format(idx_obstacle): self._obstacle_locations[str(idx_obstacle)]})
         return elements
 
     def _get_info(self):
@@ -82,7 +82,7 @@ class GridWorldEnv(gym.Env):
                      np.linalg.norm(self._agent_location - self._target_location, ord=1)} # ord=1: max(sum(abs(x), axis=0))
         for idx_obstacle in range(self.num_obstacles):
             distances.update({"distance_to_obstacle_{0}".format(idx_obstacle):
-                              np.linalg.norm(self._agent_location - self._obstacle_locations[idx_obstacle], ord=1)})
+                              np.linalg.norm(self._agent_location - self._obstacle_locations[str(idx_obstacle)], ord=1)})
         return distances
 
 
@@ -105,16 +105,16 @@ class GridWorldEnv(gym.Env):
         for idx_obstacle in range(self.num_obstacles):
             self._obstacle_locations.update({"{0}".format(idx_obstacle): self._agent_location})
             if idx_obstacle == 0:
-                while np.array_equal(self._obstacle_locations[idx_obstacle], self._agent_location) \
-                        or np.array_equal(self._obstacle_locations[idx_obstacle], self._target_location):
-                    self._obstacle_locations[idx_obstacle] = self.np_random.integers(
+                while np.array_equal(self._obstacle_locations[str(idx_obstacle)], self._agent_location) \
+                        or np.array_equal(self._obstacle_locations[str(idx_obstacle)], self._target_location):
+                    self._obstacle_locations[str(idx_obstacle)] = self.np_random.integers(
                         0, self.size, size=2, dtype=int
                     )
                 continue
-            while np.array_equal(self._obstacle_locations[idx_obstacle], self._agent_location) \
-                    or np.array_equal(self._obstacle_locations[idx_obstacle], self._target_location) \
-                    or np.array_equal(self._obstacle_locations[idx_obstacle], self._obstacle_locations[idx_obstacle-1]):
-                self._obstacle_locations[idx_obstacle] = self.np_random.integers(
+            while np.array_equal(self._obstacle_locations[str(idx_obstacle)], self._agent_location) \
+                    or np.array_equal(self._obstacle_locations[str(idx_obstacle)], self._target_location) \
+                    or np.array_equal(self._obstacle_locations[str(idx_obstacle)], self._obstacle_locations[str(idx_obstacle-1)]):
+                self._obstacle_locations[str(idx_obstacle)] = self.np_random.integers(
                     0, self.size, size=2, dtype=int
                 )
 
@@ -138,7 +138,7 @@ class GridWorldEnv(gym.Env):
         # Check for obstacle collision
         terminated = False
         for idx_obstacle in range(self.num_obstacles):
-            terminated = np.array_equal(self._agent_location, self._obstacle_locations[idx_obstacle])
+            terminated = np.array_equal(self._agent_location, self._obstacle_locations[str(idx_obstacle)])
             if terminated:
                 break
         # Check if the agent is out of bounds
@@ -172,17 +172,17 @@ class GridWorldEnv(gym.Env):
             previous_distances_to_obstacles = np.array([])
             distances_to_obstacles = np.array([])
             for idx_obstacle in self._obstacle_locations:
-                previous_distance_to_obstacle = math.sqrt((previous_position[0] - self._obstacle_locations[idx_obstacle][0]) ** 2
-                                                        + (previous_position[1] - self._obstacle_locations[idx_obstacle][1]) ** 2)
-                distance_to_obstacle = math.sqrt((self._agent_location[0] - self._obstacle_locations[idx_obstacle][0]) ** 2
-                                               + (self._agent_location[1] - self._obstacle_locations[idx_obstacle][1]) ** 2)
+                previous_distance_to_obstacle = math.sqrt((previous_position[0] - self._obstacle_locations[str(idx_obstacle)][0]) ** 2
+                                                        + (previous_position[1] - self._obstacle_locations[str(idx_obstacle)][1]) ** 2)
+                distance_to_obstacle = math.sqrt((self._agent_location[0] - self._obstacle_locations[str(idx_obstacle)][0]) ** 2
+                                               + (self._agent_location[1] - self._obstacle_locations[str(idx_obstacle)][1]) ** 2)
                 np.append(previous_distances_to_obstacles, previous_distance_to_obstacle)
                 np.append(distances_to_obstacles, distance_to_obstacle)
 
             # Distance to the closest wall
-            previous_distance_to_wall = np.min(np.vstack(np.vstack(previous_position + 1), np.vstack(self.size - previous_position)))
+            previous_distance_to_wall = np.amin(np.vstack((previous_position + 1, self.size - previous_position)))
             # get the distance to the closest wall in the previous step
-            distance_to_wall = np.min(np.vstack(np.vstack(self._agent_location + 1), np.vstack(self.size - self._agent_location)))
+            distance_to_wall = np.amin(np.vstack((self._agent_location + 1, self.size - self._agent_location)))
             # get the distance to the closest wall in the current step # TODO: check if this is correct (@Mo)
 
 
@@ -209,8 +209,7 @@ class GridWorldEnv(gym.Env):
                 reward += self.reward_parameters['obstacle_distance_weight'] * penalty_distance_collision
 
             if self.reward_parameters['target_seeking']:
-                reward += self.reward_parameters['target_distance_weight'] * distance_to_target / self._max_distance + \
-                          self.reward_parameters['obstacle_distance_weight'] * penalty_distance_collision
+                reward += self.reward_parameters['target_distance_weight'] * distance_to_target / self._max_distance
 
             ### SUB-SPARSE REWARDS ###
             # Distance checkpoint rewards
@@ -289,7 +288,7 @@ class GridWorldEnv(gym.Env):
                 canvas,
                 (0, 0, 0),
                 pygame.Rect(
-                    pix_square_size * self._obstacle_locations[idx_obstacle],
+                    pix_square_size * self._obstacle_locations[str(idx_obstacle)],
                     (pix_square_size, pix_square_size),
                 ),
             )
@@ -550,10 +549,33 @@ def optimize_model():
     criticNet_2.optimizer.step()
 
 
+def select_action(state):
+    # state = torch.Tensor([state]).to(actorNet.device)
+    actions, _ = actorNet.sample_normal(state, reparameterize=False)
+
+    return actions.cpu().detach().numpy()[0]
+
+def plot_durations():
+    plt.figure(1)
+    plt.clf()
+    durations_t = torch.tensor(episode_durations, dtype=torch.float)
+    plt.title('Training...')
+    plt.xlabel('Episode')
+    plt.ylabel('Duration')
+    plt.plot(durations_t.numpy())
+    # Take averages X episodes and plot them too
+    avg_after_X_episodes = 25
+    if len(durations_t) >= avg_after_X_episodes:
+        means = durations_t.unfold(0, avg_after_X_episodes, 1).mean(1).view(-1)
+        means = torch.cat((torch.zeros(avg_after_X_episodes - 1), means))
+        plt.plot(means.numpy())
+
+    plt.pause(0.001)  # pause a bit so that plots are updated
+
 # initialize hyperparameters
 
 num_obstacles = 5
-input_dims = 4 + num_obstacles  # original position of actor, obstacles and target position
+input_dims = 4 + num_obstacles * 2  # original position of actor, obstacles and target position
 BATCH_SIZE = 256
 GAMMA = 0.999  # discount factor
 TARGET_UPDATE = 10  # update target network every 10 episodes
@@ -572,7 +594,7 @@ reward_parameters = {
     ### DENSE REWARDS ###
     'obstacle_avoidance': False,
     'obstacle_distance_weight': -1,
-    'target_seeking': False,
+    'target_seeking': True,
     'target_distance_weight': 1,
 
     ### SPARSE REWARDS ###
@@ -617,44 +639,19 @@ memory = ReplayMemory(10000)  # replay buffer size
 steps_done = 0
 
 
-def select_action(state):
-    # state = torch.Tensor([state]).to(actorNet.device)
-    actions, _ = actorNet.sample_normal(state, reparameterize=False)
-
-    return actions.cpu().detach().numpy()[0]
-
-
 episode_durations = []
-
-
-def plot_durations():
-    plt.figure(1)
-    plt.clf()
-    durations_t = torch.tensor(episode_durations, dtype=torch.float)
-    plt.title('Training...')
-    plt.xlabel('Episode')
-    plt.ylabel('Duration')
-    plt.plot(durations_t.numpy())
-    # Take X episode averages and plot them too
-    avg_every_X_episodes = 25
-    if len(durations_t) >= avg_every_X_episodes:
-        means = durations_t.unfold(0, avg_every_X_episodes, 1).mean(1).view(-1)
-        means = torch.cat((torch.zeros(avg_every_X_episodes - 1), means))
-        plt.plot(means.numpy())
-
-    plt.pause(0.001)  # pause a bit so that plots are updated
-
-
-num_episodes = 20
+num_episodes = 200
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     env.reset()
     obs = env._get_obs()
 
-    obstacle_postions_array = np.array([])
+    obs_values = []
+    obs_values.append(obs["agent"])
+    obs_values.append(obs["target"])
     for idx_obstacle in range(num_obstacles):
-        np.append(obstacle_postions_array, obs["obstacle_{0}".format(idx_obstacle)])
-    state = torch.tensor(np.array([obs["agent"], obstacle_postions_array, obs["target"]]), dtype=torch.float, device=device)
+        obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+    state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
 
     state = state.view(1, -1)
     for t in count():
@@ -666,10 +663,12 @@ for i_episode in range(num_episodes):
         # Observe new state
         obs = env._get_obs()
         if not done:
-            obstacle_postions_array = np.array([])
+            obs_values = []
+            obs_values.append(obs["agent"])
+            obs_values.append(obs["target"])
             for idx_obstacle in range(num_obstacles):
-                np.append(obstacle_postions_array, obs["obstacle_{0}".format(idx_obstacle)])
-            next_state = torch.tensor(np.array([obs["agent"], obstacle_postions_array, obs["target"]]), dtype=torch.float, device=device)
+                obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+            next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
 
             next_state = next_state.view(1, -1)
         else:
@@ -711,10 +710,14 @@ while i < 3:  # run plot for 3 episodes to see what it learned
     i += 1
     env.reset()
     obs = env._get_obs()
-    obstacle_postions_array = np.array([])
+
+    obs_values = []
+    obs_values.append(obs["agent"])
+    obs_values.append(obs["target"])
     for idx_obstacle in range(num_obstacles):
-        np.append(obstacle_postions_array, obs["obstacle_{0}".format(idx_obstacle)])
-    state = torch.tensor(np.array([obs["agent"], obstacle_postions_array, obs["target"]]), dtype=torch.float, device=device)
+        obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+    state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
+
     state = state.view(1, -1)
     for t in count():
         # Select and perform an action
@@ -734,8 +737,13 @@ while i < 3:  # run plot for 3 episodes to see what it learned
         # Observe new state
         obs = env._get_obs()
         if not done:
-            next_state = torch.tensor(np.array([obs["agent"], obs["obstacle"], obs["target"]]), dtype=torch.float,
-                                      device=device)
+            obs_values = []
+            obs_values.append(obs["agent"])
+            obs_values.append(obs["target"])
+            for idx_obstacle in range(num_obstacles):
+                obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+            next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
+
             next_state = next_state.view(1, -1)
         else:
             next_state = None
