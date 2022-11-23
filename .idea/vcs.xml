@@ -2,5 +2,9 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/a_star_algorithm" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/pytorch_rl/A_star" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/pytorch_rl/python-astar" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/pytorch_rl/python_astar" vcs="Git" />
   </component>
 </project>

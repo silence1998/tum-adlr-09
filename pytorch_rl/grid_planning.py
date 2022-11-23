@@ -367,7 +367,7 @@ class ActorNetwork(nn.Module):
         mu = self.mu(prob)
         sigma = self.sigma(prob)  # log_std
 
-        sigma = torch.clamp(sigma, min=self.reparam_noise, max=2)  # TODO: decaying sigma
+        sigma = torch.clamp(sigma, min=self.reparam_noise, max=0.5)  # TODO: decaying sigma
 
         return mu, sigma
 
@@ -468,16 +468,14 @@ alpha = 0.0003  # learning rate for actor
 beta = 0.0003  # learning rate for critic
 tau = 0.005  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
 
-reward_paramaters = {'action_step_scaling': 2,
+reward_paramaters = {'action_step_scaling': 1,
 
                      'target_value': 10,
                      'collision_value': 5,
-                     'time_value': 1,
+                     'time_value': 0.1,
 
-                     'distance_weight': 1,
-                     'obstacle_distance_weight': 1,
-                     'collision_weight': 0.3,
-                     'time_weight': 1}
+                     'distance_weight': 0.0,
+                     'obstacle_distance_weight': 0.0}
 # TODO: reward function method (in the step def in env)
 
 env = GridWorldEnv(render_mode=None, size=20, reward_parameters=reward_paramaters)
@@ -505,6 +503,28 @@ def select_action(state):
     return actions.cpu().detach().numpy()[0]
 
 
+import A_star.algorithm
+
+
+def select_action_A_star(state):
+    size = env.size
+    grid = np.zeros((size, size))
+    grid[state[2], state[3]] = 1
+    # Start position
+    StartNode = (state[0], state[1])
+    # Goal position
+    EndNode = (state[4], state[5])
+    path = A_star.algorithm.algorithm(grid, StartNode, EndNode)
+    if path == None:
+        print("error: doesn't find a path")
+        return None
+    path = np.array(path)
+    actions = np.zeros(((len(path) - 1), 2))
+    for i in range(len(path) - 1):
+        actions[i, :] = path[i + 1] - path[i]
+    return actions
+
+
 episode_durations = []
 
 
@@ -526,7 +546,67 @@ def plot_durations():
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-num_episodes = 200
+num_episodes = 100
+for i_episode in range(num_episodes):
+    # Initialize the environment and state
+    env.reset()
+    obs = env._get_obs()
+    state_np = np.array([obs["agent"], obs["obstacle"], obs["target"]])
+    state_np = state_np.reshape(-1)
+    state = torch.tensor(state_np, dtype=torch.float, device=device)
+    state = state.view(1, -1)
+    actions = select_action_A_star(state_np)
+    if actions.all() == None:
+        print("error: doesn't find a path")
+        continue
+    t = 0
+    for action in actions:
+        t += 1
+        action = action / reward_paramaters['action_step_scaling']
+        _, reward, done, _, _ = env.step(action)
+        reward = torch.tensor([reward], dtype=torch.float, device=device)
+        obs = env._get_obs()
+        if not done:
+            next_state_ = np.array([obs["agent"], obs["obstacle"], obs["target"]])
+            next_state_ = next_state_.reshape(-1)
+            next_state = torch.tensor(np.array([obs["agent"], obs["obstacle"], obs["target"]]), dtype=torch.float,
+                                      device=device)
+            next_state = next_state.view(1, -1)
+        else:
+            next_state_ = None
+            next_state = None
+
+        # Store the transition in memory
+        action_torch = torch.tensor(np.array([action]), dtype=torch.float).to(actorNet.device)
+        memory.push(state, action_torch, next_state, reward)
+
+        # Move to the next state
+        state_np = next_state_
+        state = next_state
+
+        # Perform one step of the optimization (on the policy network)
+        optimize_model()
+        if done:
+            episode_durations.append(t + 1)
+            plot_durations()
+            break
+    # Update the target network, using tau
+    if t != len(actions):
+        print("error: actual step is not equal to precalculated steps")
+    target_value_params = target_valueNet.named_parameters()
+    value_params = valueNet.named_parameters()
+
+    target_value_state_dict = dict(target_value_params)
+    value_state_dict = dict(value_params)
+
+    for name in value_state_dict:
+        value_state_dict[name] = tau * value_state_dict[name].clone() + \
+                                 (1 - tau) * target_value_state_dict[name].clone()
+    target_valueNet.load_state_dict(value_state_dict)
+
+print('Pretrain complete')
+
+num_episodes = 1
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     env.reset()
@@ -617,7 +697,7 @@ while i < 3:  # run plot for 3 episodes to see what it learned
         state = next_state
         if done:
             break
-torch.save(actorNet.state_dict(), "model/actor.pt")
-torch.save(criticNet_1.state_dict(), "model/criticNet_1.pt")
-torch.save(criticNet_2.state_dict(), "model/criticNet_2.pt")
-torch.save(target_valueNet.state_dict(), "model/target_valueNet.pt")
+# torch.save(actorNet.state_dict(), "model/actor.pt")
+# torch.save(criticNet_1.state_dict(), "model/criticNet_1.pt")
+# torch.save(criticNet_2.state_dict(), "model/criticNet_2.pt")
+# torch.save(target_valueNet.state_dict(), "model/target_valueNet.pt")
