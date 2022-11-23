@@ -255,6 +255,9 @@ class ReplayMemory(object):  # a memory buffer to store transitions
     def sample(self, batch_size):
         return random.sample(self.memory, batch_size)
 
+    def sample_sequence(self, batch_size):
+        return random.sample(self.memory, batch_size)
+
     def __len__(self):
         return len(self.memory)
 
@@ -478,7 +481,7 @@ reward_paramaters = {'action_step_scaling': 1,
                      'obstacle_distance_weight': 0.0}
 # TODO: reward function method (in the step def in env)
 
-env = GridWorldEnv(render_mode=None, size=20, reward_parameters=reward_paramaters)
+env = GridWorldEnv(render_mode=None, size=10, reward_parameters=reward_paramaters)
 
 # initialize NN
 n_actions = 2  # velocity in 2 directions
@@ -546,7 +549,7 @@ def plot_durations():
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-num_episodes = 1400
+num_episodes = 500
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     env.reset()
