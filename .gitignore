@@ -1,2 +1,6 @@
 # ignore ALL .log files
-*.idea/
+/.idea/
+
+# ignore models .log files
+/SAC/model/
+/SAC/model_with_astar/

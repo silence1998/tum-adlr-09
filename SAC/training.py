@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from model import *
 from environment import *
 
+import A_star.algorithm
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -20,6 +21,7 @@ https://github.com/Farama-Foundation/gym-examples/blob/main/gym_examples/envs/gr
 """
 
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
+
 
 def optimize_model():
     if len(memory) < hyper_parameters["batch_size"]:  # if memory is not full enough to start training, return
@@ -86,11 +88,6 @@ def optimize_model():
     criticNet_2.optimizer.step()
     # TODO: check tau
 
-def select_action(state, actorNet):
-    # state = torch.Tensor([state]).to(actorNet.device)
-    actions, _ = actorNet.sample_normal(state, reparametrize=False)
-
-    return actions.cpu().detach().numpy()[0]
 
 def plot_durations():
     plt.figure(1)
@@ -109,6 +106,7 @@ def plot_durations():
 
     plt.pause(0.001)  # pause a bit so that plots are updated
 
+
 # initialize hyper-parameters
 
 env_parameters = {
@@ -125,8 +123,16 @@ hyper_parameters = {
     'alpha': 0.0003,  # learning rate for actor
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
-    'num_episodes': 20
+    'num_episodes': 20,
 }
+
+
+def select_action(state, actorNet):
+    # state = torch.Tensor([state]).to(actorNet.device)
+    actions, _ = actorNet.sample_normal(state, reparametrize=False)
+
+    return actions.cpu().detach().numpy()[0]
+
 
 def init_model():
     # initialize NN
@@ -148,9 +154,8 @@ def init_model():
 if __name__ == "__main__":
 
     actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
-
-    steps_done = 0
     episode_durations = []
+
     for i_episode in range(hyper_parameters["num_episodes"]):
         # Initialize the environment and state
         env.reset()
@@ -208,15 +213,16 @@ if __name__ == "__main__":
 
     print('Complete')
 
-    with open('model/reward_parameters.txt', 'w+') as file:
+    model_path = "model/"
+
+    with open(model_path + 'env_parameters.txt', 'w+') as file:
         file.write(json.dumps(env_parameters))  # use `json.loads` to do the reverse
-    with open('model/hyper_parameters.txt', 'w+') as file:
+    with open(model_path + 'hyper_parameters.txt', 'w+') as file:
         file.write(json.dumps(hyper_parameters))  # use `json.loads` to do the reverse
-    with open('model/reward_parameters.txt', 'w+') as file:
+    with open(model_path + 'reward_parameters.txt', 'w+') as file:
         file.write(json.dumps(env.reward_parameters))  # use `json.loads` to do the reverse
 
-
-    torch.save(actorNet.state_dict(), "model/actor.pt")
-    torch.save(criticNet_1.state_dict(), "model/criticNet_1.pt")
-    torch.save(criticNet_2.state_dict(), "model/criticNet_2.pt")
-    torch.save(target_valueNet.state_dict(), "model/target_valueNet.pt")
+    torch.save(actorNet.state_dict(), model_path + "actor.pt")
+    torch.save(criticNet_1.state_dict(), model_path + "criticNet_1.pt")
+    torch.save(criticNet_2.state_dict(), model_path + "criticNet_2.pt")
+    torch.save(target_valueNet.state_dict(), model_path + "target_valueNet.pt")
