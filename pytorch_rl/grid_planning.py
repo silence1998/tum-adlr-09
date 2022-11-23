@@ -48,7 +48,9 @@ class GridWorldEnv(gym.Env):
         self.observation_space = spaces.Dict(elements)
 
         # TODO action space should be continuous and bounded in [-3, 3]
-        self.action_space = spaces.Discrete(4)
+        self.action_space = spaces.Discrete(4) # Continuous 3 see gym examlpes
+        #Box(low=np.array([-1.0, -2.0]), high=np.array([2.0, 4.0]), dtype=np.float32) - Box(3,) x,y velocity
+        #no polar coord as its already encoded
 
         """
         The following dictionary maps abstract actions from `self.action_space` to 
@@ -56,6 +58,8 @@ class GridWorldEnv(gym.Env):
         I.e. 0 corresponds to "right", 1 to "up" etc.
         """
         self._action_to_direction = {
+            # TODO: a normalized direction vector and a scalar amount of velocity [-1,1]
+            # if time, dynamics
             0: np.array([1, 0]),
             1: np.array([0, 1]),
             2: np.array([-1, 0]),
@@ -123,7 +127,7 @@ class GridWorldEnv(gym.Env):
                 self._obstacle_locations[str(idx_obstacle)] = self.np_random.integers(
                     0, self.size, size=2, dtype=int
                 )
-
+            # TODO: check all obstacles pairwise for every additional obstacle
         observation = self._get_obs()
         info = self._get_info()
 
@@ -340,8 +344,7 @@ class GridWorldEnv(gym.Env):
             pygame.quit()
 
 
-Transition = namedtuple('Transition',
-                        ('state', 'action', 'next_state', 'reward'))
+Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
 
 class ReplayMemory(object):  # a memory buffer to store transitions
@@ -550,14 +553,14 @@ def optimize_model():
     q_hat = reward_batch + hyper_parameters["gamma"] * value_
     q1_old_policy = criticNet_1.forward(state_batch, action_batch).view(-1)
     q2_old_policy = criticNet_2.forward(state_batch, action_batch).view(-1)
-    critic_1_loss = 0.5 * F.mse_loss(q1_old_policy, q_hat)
+    critic_1_loss = 0.5 * F.mse_loss(q1_old_policy, q_hat)  # line 13 in s.u. pseudocode
     critic_2_loss = 0.5 * F.mse_loss(q2_old_policy, q_hat)
 
     critic_loss = critic_1_loss + critic_2_loss
     critic_loss.backward()
-    criticNet_1.optimizer.step()
+    criticNet_1.optimizer.step()  # line 13 in s.u. pseudocode
     criticNet_2.optimizer.step()
-
+    # TODO: check tau
 
 def select_action(state):
     # state = torch.Tensor([state]).to(actorNet.device)
@@ -585,7 +588,6 @@ def plot_durations():
 
 
 # initialize hyper-parameters
-
 
 num_obstacles = 5
 hyper_parameters = {
@@ -631,10 +633,14 @@ reward_parameters = {
     'waiting': False,  # if true, use waiting rewards # TODO: implement action history in step()
     'waiting_value': 0.1,  # make sure waiting_value < 1
     'max_waiting_steps': 20,  # make sure < history_size, punishment for waiting too long
+    # threshold
 
     'consistency': False,  # if true, use consistency rewards # TODO: implement action history in step()
     'consistency_step_number': 5,  # make sure consistency_step_number < history_size
     'consistency_value': 0.1,  # make sure consistency_value * consistency_step_number < 1
+    # threshold
+
+    # fast moving etc. for sub actions for sparse rewards
 }
 
 env = GridWorldEnv(render_mode=None, size=hyper_parameters['env_size'], reward_parameters=reward_parameters)
