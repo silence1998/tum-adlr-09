@@ -349,6 +349,7 @@ class GridWorldEnv(gym.Env):
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
 
+
 class ReplayMemory(object):  # a memory buffer to store transitions
 
     def __init__(self, capacity):
