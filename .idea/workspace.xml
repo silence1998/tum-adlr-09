@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="8d5a0326-3043-492e-9dbb-df708c8e334d" name="Changes" comment="normalized reward func trial">
+    <list default="true" id="2731fe44-eb3c-49f3-8abf-7bbeea02d366" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch_rl/model/actor.pt" beforeDir="false" afterPath="$PROJECT_DIR$/pytorch_rl/model/actor.pt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch_rl/model/criticNet_1.pt" beforeDir="false" afterPath="$PROJECT_DIR$/pytorch_rl/model/criticNet_1.pt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch_rl/model/criticNet_2.pt" beforeDir="false" afterPath="$PROJECT_DIR$/pytorch_rl/model/criticNet_2.pt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch_rl/model/target_valueNet.pt" beforeDir="false" afterPath="$PROJECT_DIR$/pytorch_rl/model/target_valueNet.pt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -12,41 +19,28 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="Volkan" />
+        <entry key="$PROJECT_DIR$" value="test_branch" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
-    <option name="RESET_MODE" value="HARD" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
-  <component name="ProjectId" id="2HTJ4D49VxMVIRz5OVbLhB1jON7" />
-  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectId" id="2HnkkzpOexnIh6FJjJnKto7ff42" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "last_opened_file_path": "/media/chenmo/新加卷/硕士课程/advanced deep learning for robotics/code/tum-adlr-09/pytorch_rl",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.sourceCode.Markdown"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/media/chenmo/新加卷/硕士课程/advanced deep learning for robotics/code/tum-adlr-09/pytorch_rl/test.py&quot;
   }
-}]]></component>
-  <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/logs/project_notes" />
-      <recent name="$PROJECT_DIR$/logs/project_notes/images" />
-      <recent name="$PROJECT_DIR$/logs/proposal" />
-      <recent name="$PROJECT_DIR$/logs/draft_proposal" />
-    </key>
-  </component>
-  <component name="RunManager">
+}</component>
+  <component name="RunManager" selected="Python.grid_planning">
     <configuration name="grid_planning" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
       <module name="tum-adlr-09" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -69,38 +63,46 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="test" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
+      <module name="tum-adlr-09" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="$USER_HOME$/.conda/envs/rl/bin/python" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/pytorch_rl" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/pytorch_rl/test.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Python.grid_planning" />
+      <item itemvalue="Python.test" />
+    </list>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="8d5a0326-3043-492e-9dbb-df708c8e334d" name="Changes" comment="" />
-      <created>1668302947635</created>
+      <changelist id="2731fe44-eb3c-49f3-8abf-7bbeea02d366" name="Changes" comment="" />
+      <created>1668928381546</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1668302947635</updated>
-      <workItem from="1668302952650" duration="90000" />
-      <workItem from="1668303056567" duration="2144000" />
-      <workItem from="1668353057418" duration="9211000" />
-      <workItem from="1668362340066" duration="241000" />
-      <workItem from="1668362592464" duration="2065000" />
-      <workItem from="1668364668677" duration="619000" />
-      <workItem from="1668365299486" duration="3858000" />
-      <workItem from="1668415497294" duration="20305000" />
-      <workItem from="1668440153203" duration="293000" />
-      <workItem from="1668440462842" duration="71000" />
-      <workItem from="1668440547584" duration="69000" />
-      <workItem from="1668605500928" duration="38000" />
-      <workItem from="1668605546597" duration="15000" />
-      <workItem from="1668605562654" duration="11000" />
+      <updated>1668928381546</updated>
+      <workItem from="1668928383125" duration="5551000" />
+      <workItem from="1668934583530" duration="42000" />
+      <workItem from="1668936869070" duration="18000" />
+      <workItem from="1668967330358" duration="3779000" />
     </task>
-    <task id="LOCAL-00001" summary="normalized reward func trial">
-      <created>1668378844241</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1668378844241</updated>
-    </task>
-    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -112,17 +114,12 @@
         <entry key="MAIN">
           <value>
             <State>
-              <option name="CUSTOM_BOOLEAN_PROPERTIES">
-                <map>
-                  <entry key="Show.Git.Branches" value="true" />
-                </map>
-              </option>
               <option name="FILTERS">
                 <map>
                   <entry key="branch">
                     <value>
                       <list>
-                        <option value="Volkan" />
+                        <option value="Chen_Mo" />
                       </list>
                     </value>
                   </entry>
@@ -134,22 +131,25 @@
       </map>
     </option>
   </component>
-  <component name="VcsManagerConfiguration">
-    <MESSAGE value="normalized reward func trial" />
-    <option name="LAST_COMMIT_MESSAGE" value="normalized reward func trial" />
-  </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <default-breakpoints>
-        <breakpoint type="python-exception">
-          <properties notifyOnTerminate="true" exception="BaseException">
-            <option name="notifyOnTerminate" value="true" />
-          </properties>
-        </breakpoint>
-      </default-breakpoints>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/pytorch_rl/grid_planning.py</url>
+          <line>619</line>
+          <option name="timeStamp" value="6" />
+        </line-breakpoint>
+      </breakpoints>
     </breakpoint-manager>
+    <watches-manager>
+      <configuration name="PythonConfigurationType">
+        <watch expression="graph" />
+        <watch expression="state" />
+      </configuration>
+    </watches-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/tum_adlr_09$grid_planning.coverage" NAME="grid_planning Coverage Results" MODIFIED="1668378520488" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pytorch_rl" />
+    <SUITE FILE_PATH="coverage/tum_adlr_09$test.coverage" NAME="test Coverage Results" MODIFIED="1668971803794" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pytorch_rl" />
+    <SUITE FILE_PATH="coverage/tum_adlr_09$grid_planning.coverage" NAME="grid_planning Coverage Results" MODIFIED="1668972232904" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pytorch_rl" />
   </component>
 </project>
