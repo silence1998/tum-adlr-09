@@ -124,7 +124,6 @@ hyper_parameters = {
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'num_episodes': 20,
-    'pretrain': 1
 }
 
 
@@ -133,27 +132,6 @@ def select_action(state, actorNet):
     actions, _ = actorNet.sample_normal(state, reparametrize=False)
 
     return actions.cpu().detach().numpy()[0]
-
-
-def select_action_A_star(state):
-    size = env.size
-    grid = np.zeros((size, size))
-    for i in range(env_parameters['num_obstacles']):
-        grid[state[4 + 2 * i], state[5 + 2 * i]] = 1
-
-    # Start position
-    StartNode = (state[0], state[1])
-    # Goal position
-    EndNode = (state[2], state[3])
-    path = A_star.algorithm.algorithm(grid, StartNode, EndNode)
-    if path == None:
-        print("error: doesn't find a path")
-        return None
-    path = np.array(path)
-    actions = np.zeros(((len(path) - 1), 2))
-    for i in range(len(path) - 1):
-        actions[i, :] = path[i + 1] - path[i]
-    return actions
 
 
 def init_model():
@@ -177,75 +155,6 @@ if __name__ == "__main__":
 
     actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
     episode_durations = []
-    if hyper_parameters['pretrain']:
-        num_episodes = 500
-        for i_episode in range(num_episodes):
-            # Initialize the environment and state
-            env.reset()
-            obs = env._get_obs()
-            obs_values = [obs["agent"], obs["target"]]
-            for idx_obstacle in range(env_parameters['num_obstacles']):
-                obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-            obs_values = np.array(obs_values)
-            obs_values = obs_values.reshape(-1)
-            state = torch.tensor(obs_values, dtype=torch.float, device=device)
-            state = state.view(1, -1)
-            actions = select_action_A_star(obs_values)
-            if actions.all() == None:
-                print("error: doesn't find a path")
-                continue
-            t = 0
-            actual_path = []
-            for action in actions:
-                t += 1
-                action = action / env.reward_parameters['action_step_scaling']
-                _, reward, done, _, _ = env.step(action)
-                reward = torch.tensor([reward], dtype=torch.float, device=device)
-                obs = env._get_obs()
-                if not done:
-                    actual_path.append(obs["agent"])
-                    obs_values = [obs["agent"], obs["target"]]
-                    for idx_obstacle in range(env_parameters['num_obstacles']):
-                        obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-                    next_state_ = np.array(obs_values)
-                    next_state_ = next_state_.reshape(-1)
-                    next_state = torch.tensor(next_state_,
-                                              dtype=torch.float,
-                                              device=device)
-                    next_state = next_state.view(1, -1)
-                else:
-                    next_state_ = None
-                    next_state = None
-
-                # Store the transition in memory
-                action_torch = torch.tensor(np.array([action]), dtype=torch.float).to(actorNet.device)
-                memory.push(state, action_torch, next_state, reward)
-
-                # Move to the next state
-                obs_values = next_state_
-                state = next_state
-
-                # Perform one step of the optimization (on the policy network)
-                optimize_model()
-                if done:
-                    episode_durations.append(t + 1)
-                    plot_durations()
-                    break
-            # Update the target network, using tau
-            if t != len(actions):
-                print("error: actual step is not equal to precalculated steps")
-            target_value_params = target_valueNet.named_parameters()
-            value_params = valueNet.named_parameters()
-
-            target_value_state_dict = dict(target_value_params)
-            value_state_dict = dict(value_params)
-
-            for name in value_state_dict:
-                value_state_dict[name] = hyper_parameters['tau'] * value_state_dict[name].clone() + \
-                                         (1 - hyper_parameters['tau']) * target_value_state_dict[name].clone()
-            target_valueNet.load_state_dict(value_state_dict)
-
-        print('Pretrain complete')
 
     for i_episode in range(hyper_parameters["num_episodes"]):
         # Initialize the environment and state
@@ -304,14 +213,16 @@ if __name__ == "__main__":
 
     print('Complete')
 
-    with open('model/reward_parameters.txt', 'w+') as file:
+    model_path = "model/"
+
+    with open(model_path + 'env_parameters.txt', 'w+') as file:
         file.write(json.dumps(env_parameters))  # use `json.loads` to do the reverse
-    with open('model/hyper_parameters.txt', 'w+') as file:
+    with open(model_path + 'hyper_parameters.txt', 'w+') as file:
         file.write(json.dumps(hyper_parameters))  # use `json.loads` to do the reverse
-    with open('model/reward_parameters.txt', 'w+') as file:
+    with open(model_path + 'reward_parameters.txt', 'w+') as file:
         file.write(json.dumps(env.reward_parameters))  # use `json.loads` to do the reverse
 
-    torch.save(actorNet.state_dict(), "model/actor.pt")
-    torch.save(criticNet_1.state_dict(), "model/criticNet_1.pt")
-    torch.save(criticNet_2.state_dict(), "model/criticNet_2.pt")
-    torch.save(target_valueNet.state_dict(), "model/target_valueNet.pt")
+    torch.save(actorNet.state_dict(), model_path + "actor.pt")
+    torch.save(criticNet_1.state_dict(), model_path + "criticNet_1.pt")
+    torch.save(criticNet_2.state_dict(), model_path + "criticNet_2.pt")
+    torch.save(target_valueNet.state_dict(), model_path + "target_valueNet.pt")

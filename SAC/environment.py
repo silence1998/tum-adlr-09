@@ -67,8 +67,8 @@ class GridWorldEnv(gym.Env):
             # fast moving etc. for sub actions for sparse rewards
         }
 
-        # TODO action space should be continuous and bounded in [-3, 3]
-        self.action_space = spaces.Discrete(4) # Continuous 3 see gym examlpes
+        # TODO action space should be continuous now its bounded bounded in [-3, 3]
+        self.action_space = spaces.Discrete(4)  # Continuous 3 see gym examples
         #Box(low=np.array([-1.0, -2.0]), high=np.array([2.0, 4.0]), dtype=np.float32) - Box(3,) x,y velocity
         #no polar coord as its already encoded
 

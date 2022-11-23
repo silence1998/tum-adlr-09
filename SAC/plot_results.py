@@ -16,11 +16,16 @@ env.render_mode = "human"
 # initialize NN
 actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
 
+# Load the model
+# TODO: Select model to load
+#model_path = "model_with_astar/"
+model_path = "model/"
+
 # load model
-torch.load("model/actor.pt", map_location=device)
-torch.load("model/criticNet_1.pt", map_location=device)
-torch.load("model/criticNet_2.pt", map_location=device)
-torch.load("model/target_valueNet.pt", map_location=device)
+torch.load(model_path + "actor.pt", map_location=device)
+torch.load(model_path + "criticNet_1.pt", map_location=device)
+torch.load(model_path + "criticNet_2.pt", map_location=device)
+torch.load(model_path + "target_valueNet.pt", map_location=device)
 
 steps_done = 0
 
