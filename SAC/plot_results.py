@@ -2,9 +2,8 @@
 import numpy as np
 from itertools import count
 
-
 from environment import GridWorldEnv
-from training import hyper_parameters, select_action, env_parameters
+from training import *
 from model import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -15,23 +14,13 @@ env.render_mode = "human"
 
 
 # initialize NN
-n_actions = 2  # velocity in 2 directions
-actorNet = ActorNetwork(hyper_parameters["alpha"], hyper_parameters["input_dims"], n_actions=n_actions,
-                        name='actor', max_action=[1, 1])  # TODO max_action value and min_action value
-criticNet_1 = CriticNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], n_actions=n_actions,
-                            name='critic_1')
-criticNet_2 = CriticNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], n_actions=n_actions,
-                            name='critic_2')
-valueNet = ValueNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], name='value')
-target_valueNet = ValueNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], name='target_value')
+actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
 
 # load model
 torch.load("model/actor.pt", map_location=device)
 torch.load("model/criticNet_1.pt", map_location=device)
 torch.load("model/criticNet_2.pt", map_location=device)
 torch.load("model/target_valueNet.pt", map_location=device)
-
-memory = ReplayMemory(10000)  # replay buffer size
 
 steps_done = 0
 
@@ -50,7 +39,7 @@ while i < 3:  # run plot for 3 episodes to see what it learned
     state = state.view(1, -1)
     for t in count():
         # Select and perform an action
-        action = select_action(state)
+        action = select_action(state, actorNet)
         _, reward, done, _, _ = env.step(action)
 
         action_ = torch.tensor(action, dtype=torch.float, device=device)

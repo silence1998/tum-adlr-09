@@ -86,7 +86,7 @@ def optimize_model():
     criticNet_2.optimizer.step()
     # TODO: check tau
 
-def select_action(state):
+def select_action(state, actorNet):
     # state = torch.Tensor([state]).to(actorNet.device)
     actions, _ = actorNet.sample_normal(state, reparametrize=False)
 
@@ -128,8 +128,7 @@ hyper_parameters = {
     'num_episodes': 20
 }
 
-if __name__ == "__main__":
-
+def init_model():
     # initialize NN
     n_actions = 2  # velocity in 2 directions
     actorNet = ActorNetwork(hyper_parameters["alpha"], hyper_parameters["input_dims"], n_actions=n_actions,
@@ -143,10 +142,15 @@ if __name__ == "__main__":
 
     memory = ReplayMemory(10000)  # replay buffer size
 
+    return actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory
+
+
+if __name__ == "__main__":
+
+    actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
+
     steps_done = 0
-
     episode_durations = []
-
     for i_episode in range(hyper_parameters["num_episodes"]):
         # Initialize the environment and state
         env.reset()
@@ -160,7 +164,7 @@ if __name__ == "__main__":
         state = state.view(1, -1)
         for t in count():
             # Select and perform an action
-            action = select_action(state)
+            action = select_action(state, actorNet)
             _, reward, done, _, _ = env.step(action)
             reward = torch.tensor([reward], dtype=torch.float, device=device)
 
