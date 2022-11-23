@@ -1,4 +1,0 @@
-this model is to motion planning problem in 20*20 grids and maximum movement is 2 in both direction.
-
-if setting num_episodes=150, it will has more probability to converge.
-
