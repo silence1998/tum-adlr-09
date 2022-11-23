@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from model import *
 from environment import *
 
+from
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -91,6 +92,25 @@ def select_action(state, actorNet):
     actions, _ = actorNet.sample_normal(state, reparametrize=False)
 
     return actions.cpu().detach().numpy()[0]
+
+def select_action_A_star(state):
+    size = env.size
+    grid = np.zeros((size, size))
+    grid[state[2], state[3]] = 1
+    # Start position
+    StartNode = (state[0], state[1])
+    # Goal position
+    EndNode = (state[4], state[5])
+    path = A_star.algorithm.algorithm(grid, StartNode, EndNode)
+    if path == None:
+        print("error: doesn't find a path")
+        return None
+    path = np.array(path)
+    actions = np.zeros(((len(path) - 1), 2))
+    for i in range(len(path) - 1):
+        actions[i, :] = path[i + 1] - path[i]
+    return actions
+
 
 def plot_durations():
     plt.figure(1)
