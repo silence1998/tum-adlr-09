@@ -2,21 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2731fe44-eb3c-49f3-8abf-7bbeea02d366" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/a_star_algorithm" beforeDir="false" afterPath="$PROJECT_DIR$/a_star_algorithm" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/a_star_algorithm/a_star/a_star.py" beforeDir="false" afterPath="$PROJECT_DIR$/a_star_algorithm/a_star/a_star.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/a_star_algorithm/examples/maze_solving_example.py" beforeDir="false" afterPath="$PROJECT_DIR$/a_star_algorithm/examples/maze_solving_example.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytorch_rl/A_star" beforeDir="false" afterPath="$PROJECT_DIR$/pytorch_rl/A_star" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pytorch_rl/A_star/algorithm.py" beforeDir="false" afterPath="$PROJECT_DIR$/pytorch_rl/A_star/algorithm.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pytorch_rl/A_star/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/pytorch_rl/A_star/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pytorch_rl/a_star/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pytorch_rl/a_star/a_star.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pytorch_rl/a_star/tools.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/pytorch_rl/grid_planning.py" beforeDir="false" afterPath="$PROJECT_DIR$/pytorch_rl/grid_planning.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pytorch_rl/model/actor.pt" beforeDir="false" afterPath="$PROJECT_DIR$/pytorch_rl/model/actor.pt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pytorch_rl/model/criticNet_1.pt" beforeDir="false" afterPath="$PROJECT_DIR$/pytorch_rl/model/criticNet_1.pt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pytorch_rl/model/criticNet_2.pt" beforeDir="false" afterPath="$PROJECT_DIR$/pytorch_rl/model/criticNet_2.pt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pytorch_rl/model/target_valueNet.pt" beforeDir="false" afterPath="$PROJECT_DIR$/pytorch_rl/model/target_valueNet.pt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -111,7 +104,10 @@
       <workItem from="1668936869070" duration="18000" />
       <workItem from="1668967330358" duration="3779000" />
       <workItem from="1669206578317" duration="138000" />
-      <workItem from="1669206772526" duration="3753000" />
+      <workItem from="1669206772526" duration="5682000" />
+      <workItem from="1669212521076" duration="20000" />
+      <workItem from="1669226322189" duration="2719000" />
+      <workItem from="1669231404227" duration="625000" />
     </task>
     <servers />
   </component>
@@ -150,6 +146,6 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/tum_adlr_09$test.coverage" NAME="test Coverage Results" MODIFIED="1668971803794" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pytorch_rl" />
-    <SUITE FILE_PATH="coverage/tum_adlr_09$grid_planning.coverage" NAME="grid_planning Coverage Results" MODIFIED="1669210487942" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pytorch_rl" />
+    <SUITE FILE_PATH="coverage/tum_adlr_09$grid_planning.coverage" NAME="grid_planning Coverage Results" MODIFIED="1669231417966" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/pytorch_rl" />
   </component>
 </project>

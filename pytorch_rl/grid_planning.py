@@ -260,7 +260,7 @@ class ReplayMemory(object):  # a memory buffer to store transitions
 
 
 class CriticNetwork(nn.Module):
-    def __init__(self, beta, input_dims, n_actions, fc1_dims=16, fc2_dims=16,
+    def __init__(self, beta, input_dims, n_actions, fc1_dims=128, fc2_dims=54,
                  name='critic', chkpt_dir='tmp/sac'):
         super(CriticNetwork, self).__init__()
         self.input_dims = input_dims
@@ -298,7 +298,7 @@ class CriticNetwork(nn.Module):
 
 
 class ValueNetwork(nn.Module):
-    def __init__(self, beta, input_dims, fc1_dims=16, fc2_dims=16,
+    def __init__(self, beta, input_dims, fc1_dims=128, fc2_dims=64,
                  name='value', chkpt_dir='tmp/sac'):
         super(ValueNetwork, self).__init__()
         self.input_dims = input_dims
@@ -335,8 +335,8 @@ class ValueNetwork(nn.Module):
 
 
 class ActorNetwork(nn.Module):
-    def __init__(self, alpha, input_dims, max_action, fc1_dims=16,
-                 fc2_dims=16, n_actions=2, name='actor', chkpt_dir='tmp/sac'):
+    def __init__(self, alpha, input_dims, max_action, fc1_dims=128,
+                 fc2_dims=64, n_actions=2, name='actor', chkpt_dir='tmp/sac'):
         super(ActorNetwork, self).__init__()
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
@@ -461,7 +461,7 @@ def optimize_model():
 # initialize hyperparameters
 
 input_dims = 6  # original position of actor, obstacle and target position
-BATCH_SIZE = 256
+BATCH_SIZE = 512
 GAMMA = 0.999  # discount factor
 TARGET_UPDATE = 10  # update target network every 10 episodes
 alpha = 0.0003  # learning rate for actor
@@ -471,8 +471,8 @@ tau = 0.005  # target network soft update parameter (parameters = tau*parameters
 reward_paramaters = {'action_step_scaling': 1,
 
                      'target_value': 10,
-                     'collision_value': 5,
-                     'time_value': 0.1,
+                     'collision_value': 50,
+                     'time_value': 0.0,
 
                      'distance_weight': 0.0,
                      'obstacle_distance_weight': 0.0}
@@ -546,7 +546,7 @@ def plot_durations():
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-num_episodes = 100
+num_episodes = 1400
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     env.reset()
@@ -606,7 +606,7 @@ for i_episode in range(num_episodes):
 
 print('Pretrain complete')
 
-num_episodes = 1
+num_episodes = 150
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     env.reset()
@@ -660,7 +660,7 @@ env.render_mode = "human"
 
 # env=GridWorldEnv(render_mode="human")
 i = 0
-while i < 3:  # run plot for 3 episodes to see what it learned
+while True:  # run plot for 3 episodes to see what it learned
     i += 1
     env.reset()
     obs = env._get_obs()
