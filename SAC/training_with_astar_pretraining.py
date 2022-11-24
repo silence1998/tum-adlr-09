@@ -185,13 +185,13 @@ if __name__ == "__main__":
             obs_values = [obs["agent"], obs["target"]]
             for idx_obstacle in range(env_parameters['num_obstacles']):
                 obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-            obs_values = np.array(obs_values).reshape(-1)  # TODO: VOLKAN: why do we need to reshape we change again later with view?
+            obs_values = np.array(obs_values).reshape(-1)  # TODO: MO: why do we need to reshape we change again later with view?
 
             state = torch.tensor(obs_values, dtype=torch.float, device=device)
             state = state.view(1, -1)
             actions = select_action_A_star(obs_values)
 
-            if actions.all() == None:  # TODO: VOLKAN: why is this all, shouldnt it be .any()?
+            if actions.all() == None:  # TODO: MO: why is this all, shouldnt it be .any()?
                 print("error: doesn't find a path")
                 continue
             t = 0
@@ -210,7 +210,7 @@ if __name__ == "__main__":
                     obs_values = [obs["agent"], obs["target"]]
                     for idx_obstacle in range(env_parameters['num_obstacles']):
                         obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-                    next_state = torch.tensor(np.array(obs_values).reshape(-1), # TODO: VOLKAN: why do we need to reshape we change again later with view?
+                    next_state = torch.tensor(np.array(obs_values).reshape(-1), # TODO: MO: why do we need to reshape we change again later with view?
                                               dtype=torch.float,
                                               device=device)
                     next_state = next_state.view(1, -1)
