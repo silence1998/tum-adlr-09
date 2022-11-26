@@ -9,7 +9,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.distributions.normal import Normal
 
-
+torch.manual_seed(3407)
 
 class ReplayMemory(object):  # a memory buffer to store transitions
 
@@ -141,18 +141,20 @@ class ActorNetwork(nn.Module):
         return mu, sigma
 
     def sample_normal(self, state, reparametrize=True):
+        # SpinningUP SAC PC: line 12 -> big () right term
+        # we set alpha from PC = 1 -> to modify the variance of the distribution (entropy) # line 12 -> big () right terms coeffiecient
         mu, sigma = self.forward(state)
         probabilities = Normal(mu, sigma)
 
         if reparametrize:
-            actions = probabilities.rsample()
+            actions = probabilities.rsample()   # for entropy regularization
         else:
-            actions = probabilities.sample()
+            actions = probabilities.sample()  # use the generated action
 
-        action_sample = torch.tanh(actions) * torch.tensor(self.max_action).to(self.device)
-        log_probs = probabilities.log_prob(actions)
-        log_probs -= torch.log(1 - action_sample.pow(2) + self.reparam_noise)  # lower bound for probabilities
-        log_probs = log_probs.sum(1, keepdim=True)
+        action_sample = torch.tanh(actions) * torch.tensor(self.max_action).to(self.device)  # [-1,1]
+        log_probs = probabilities.log_prob(actions)  # log_prob of the generated action
+        log_probs -= torch.log(1 - action_sample.pow(2) + self.reparam_noise)  # lower bound for probabilities  #
+        log_probs = log_probs.sum(1, keepdim=True)  # sum over all actions
 
         return action_sample, log_probs
 
