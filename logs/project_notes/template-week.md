@@ -4,11 +4,15 @@
 
 ## Environment
 ### Obstacles
+
 ### Collision Check
 ### Reward Func
-
+#### Sub sparse Rewards
   
 ## Algorithm
+#### SAC-X
+#### SAC
+##### JUMP START IDEA
 ### Policy
 ### Networks
 #### Inputs
@@ -16,37 +20,13 @@
 
 ## Optimizer
 
-## Performance
-### Google Cloud
-
-
-## MILE STONES
-### MIDTERM
-
----------------------
-
-# TODO
-## Organizational
-
-## Environment
-### Obstacles
-### Collision Check
-### Reward Func
-
-  
-## Algorithm
-### Policy
-### Networks
-#### Inputs
-#### Outputs
-
-## Optimizer
-
+### Loss
 ## Performance
 ### Google Cloud
 
 ## MILE STONES
 ### MIDTERM
+
 
 
 
