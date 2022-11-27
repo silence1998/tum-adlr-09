@@ -178,6 +178,8 @@ def select_action_A_star(state):
     for i in range(len(path) - 1):
         actions[i, :] = path[i + 1] - path[i]
     return actions
+
+
 def init_model():
     # initialize NN
     n_actions = 2  # velocity in 2 directions

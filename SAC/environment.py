@@ -67,7 +67,7 @@ class GridWorldEnv(gym.Env):
             # fast moving etc. for sub actions for sparse rewards
         }
 
-        # TODO action space should be continuous now its bounded bounded in [-3, 3]
+        # TODO action space should be continuous now its bounded in [-3, 3]
         self.action_space = spaces.Discrete(4)  # Continuous 3 see gym examples
         #Box(low=np.array([-1.0, -2.0]), high=np.array([2.0, 4.0]), dtype=np.float32) - Box(3,) x,y velocity
         #no polar coord as its already encoded
@@ -135,21 +135,18 @@ class GridWorldEnv(gym.Env):
         self._obstacle_locations = {}
         for idx_obstacle in range(self.num_obstacles):
             self._obstacle_locations.update({"{0}".format(idx_obstacle): self._agent_location})
-            if idx_obstacle == 0:
-                while np.array_equal(self._obstacle_locations[str(idx_obstacle)], self._agent_location) \
-                        or np.array_equal(self._obstacle_locations[str(idx_obstacle)], self._target_location):
-                    self._obstacle_locations[str(idx_obstacle)] = self.np_random.integers(
-                        0, self.size, size=2, dtype=int
-                    )
-                continue
             while np.array_equal(self._obstacle_locations[str(idx_obstacle)], self._agent_location) \
-                    or np.array_equal(self._obstacle_locations[str(idx_obstacle)], self._target_location) \
-                    or np.array_equal(self._obstacle_locations[str(idx_obstacle)],
-                                      self._obstacle_locations[str(idx_obstacle - 1)]):
-                self._obstacle_locations[str(idx_obstacle)] = self.np_random.integers(
-                    0, self.size, size=2, dtype=int
-                )
-            # TODO: check all obstacles pairwise for every additional obstacle
+                    or np.array_equal(self._obstacle_locations[str(idx_obstacle)], self._target_location):
+                random_location = np.array(self.np_random.integers(0, self.size, size=2, dtype=int))
+                _obstacle_locations_array = np.array(self._obstacle_locations.values())
+                if (idx_obstacle != 0) & (np.array_equal(random_location, _obstacle_locations_array.any())):
+                    print(_obstacle_locations_array)
+                    print("\n \n \n \n Collision in random object generation!!! \n \n \n \n")
+                    continue
+                self._obstacle_locations[str(idx_obstacle)] = random_location
+                assert not np.array_equal(random_location, _obstacle_locations_array.any())
+        assert len(self._obstacle_locations) == self.num_obstacles
+
         observation = self._get_obs()
         info = self._get_info()
 
