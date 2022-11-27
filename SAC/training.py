@@ -150,7 +150,7 @@ hyper_parameters = {
     'alpha': 0.0003,  # learning rate for actor
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
-    'num_episodes': 200,
+    'num_episodes': 50,
     'pretrain': 0
 }
 
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     episode_durations = []
     average_sigma_per_batch = []
 
-    print(torch.rand(2))
+    print("Testing random seed: " + str(torch.rand(2)))
 
     if not hyper_parameters['pretrain']:
         for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
@@ -281,18 +281,6 @@ if __name__ == "__main__":
         print('Complete')
 
         model_path = "model/"
-
-        with open(model_path + 'env_parameters.txt', 'w+') as file:
-            file.write(json.dumps(env_parameters))  # use `json.loads` to do the reverse
-        with open(model_path + 'hyper_parameters.txt', 'w+') as file:
-            file.write(json.dumps(hyper_parameters))  # use `json.loads` to do the reverse
-        with open(model_path + 'reward_parameters.txt', 'w+') as file:
-            file.write(json.dumps(env.reward_parameters))  # use `json.loads` to do the reverse
-
-        torch.save(actorNet.state_dict(), model_path + "actor.pt")
-        torch.save(criticNet_1.state_dict(), model_path + "criticNet_1.pt")
-        torch.save(criticNet_2.state_dict(), model_path + "criticNet_2.pt")
-        torch.save(target_valueNet.state_dict(), model_path + "target_valueNet.pt")
 
     if hyper_parameters['pretrain']:
         for i_episode in range(hyper_parameters['num_episodes']):
@@ -365,3 +353,15 @@ if __name__ == "__main__":
 
         model_path = "model_with_astar/"
         print('Pretrain complete')
+
+    with open(model_path + 'env_parameters.txt', 'w+') as file:
+        file.write(json.dumps(env_parameters))  # use `json.loads` to do the reverse
+    with open(model_path + 'hyper_parameters.txt', 'w+') as file:
+        file.write(json.dumps(hyper_parameters))  # use `json.loads` to do the reverse
+    with open(model_path + 'reward_parameters.txt', 'w+') as file:
+        file.write(json.dumps(env.reward_parameters))  # use `json.loads` to do the reverse
+
+    torch.save(actorNet.state_dict(), model_path + "actor.pt")
+    torch.save(criticNet_1.state_dict(), model_path + "criticNet_1.pt")
+    torch.save(criticNet_2.state_dict(), model_path + "criticNet_2.pt")
+    torch.save(target_valueNet.state_dict(), model_path + "target_valueNet.pt")
