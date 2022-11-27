@@ -141,7 +141,7 @@ class GridWorldEnv(gym.Env):
                 _obstacle_locations_array = np.array(self._obstacle_locations.values())
                 if (idx_obstacle != 0) & (np.array_equal(random_location, _obstacle_locations_array.any())):
                     print(_obstacle_locations_array)
-                    print("\n \n \n \n Collision in random object generation \n \n \n \n")
+                    print("\n \n \n \n Collision in random object generation!!! \n \n \n \n")
                     continue
                 self._obstacle_locations[str(idx_obstacle)] = random_location
                 assert not np.array_equal(random_location, _obstacle_locations_array.any())
