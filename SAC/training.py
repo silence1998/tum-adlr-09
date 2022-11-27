@@ -68,7 +68,8 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     valueNet.optimizer.step()
 
     # Update the target value network
-    actions, log_probs = actorNet.sample_normal(state_batch, reparametrize=True)  # line 14 big () right term a_tilde_theta(s)
+    actions, log_probs = actorNet.sample_normal(state_batch,
+                                                reparametrize=True)  # line 14 big () right term a_tilde_theta(s)
     log_probs = log_probs.view(-1)
     q1_new_policy = criticNet_1.forward(state_batch, actions)
     q2_new_policy = criticNet_2.forward(state_batch, actions)
@@ -84,7 +85,7 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
 
     criticNet_1.optimizer.zero_grad()
     criticNet_2.optimizer.zero_grad()
-    q_hat = reward_batch + hyper_parameters["gamma"] * value_ # SpinningUP SAC PC: line 12 -> calc y (target)
+    q_hat = reward_batch + hyper_parameters["gamma"] * value_  # SpinningUP SAC PC: line 12 -> calc y (target)
     q1_old_policy = criticNet_1.forward(state_batch, action_batch).view(-1)
     q2_old_policy = criticNet_2.forward(state_batch, action_batch).view(-1)
     critic_1_loss = 0.5 * F.mse_loss(q1_old_policy, q_hat)  # line 13 in s.u. pseudocode
@@ -114,6 +115,7 @@ def plot_durations():
 
     plt.pause(0.001)  # pause a bit so that plots are updated
 
+
 # def plot_sigma():
 #     plt.figure(2)
 #     plt.clf()
@@ -142,14 +144,14 @@ env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'])
 
 hyper_parameters = {
     'input_dims': 4 + env_parameters['num_obstacles'] * 2,  # original position of actor, obstacle and target position
-    'batch_size': 256,
+    'batch_size': 512,
     'gamma': 0.999,  # discount factor
     'target_update': 10,  # update target network every 10 episodes TODO: UNUSED if code for now
     'alpha': 0.0003,  # learning rate for actor
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
-    'num_episodes': 100,
-    'pretrain': 1
+    'num_episodes': 200,
+    'pretrain': 0
 }
 
 
@@ -158,6 +160,17 @@ def select_action(state, actorNet):
     actions, _ = actorNet.sample_normal(state, reparametrize=False)
 
     return actions.cpu().detach().numpy()[0]
+
+
+def select_action_filter(state, actorNet):
+    # state = torch.Tensor([state]).to(actorNet.device)
+    delta_x = state[0, 2] - state[0, 0]
+    delta_y = state[0, 3] - state[0, 1]
+    actions, _ = actorNet.sample_normal(state, reparametrize=False)
+    while actions[0, 0] * delta_x < 0 or actions[0, 1] * delta_y < 0:
+        actions, _ = actorNet.sample_normal(state, reparametrize=False)
+    return actions.cpu().detach().numpy()[0]
+
 
 def select_action_A_star(state):
     size = env.size
@@ -178,6 +191,8 @@ def select_action_A_star(state):
     for i in range(len(path) - 1):
         actions[i, :] = path[i + 1] - path[i]
     return actions
+
+
 def init_model():
     # initialize NN
     n_actions = 2  # velocity in 2 directions
@@ -217,7 +232,10 @@ if __name__ == "__main__":
             state = state.view(1, -1)
             for t in count():  # every step of the environment
                 # Select and perform an action
-                action = select_action(state, actorNet)
+                if i_episode < 40:
+                    action = select_action(state, actorNet)
+                else:
+                    action = select_action_filter(state, actorNet)
                 _, reward, done, _, _ = env.step(action)
                 reward = torch.tensor([reward], dtype=torch.float, device=device)
 
@@ -246,7 +264,7 @@ if __name__ == "__main__":
                 if done:
                     episode_durations.append(t + 1)
                     plot_durations()
-                    #plot_sigma()
+                    # plot_sigma()
                     break
             # Update the target network, using tau
             target_value_params = target_valueNet.named_parameters()
@@ -284,13 +302,13 @@ if __name__ == "__main__":
             obs_values = [obs["agent"], obs["target"]]
             for idx_obstacle in range(env_parameters['num_obstacles']):
                 obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-            obs_values = np.array(obs_values).reshape(-1)  # TODO: MO: why do we need to reshape we change again later with view?
+            obs_values = np.array(obs_values).reshape(-1)
 
             state = torch.tensor(obs_values, dtype=torch.float, device=device)
             state = state.view(1, -1)
             actions = select_action_A_star(obs_values)
 
-            if actions.all() == None:  # TODO: MO: why is this all, shouldnt it be .any()?
+            if actions is None:  # TODO: MO: why is this all, shouldnt it be .any()?
                 print("error: doesn't find a path")
                 continue
             t = 0
@@ -309,7 +327,8 @@ if __name__ == "__main__":
                     obs_values = [obs["agent"], obs["target"]]
                     for idx_obstacle in range(env_parameters['num_obstacles']):
                         obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-                    next_state = torch.tensor(np.array(obs_values).reshape(-1), # TODO: MO: why do we need to reshape we change again later with view?
+                    next_state = torch.tensor(np.array(obs_values).reshape(-1),
+                                              # TODO: MO: why do we need to reshape we change again later with view?
                                               dtype=torch.float,
                                               device=device)
                     next_state = next_state.view(1, -1)
