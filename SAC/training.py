@@ -50,6 +50,7 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
         mu, sigma = actorNet.forward(state_batch)
         global average_sigma_per_batch
         average_sigma_per_batch.append(np.mean(sigma.detach().cpu().numpy(), axis=0)) # mean of sigma of the current batch
+
     value = valueNet(state_batch).view(-1)  # infer size of batch
     value_ = torch.zeros(hyper_parameters["batch_size"], device=device)
     value_[non_final_mask] = target_valueNet(non_final_next_states).view(-1)
@@ -109,7 +110,9 @@ def plot_durations():
     plt.plot(durations_t.numpy())
     # Take X episode averages and plot them too
     avg_every_X_episodes = 10
-    if (len(durations_t) % avg_every_X_episodes) == 0:
+    if len(durations_t) >= avg_every_X_episodes:
+    # TODO: fix so that it takes 10 last values and averages it
+    #if (len(durations_t) % avg_every_X_episodes) == 0:
         means = durations_t.unfold(0, avg_every_X_episodes, 1).mean(1).view(-1)
         means = torch.cat((torch.zeros(avg_every_X_episodes - 1), means))
         plt.plot(means.numpy())
@@ -129,6 +132,7 @@ def plot_sigma():
     # Take X episode averages and plot them too
     avg_every_X_batches = 10
     if (len(sigma_t) > 100):# avg_every_X_batches) == 0:
+        # TODO: fix so that it takes 10 last values and averages it
         means = sigma_t.unfold(0, avg_every_X_batches, 1).mean(1).view(-1)
         means = torch.cat((torch.zeros(avg_every_X_batches - 1), means))
         plt.plot(means.numpy())
@@ -267,10 +271,12 @@ if __name__ == "__main__":
                 optimize_model()
                 if done:
                     episode_durations.append(t + 1)
-                    plot_durations()
-                    #if not len(memory) < hyper_parameters["batch_size"]:
-                        #plot_sigma()
-                    #break
+                    #plot_durations()
+
+                    if not len(memory) < hyper_parameters["batch_size"]:
+                        plot_sigma()
+
+                    break
             # Update the target network, using tau
             target_value_params = target_valueNet.named_parameters()
             value_params = valueNet.named_parameters()
