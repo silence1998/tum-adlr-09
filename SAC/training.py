@@ -109,12 +109,12 @@ def plot_durations():
     plt.ylabel('Duration')
     plt.plot(durations_t.numpy())
     # Take X episode averages and plot them too
-    avg_every_X_episodes = 10
-    if len(durations_t) >= avg_every_X_episodes:
-    # TODO: fix so that it takes 10 last values and averages it
-    #if (len(durations_t) % avg_every_X_episodes) == 0:
-        means = durations_t.unfold(0, avg_every_X_episodes, 1).mean(1).view(-1)
-        means = torch.cat((torch.zeros(avg_every_X_episodes - 1), means))
+    avg_last_X_episodes = 10
+    if len(durations_t) >= avg_last_X_episodes:
+        means = durations_t.unfold(0, avg_last_X_episodes, 1).mean(1).view(-1)
+        # takes the average of the last X episodes and adds to the averages list
+        # starting from Xth episode as average value slice needs X episodes for mean as given
+        means = torch.cat((torch.zeros(avg_last_X_episodes - 1), means))  # pad with zeros for the first X episodes
         plt.plot(means.numpy())
 
     plt.pause(0.001)  # pause a bit so that plots are updated
@@ -134,7 +134,7 @@ def plot_sigma():
     if (len(sigma_t) > 100):# avg_every_X_batches) == 0:
         # TODO: fix so that it takes 10 last values and averages it
         means = sigma_t.unfold(0, avg_every_X_batches, 1).mean(1).view(-1)
-        means = torch.cat((torch.zeros(avg_every_X_batches - 1), means))
+        means = torch.cat((torch.zeros(avg_every_X_batches - 1), means))  # pad with zeros for the first X episodes
         plt.plot(means.numpy())
 
     plt.pause(0.001)  # pause a bit so that plots are updated
@@ -271,10 +271,10 @@ if __name__ == "__main__":
                 optimize_model()
                 if done:
                     episode_durations.append(t + 1)
-                    #plot_durations()
+                    plot_durations()
 
-                    if not len(memory) < hyper_parameters["batch_size"]:
-                        plot_sigma()
+                    #if not len(memory) < hyper_parameters["batch_size"]:
+                    #    plot_sigma()
 
                     break
             # Update the target network, using tau
