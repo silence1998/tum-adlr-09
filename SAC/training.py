@@ -125,17 +125,21 @@ def plot_sigma():
     plt.figure(2)
     plt.clf()
     sigma_t = torch.tensor(np.array(average_sigma_per_batch), dtype=torch.float)
+    sigma_tx = sigma_t[:, 0]
+    sigma_ty = sigma_t[:, 1]
     plt.title('Training...')
     plt.xlabel('Batch')
     plt.ylabel('Sigma')
     plt.plot(sigma_t.numpy())
     # Take X episode averages and plot them too
-    avg_every_X_batches = 10
-    if (len(sigma_t) > 100):# avg_every_X_batches) == 0:
-        # TODO: fix so that it takes 10 last values and averages it
-        means = sigma_t.unfold(0, avg_every_X_batches, 1).mean(1).view(-1)
-        means = torch.cat((torch.zeros(avg_every_X_batches - 1), means))  # pad with zeros for the first X episodes
-        plt.plot(means.numpy())
+    avg_last_X_batches = 100
+    if len(sigma_t) > avg_last_X_batches:
+        means_x = sigma_tx.unfold(0, avg_last_X_batches, 1).mean(1).view(-1)
+        means_x = torch.cat((torch.zeros(avg_last_X_batches - 1), means_x))  # pad with zeros for the first X episodes
+        means_y = sigma_ty.unfold(0, avg_last_X_batches, 1).mean(1).view(-1)
+        means_y = torch.cat((torch.zeros(avg_last_X_batches - 1), means_y))  # pad with zeros for the first X episodes
+        plt.plot(means_x.numpy())
+        plt.plot(means_y.numpy())
 
     plt.pause(0.001)  # pause a bit so that plots are updated
 
@@ -271,10 +275,10 @@ if __name__ == "__main__":
                 optimize_model()
                 if done:
                     episode_durations.append(t + 1)
-                    plot_durations()
+                    #plot_durations()
 
-                    #if not len(memory) < hyper_parameters["batch_size"]:
-                    #    plot_sigma()
+                    if not len(memory) < hyper_parameters["batch_size"]:
+                        plot_sigma()
 
                     break
             # Update the target network, using tau
