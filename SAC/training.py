@@ -45,10 +45,11 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)
 
-    ### Calculate average sigma per batch
-    mu, sigma = actorNet.forward(state_batch)
-    average_sigma_per_batch.append(np.mean(sigma.detach().cpu().numpy(), axis=0))
-
+    if not len(memory) < hyper_parameters["batch_size"]:
+        ### Calculate average sigma per batch
+        mu, sigma = actorNet.forward(state_batch)
+        global average_sigma_per_batch
+        average_sigma_per_batch.append(np.mean(sigma.detach().cpu().numpy(), axis=0)) # mean of sigma of the current batch
     value = valueNet(state_batch).view(-1)  # infer size of batch
     value_ = torch.zeros(hyper_parameters["batch_size"], device=device)
     value_[non_final_mask] = target_valueNet(non_final_next_states).view(-1)
@@ -107,8 +108,8 @@ def plot_durations():
     plt.ylabel('Duration')
     plt.plot(durations_t.numpy())
     # Take X episode averages and plot them too
-    avg_every_X_episodes = 25
-    if len(durations_t) >= avg_every_X_episodes:
+    avg_every_X_episodes = 10
+    if (len(durations_t) % avg_every_X_episodes) == 0:
         means = durations_t.unfold(0, avg_every_X_episodes, 1).mean(1).view(-1)
         means = torch.cat((torch.zeros(avg_every_X_episodes - 1), means))
         plt.plot(means.numpy())
@@ -116,22 +117,23 @@ def plot_durations():
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-# def plot_sigma():
-#     plt.figure(2)
-#     plt.clf()
-#     sigma_t = torch.tensor(average_sigma_per_batch, dtype=torch.float)
-#     plt.title('Training...')
-#     plt.xlabel('Episode')
-#     plt.ylabel('Duration')
-#     plt.plot(durations_t.numpy())
-#     # Take X episode averages and plot them too
-#     avg_every_X_episodes = 25
-#     if len(durations_t) >= avg_every_X_episodes:
-#         means = durations_t.unfold(0, avg_every_X_episodes, 1).mean(1).view(-1)
-#         means = torch.cat((torch.zeros(avg_every_X_episodes - 1), means))
-#         plt.plot(means.numpy())
-#
-#     plt.pause(0.001)  # pause a bit so that plots are updated
+def plot_sigma():
+    global average_sigma_per_batch
+    plt.figure(2)
+    plt.clf()
+    sigma_t = torch.tensor(np.array(average_sigma_per_batch), dtype=torch.float)
+    plt.title('Training...')
+    plt.xlabel('Batch')
+    plt.ylabel('Sigma')
+    plt.plot(sigma_t.numpy())
+    # Take X episode averages and plot them too
+    avg_every_X_batches = 10
+    if (len(sigma_t) > 100):# avg_every_X_batches) == 0:
+        means = sigma_t.unfold(0, avg_every_X_batches, 1).mean(1).view(-1)
+        means = torch.cat((torch.zeros(avg_every_X_batches - 1), means))
+        plt.plot(means.numpy())
+
+    plt.pause(0.001)  # pause a bit so that plots are updated
 
 
 # initialize hyper-parameters
@@ -150,7 +152,7 @@ hyper_parameters = {
     'alpha': 0.0003,  # learning rate for actor
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
-    'num_episodes': 50,
+    'num_episodes': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'pretrain': 0
 }
 
@@ -219,7 +221,9 @@ if __name__ == "__main__":
     print("Testing random seed: " + str(torch.rand(2)))
 
     if not hyper_parameters['pretrain']:
+
         for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
+            print("Episode: " + str(len(episode_durations)))
             # Initialize the environment and state
             env.reset()
             obs = env._get_obs()
@@ -264,8 +268,9 @@ if __name__ == "__main__":
                 if done:
                     episode_durations.append(t + 1)
                     plot_durations()
-                    # plot_sigma()
-                    break
+                    #if not len(memory) < hyper_parameters["batch_size"]:
+                        #plot_sigma()
+                    #break
             # Update the target network, using tau
             target_value_params = target_valueNet.named_parameters()
             value_params = valueNet.named_parameters()
@@ -296,7 +301,7 @@ if __name__ == "__main__":
             state = state.view(1, -1)
             actions = select_action_A_star(obs_values)
 
-            if actions is None:  # TODO: MO: why is this all, shouldnt it be .any()?
+            if actions is None:  # TODO: MO: why is this all, shouldn't it be .any()?
                 print("error: doesn't find a path")
                 continue
             t = 0
@@ -315,8 +320,7 @@ if __name__ == "__main__":
                     obs_values = [obs["agent"], obs["target"]]
                     for idx_obstacle in range(env_parameters['num_obstacles']):
                         obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-                    next_state = torch.tensor(np.array(obs_values).reshape(-1),
-                                              # TODO: MO: why do we need to reshape we change again later with view?
+                    next_state = torch.tensor(np.array(obs_values).reshape(-1),  # TODO: MO: why do we need to reshape we change again later with view?
                                               dtype=torch.float,
                                               device=device)
                     next_state = next_state.view(1, -1)
