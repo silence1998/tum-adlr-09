@@ -13,7 +13,7 @@ import A_star.algorithm
 
 import wandb
 
-wandb.init(project="test-project", entity="tum-adlr-09")
+wandb.init(project="SAC", entity="tum-adlr-09")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -168,9 +168,13 @@ hyper_parameters = {
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'num_episodes': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
-    'pretrain': 0
+    'pretrain': False
 }
-wandb.config = env_parameters.update(hyper_parameters)
+wandb_dict = {}
+wandb_dict.update(env_parameters)
+wandb_dict.update(hyper_parameters)
+print("dict: " + str(wandb_dict))
+wandb.config.update(wandb_dict)
 
 def select_action(state, actorNet):
     # state = torch.Tensor([state]).to(actorNet.device)
