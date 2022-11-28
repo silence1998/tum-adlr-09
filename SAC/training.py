@@ -11,6 +11,10 @@ from environment import *
 
 import A_star.algorithm
 
+import wandb
+
+wandb.init(project="test-project", entity="tum-adlr-09")
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 """
@@ -80,7 +84,10 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
 
     actor_loss = log_probs - critic_value
     actor_loss = torch.mean(actor_loss)
+
+    wandb.log({"actor_loss": actor_loss})
     print(actor_loss)
+
     actorNet.optimizer.zero_grad()
     actor_loss.backward(retain_graph=True)
     actorNet.optimizer.step()
@@ -163,7 +170,7 @@ hyper_parameters = {
     'num_episodes': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'pretrain': 0
 }
-
+wandb.config = env_parameters.update(hyper_parameters)
 
 def select_action(state, actorNet):
     # state = torch.Tensor([state]).to(actorNet.device)
@@ -223,6 +230,12 @@ def init_model():
 if __name__ == "__main__":
 
     actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
+    wandb.watch(actorNet)
+    wandb.watch(criticNet_1)
+    wandb.watch(criticNet_2)
+    wandb.watch(valueNet)
+    wandb.watch(target_valueNet)
+
     episode_durations = []
     average_sigma_per_batch = []
 
