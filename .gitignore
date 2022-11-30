@@ -1,7 +1,14 @@
-/SAC/model/
-/pytorch_rl/model/
-/pytorch_rl/.idea/
-/SAC/A_star/__pycache__/
-/SAC/__pycache__/
+# ignore ALL .log files
 /.idea/
+/pytorch_rl/.idea/
 
+# ignore models .log files
+/SAC/model/
+/SAC-X/model/
+/SAC/model_with_astar/
+SAC/__pycache__/
+SAC/A_star/__pycache__/
+
+# ignore unnecessary files
+#a_star_algorithm
+/SAC/wandb/
