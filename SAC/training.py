@@ -167,7 +167,7 @@ hyper_parameters = {
     'alpha': 0.0003,  # learning rate for actor
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
-    'num_episodes': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 70,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'pretrain': False
 }
 wandb_dict = {}
@@ -242,6 +242,7 @@ if __name__ == "__main__":
 
     episode_durations = []
     average_sigma_per_batch = []
+    seed = 3407
 
     print("Testing random seed: " + str(torch.rand(2)))
 
@@ -250,7 +251,9 @@ if __name__ == "__main__":
         for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
             print("Episode: " + str(len(episode_durations)))
             # Initialize the environment and state
-            env.reset()
+            seed = seed + 1
+            print(seed)
+            env.reset(seed=seed)
             obs = env._get_obs()
 
             obs_values = [obs["agent"], obs["target"]]
