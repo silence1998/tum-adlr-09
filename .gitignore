@@ -11,3 +11,5 @@ SAC/A_star/__pycache__/
 /SAC/wandb/
 
 
+/SAC/model_pretrain/
+/pytorch_rl/model/

@@ -18,8 +18,8 @@ actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_mod
 
 # Load the model
 # TODO: Select model to load
-#model_path = "model_with_astar/"
-model_path = "model/"
+model_path = "model_pretrain/"
+#model_path = "model/"
 
 # load model
 torch.load(model_path + "actor.pt", map_location=device)

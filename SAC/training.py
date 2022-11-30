@@ -155,10 +155,10 @@ def plot_sigma():
 # initialize hyper-parameters
 
 env_parameters = {
-    'num_obstacles': 5,
-    'env_size': 20  # size of the environment
+    'num_obstacles': 1,
+    'env_size': 10  # size of the environment
 }
-env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'])
+env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
 
 hyper_parameters = {
     'input_dims': 4 + env_parameters['num_obstacles'] * 2,  # original position of actor, obstacle and target position
@@ -168,9 +168,9 @@ hyper_parameters = {
     'alpha': 0.0003,  # learning rate for actor
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
-    'num_episodes': 70,  # set min 70 for tests as some parts of code starts after ~40 episodes
-    'pretrain': False,
-    'num_episodes_pretrain': 70
+    'num_episodes': 150,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'pretrain': True,
+    'num_episodes_pretrain': 150
 }
 wandb_dict = {}
 wandb_dict.update(env_parameters)
@@ -245,14 +245,16 @@ if __name__ == "__main__":
 
     episode_durations = []
     average_sigma_per_batch = []
-    seed = 3407
+    seed_init_value = 3406
+    seed = seed_init_value
 
     print("Testing random seed: " + str(torch.rand(2)))
 
     if hyper_parameters['pretrain']:
         for i_episode in range(hyper_parameters['num_episodes_pretrain']):
             # Initialize the environment and state
-            env.reset()
+            seed += 1
+            env.reset(seed=seed)
             obs = env._get_obs()
             obs_values = [obs["agent"], obs["target"]]
             for idx_obstacle in range(env_parameters['num_obstacles']):
@@ -282,7 +284,7 @@ if __name__ == "__main__":
                     obs_values = [obs["agent"], obs["target"]]
                     for idx_obstacle in range(env_parameters['num_obstacles']):
                         obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-                    next_state = torch.tensor(np.array(obs_values),
+                    next_state = torch.tensor(np.array(obs_values).reshape(-1),
                                               dtype=torch.float,
                                               device=device)
                     next_state = next_state.view(1, -1)
@@ -301,7 +303,9 @@ if __name__ == "__main__":
                 optimize_model()
                 if done:
                     episode_durations.append(t + 1)
-                    plot_durations()
+                    # plot_durations()
+                    if not len(memory) < hyper_parameters["batch_size"]:
+                        plot_sigma()
                     break
             # Update the target network, using tau
             if t != len(actions):
@@ -320,6 +324,7 @@ if __name__ == "__main__":
         # model_path = "model_with_astar/"
         print('Pretrain complete')
 
+    seed = seed_init_value
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
         print("Episode: " + str(len(episode_durations)))
         # Initialize the environment and state
@@ -382,8 +387,11 @@ if __name__ == "__main__":
                                      (1 - hyper_parameters["tau"]) * target_value_state_dict[name].clone()
         target_valueNet.load_state_dict(value_state_dict)
 
-        print('Complete')
+    print('Complete')
 
+    if hyper_parameters['pretrain']:
+        model_path = "model_pretrain/"
+    else:
         model_path = "model/"
 
     with open(model_path + 'env_parameters.txt', 'w+') as file:
@@ -397,3 +405,4 @@ if __name__ == "__main__":
     torch.save(criticNet_1.state_dict(), model_path + "criticNet_1.pt")
     torch.save(criticNet_2.state_dict(), model_path + "criticNet_2.pt")
     torch.save(target_valueNet.state_dict(), model_path + "target_valueNet.pt")
+    print("torch.save")
