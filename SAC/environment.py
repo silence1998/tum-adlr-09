@@ -36,15 +36,15 @@ class GridWorldEnv(gym.Env):
             ### DENSE REWARDS ###
             'obstacle_avoidance': False,
             'obstacle_distance_weight': -0,
-            'target_seeking': True,
-            'target_distance_weight': 0,
+            'target_seeking': False,
+            'target_distance_weight': 1,
 
             ### SPARSE REWARDS ###
-            'target_value': 1,
-            'collision_value': -1,
+            'target_value': 10,
+            'collision_value': -50,
 
             ### SUB-SPARSE REWARDS ###
-            'checkpoints': True,  # if true, use checkpoints rewards
+            'checkpoints': False,  # if true, use checkpoints rewards
             'checkpoint_distance_proportion': 0.0,
             'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
             'checkpoint_value': 0.0,  # make sure checkpoint_value * checkpoint_number < 1
