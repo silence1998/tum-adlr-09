@@ -2,11 +2,19 @@
 /.idea/
 /pytorch_rl/.idea/
 
-# ignore models .log files
+
+# ignore model files
 /SAC/model/
 /SAC/model_with_astar/
 SAC/__pycache__/
 SAC/A_star/__pycache__/
+/SAC/wandb/
+
 
 # ignore unnecessary files
 #a_star_algorithm
+<<<<<<< HEAD
+
+=======
+/SAC/wandb/
+>>>>>>> test_Volkan
