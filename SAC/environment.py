@@ -32,7 +32,7 @@ class GridWorldEnv(gym.Env):
             # 'time_weight': 1,
             # the above are not used in the current version which is sparse reward based
 
-            'action_step_scaling': 2,  # 1 step -> "2" grids of movement reach in x and y directions
+            'action_step_scaling': 1,  # 1 step -> "2" grids of movement reach in x and y directions
             ### DENSE REWARDS ###
             'obstacle_avoidance': False,
             'obstacle_distance_weight': -1,
@@ -45,9 +45,9 @@ class GridWorldEnv(gym.Env):
 
             ### SUB-SPARSE REWARDS ###
             'checkpoints': True,  # if true, use checkpoints rewards
-            'checkpoint_distance_proportion': 0.2,
+            'checkpoint_distance_proportion': 0.0,
             'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
-            'checkpoint_value': 0.1,  # make sure checkpoint_value * checkpoint_number < 1
+            'checkpoint_value': 0.0,  # make sure checkpoint_value * checkpoint_number < 1
 
             'time': True,  # if true, use time rewards
             'time_penalty': -0.01,  # == penalty of -1 for "100" action steps
@@ -55,13 +55,13 @@ class GridWorldEnv(gym.Env):
             'history_size': 20,  # size of history to check for waiting and consistency
 
             'waiting': False,  # if true, use waiting rewards # TODO: implement action history in step()
-            'waiting_value': 0.1,  # make sure waiting_value < 1
+            'waiting_value': 0.0,  # make sure waiting_value < 1
             'max_waiting_steps': 20,  # make sure < history_size, punishment for waiting too long
             # threshold
 
             'consistency': False,  # if true, use consistency rewards # TODO: implement action history in step()
             'consistency_step_number': 5,  # make sure consistency_step_number < history_size
-            'consistency_value': 0.1,  # make sure consistency_value * consistency_step_number < 1
+            'consistency_value': 0.0,  # make sure consistency_value * consistency_step_number < 1
             # threshold
 
             # fast moving etc. for sub actions for sparse rewards
