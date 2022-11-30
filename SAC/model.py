@@ -29,7 +29,7 @@ class ReplayMemory(object):  # a memory buffer to store transitions
 
 
 class CriticNetwork(nn.Module):
-    def __init__(self, beta, input_dims, n_actions, fc1_dims=16, fc2_dims=16,
+    def __init__(self, beta, input_dims, n_actions, fc1_dims=128, fc2_dims=64,
                  name='critic', chkpt_dir='tmp/sac'):
         super(CriticNetwork, self).__init__()
         self.input_dims = input_dims
@@ -67,7 +67,7 @@ class CriticNetwork(nn.Module):
 
 
 class ValueNetwork(nn.Module):
-    def __init__(self, beta, input_dims, fc1_dims=16, fc2_dims=16,
+    def __init__(self, beta, input_dims, fc1_dims=128, fc2_dims=64,
                  name='value', chkpt_dir='tmp/sac'):
         super(ValueNetwork, self).__init__()
         self.input_dims = input_dims
@@ -104,8 +104,8 @@ class ValueNetwork(nn.Module):
 
 
 class ActorNetwork(nn.Module):
-    def __init__(self, alpha, input_dims, max_action, fc1_dims=16,
-                 fc2_dims=16, n_actions=2, name='actor', chkpt_dir='tmp/sac'):
+    def __init__(self, alpha, input_dims, max_action, fc1_dims=128,
+                 fc2_dims=64, n_actions=2, name='actor', chkpt_dir='tmp/sac'):
         super(ActorNetwork, self).__init__()
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims

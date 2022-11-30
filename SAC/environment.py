@@ -35,9 +35,9 @@ class GridWorldEnv(gym.Env):
             'action_step_scaling': 1,  # 1 step -> "2" grids of movement reach in x and y directions
             ### DENSE REWARDS ###
             'obstacle_avoidance': False,
-            'obstacle_distance_weight': -1,
+            'obstacle_distance_weight': -0,
             'target_seeking': True,
-            'target_distance_weight': 1,
+            'target_distance_weight': 0,
 
             ### SPARSE REWARDS ###
             'target_value': 1,
@@ -49,8 +49,8 @@ class GridWorldEnv(gym.Env):
             'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
             'checkpoint_value': 0.0,  # make sure checkpoint_value * checkpoint_number < 1
 
-            'time': True,  # if true, use time rewards
-            'time_penalty': -0.01,  # == penalty of -1 for "100" action steps
+            'time': False,  # if true, use time rewards
+            'time_penalty': 0,  # == penalty of -1 for "100" action steps
 
             'history_size': 20,  # size of history to check for waiting and consistency
 
@@ -60,7 +60,7 @@ class GridWorldEnv(gym.Env):
             # threshold
 
             'consistency': False,  # if true, use consistency rewards # TODO: implement action history in step()
-            'consistency_step_number': 5,  # make sure consistency_step_number < history_size
+            'consistency_step_number': 0,  # make sure consistency_step_number < history_size
             'consistency_value': 0.0,  # make sure consistency_value * consistency_step_number < 1
             # threshold
 
