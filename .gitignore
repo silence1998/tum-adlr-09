@@ -13,4 +13,8 @@ SAC/A_star/__pycache__/
 
 # ignore unnecessary files
 #a_star_algorithm
+<<<<<<< HEAD
 
+=======
+/SAC/wandb/
+>>>>>>> test_Volkan

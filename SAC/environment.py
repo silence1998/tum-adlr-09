@@ -5,7 +5,6 @@ import numpy as np
 import gym
 from gym import spaces
 import pygame
-
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
@@ -119,6 +118,7 @@ class GridWorldEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
+
         super().reset(seed=seed)
 
         # Choose the agent's location uniformly at random
