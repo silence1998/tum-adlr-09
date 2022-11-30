@@ -155,7 +155,7 @@ def plot_sigma():
 # initialize hyper-parameters
 
 env_parameters = {
-    'num_obstacles': 1,
+    'num_obstacles': 5,
     'env_size': 10  # size of the environment
 }
 env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
@@ -245,7 +245,7 @@ if __name__ == "__main__":
 
     episode_durations = []
     average_sigma_per_batch = []
-    seed_init_value = 3406
+    seed_init_value = 3407
     seed = seed_init_value
 
     print("Testing random seed: " + str(torch.rand(2)))
@@ -329,7 +329,6 @@ if __name__ == "__main__":
         print("Episode: " + str(len(episode_durations)))
         # Initialize the environment and state
         seed = seed + 1
-        print(seed)
         env.reset(seed=seed)
         obs = env._get_obs()
 
@@ -387,7 +386,7 @@ if __name__ == "__main__":
                                      (1 - hyper_parameters["tau"]) * target_value_state_dict[name].clone()
         target_valueNet.load_state_dict(value_state_dict)
 
-    print('Complete')
+    print('Completed Training')
 
     if hyper_parameters['pretrain']:
         model_path = "model_pretrain/"
@@ -401,8 +400,9 @@ if __name__ == "__main__":
     with open(model_path + 'reward_parameters.txt', 'w+') as file:
         file.write(json.dumps(env.reward_parameters))  # use `json.loads` to do the reverse
 
+    print("Saving models ...")
     torch.save(actorNet.state_dict(), model_path + "actor.pt")
     torch.save(criticNet_1.state_dict(), model_path + "criticNet_1.pt")
     torch.save(criticNet_2.state_dict(), model_path + "criticNet_2.pt")
     torch.save(target_valueNet.state_dict(), model_path + "target_valueNet.pt")
-    print("torch.save")
+    print("Done")
