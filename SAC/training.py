@@ -150,7 +150,7 @@ hyper_parameters = {
     'alpha': 0.0003,  # learning rate for actor
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
-    'num_episodes': 50,
+    'num_episodes': 70,
     'pretrain': 0
 }
 
