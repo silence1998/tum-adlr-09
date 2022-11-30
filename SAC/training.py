@@ -264,10 +264,7 @@ if __name__ == "__main__":
             state = state.view(1, -1)
             for t in count():  # every step of the environment
                 # Select and perform an action
-                if i_episode < 40:
-                    action = select_action(state, actorNet)
-                else:
-                    action = select_action_filter(state, actorNet)
+                action = select_action(state, actorNet)
                 _, reward, done, _, _ = env.step(action)
                 reward = torch.tensor([reward], dtype=torch.float, device=device)
 
