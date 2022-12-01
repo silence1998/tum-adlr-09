@@ -1,3 +1,10 @@
+"""
+Used Sources:
+https://www.gymlibrary.dev/content/environment_creation/
+https://github.com/Farama-Foundation/gym-examples/blob/main/gym_examples/envs/grid_world.py
+#https://github.com/philtabor/Youtube-Code-Repository/tree/master/ReinforcementLearning/PolicyGradient/SAC
+"""
+
 import numpy as np
 import json
 import matplotlib.pyplot as plt
@@ -10,6 +17,7 @@ from model import *
 from environment import *
 
 import A_star.algorithm
+import parameters
 
 import wandb
 
@@ -17,14 +25,21 @@ wandb.init(project="SAC", entity="tum-adlr-09")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-"""
-Used Sources:
-https://www.gymlibrary.dev/content/environment_creation/
-https://github.com/Farama-Foundation/gym-examples/blob/main/gym_examples/envs/grid_world.py
-#https://github.com/philtabor/Youtube-Code-Repository/tree/master/ReinforcementLearning/PolicyGradient/SAC
-"""
+
 
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
+
+# initialize hyper-parameters
+
+env_parameters = parameters.env_parameters
+env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
+hyper_parameters = parameters.hyper_parameters
+
+wandb_dict = {}
+wandb_dict.update(env_parameters)
+wandb_dict.update(hyper_parameters)
+print("dict: " + str(wandb_dict))
+wandb.config.update(wandb_dict)
 
 
 def optimize_model():  # SpinningUP SAC PC: lines 12-14
@@ -34,7 +49,7 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     transitions = memory.sample(hyper_parameters["batch_size"])  # SpinningUP SAC PC: line 11
     # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
     # detailed explanation). This converts batch-array of Transitions
-    # to Transition of batch-arrays.
+    # to Transition of batch-arrays
 
     batch = Transition(*zip(*transitions))
 
@@ -69,7 +84,7 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     critic_value = critic_value.view(-1)  # rhs SpinningUP SAC PC: line 12 big ()
 
     valueNet.optimizer.zero_grad()
-    value_target = critic_value - log_probs
+    value_target = critic_value - hyper_parameters['entropy_factor'] * log_probs
     value_loss = 0.5 * F.mse_loss(value, value_target)
     value_loss.backward(retain_graph=True)
     valueNet.optimizer.step()
@@ -87,7 +102,7 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     actor_loss = torch.mean(actor_loss)
 
     wandb.log({"actor_loss": actor_loss})
-    print(actor_loss)
+    print(str(i_episode) + "-actor_loss: " + str(actor_loss.detach().cpu().numpy()))
 
     actorNet.optimizer.zero_grad()
     actor_loss.backward(retain_graph=True)
@@ -151,34 +166,6 @@ def plot_sigma():
 
     plt.pause(0.001)  # pause a bit so that plots are updated
 
-
-# initialize hyper-parameters
-
-env_parameters = {
-    'num_obstacles': 5,
-    'env_size': 10  # size of the environment
-}
-env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
-
-hyper_parameters = {
-    'input_dims': 4 + env_parameters['num_obstacles'] * 2,  # original position of actor, obstacle and target position
-    'batch_size': 512,
-    'gamma': 0.999,  # discount factor
-    'target_update': 10,  # update target network every 10 episodes TODO: UNUSED if code for now
-    'alpha': 0.0003,  # learning rate for actor
-    'beta': 0.0003,  # learning rate for critic
-    'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
-    'num_episodes': 150,  # set min 70 for tests as some parts of code starts after ~40 episodes
-    'pretrain': True,
-    'num_episodes_pretrain': 150
-}
-wandb_dict = {}
-wandb_dict.update(env_parameters)
-wandb_dict.update(hyper_parameters)
-print("dict: " + str(wandb_dict))
-wandb.config.update(wandb_dict)
-
-
 def select_action(state, actorNet):
     # state = torch.Tensor([state]).to(actorNet.device)
     actions, _ = actorNet.sample_normal(state, reparametrize=False)
@@ -187,7 +174,11 @@ def select_action(state, actorNet):
 
 
 def select_action_filter(state, actorNet):
+    """
+    erases the actions which are directed away from the goal
+    """
     # state = torch.Tensor([state]).to(actorNet.device)
+    # 0,1: agent position, 2,3: target position
     delta_x = state[0, 2] - state[0, 0]
     delta_y = state[0, 3] - state[0, 1]
     actions, _ = actorNet.sample_normal(state, reparametrize=False)
@@ -215,6 +206,43 @@ def select_action_A_star(state):
     for i in range(len(path) - 1):
         actions[i, :] = path[i + 1] - path[i]
     return actions
+
+
+def obstacle_sort(obs):
+    """
+    Sorts the obstacles in the environment by their distance to the agent.
+    :return: A list of obstacle indices sorted by their distance to the agent.
+    """
+    distances = []
+    obs_temp = obs.copy()  # copy the dict elements in the env
+    for idx_obstacle in range(env_parameters["num_obstacles"]):
+        distances.append(np.sqrt(np.sum(np.power((obs_temp["agent"] - obs_temp["obstacle_{0}".format(idx_obstacle)]), 2))))
+    idx_obstacle_sorted = np.argsort(distances)  # min to max
+    num_obstacles = range(env_parameters["num_obstacles"])
+    for i, j in zip(num_obstacles, idx_obstacle_sorted):
+        obs["obstacle_{0}".format(i)] = obs_temp["obstacle_{0}".format(j)]
+    return obs
+
+
+def save_models():
+    if hyper_parameters['pretrain']:
+        model_path = "model_pretrain/"
+    else:
+        model_path = "model/"
+
+    with open(model_path + 'env_parameters.txt', 'w+') as file:
+        file.write(json.dumps(env_parameters))  # use `json.loads` to do the reverse
+    with open(model_path + 'hyper_parameters.txt', 'w+') as file:
+        file.write(json.dumps(hyper_parameters))  # use `json.loads` to do the reverse
+    with open(model_path + 'reward_parameters.txt', 'w+') as file:
+        file.write(json.dumps(env.reward_parameters))  # use `json.loads` to do the reverse
+
+    print("Saving models ...")
+    torch.save(actorNet.state_dict(), model_path + "actor.pt")
+    torch.save(criticNet_1.state_dict(), model_path + "criticNet_1.pt")
+    torch.save(criticNet_2.state_dict(), model_path + "criticNet_2.pt")
+    torch.save(target_valueNet.state_dict(), model_path + "target_valueNet.pt")
+    print("Done")
 
 
 def init_model():
@@ -253,8 +281,8 @@ if __name__ == "__main__":
     if hyper_parameters['pretrain']:
         for i_episode in range(hyper_parameters['num_episodes_pretrain']):
             # Initialize the environment and state
-            seed += 1
             env.reset(seed=seed)
+            seed += 1
             obs = env._get_obs()
             obs_values = [obs["agent"], obs["target"]]
             for idx_obstacle in range(env_parameters['num_obstacles']):
@@ -284,6 +312,7 @@ if __name__ == "__main__":
                     obs_values = [obs["agent"], obs["target"]]
                     for idx_obstacle in range(env_parameters['num_obstacles']):
                         obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+                    obs_values = obstacle_sort(obs_values)
                     next_state = torch.tensor(np.array(obs_values).reshape(-1),
                                               dtype=torch.float,
                                               device=device)
@@ -326,10 +355,10 @@ if __name__ == "__main__":
 
     seed = seed_init_value
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
-        print("Episode: " + str(len(episode_durations)))
+        #print("Episode: " + str(len(episode_durations)))
         # Initialize the environment and state
-        seed = seed + 1
         env.reset(seed=seed)
+        seed = seed + 1
         obs = env._get_obs()
 
         obs_values = [obs["agent"], obs["target"]]
@@ -340,13 +369,17 @@ if __name__ == "__main__":
         state = state.view(1, -1)
         for t in count():  # every step of the environment
             # Select and perform an action
+            #if i_episode < 100:
             action = select_action(state, actorNet)
+            #else:
+            #    action = select_action_filter(state, actorNet)
             _, reward, done, _, _ = env.step(action)
             reward = torch.tensor([reward], dtype=torch.float, device=device)
 
             # Observe new state
             obs = env._get_obs()
             if not done:
+                obs = obstacle_sort(obs)
                 obs_values = [obs["agent"], obs["target"]]
                 for idx_obstacle in range(env_parameters['num_obstacles']):
                     obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
@@ -388,21 +421,4 @@ if __name__ == "__main__":
 
     print('Completed Training')
 
-    if hyper_parameters['pretrain']:
-        model_path = "model_pretrain/"
-    else:
-        model_path = "model/"
-
-    with open(model_path + 'env_parameters.txt', 'w+') as file:
-        file.write(json.dumps(env_parameters))  # use `json.loads` to do the reverse
-    with open(model_path + 'hyper_parameters.txt', 'w+') as file:
-        file.write(json.dumps(hyper_parameters))  # use `json.loads` to do the reverse
-    with open(model_path + 'reward_parameters.txt', 'w+') as file:
-        file.write(json.dumps(env.reward_parameters))  # use `json.loads` to do the reverse
-
-    print("Saving models ...")
-    torch.save(actorNet.state_dict(), model_path + "actor.pt")
-    torch.save(criticNet_1.state_dict(), model_path + "criticNet_1.pt")
-    torch.save(criticNet_2.state_dict(), model_path + "criticNet_2.pt")
-    torch.save(target_valueNet.state_dict(), model_path + "target_valueNet.pt")
-    print("Done")
+    save_models()

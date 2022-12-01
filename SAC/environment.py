@@ -5,6 +5,7 @@ import numpy as np
 import gym
 from gym import spaces
 import pygame
+import parameters
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
@@ -25,46 +26,7 @@ class GridWorldEnv(gym.Env):
         self.observation_space = spaces.Dict(elements)
 
         ### REWARD PARAMETERS ###
-        self.reward_parameters = {
-            # 'field_of_view': 5,  # see min_collision_distance
-            # 'collision_weight': 0.3,
-            # 'time_weight': 1,
-            # the above are not used in the current version which is sparse reward based
-
-            'action_step_scaling': 1,  # 1 step -> "2" grids of movement reach in x and y directions
-            ### DENSE REWARDS ###
-            'obstacle_avoidance': False,
-            'obstacle_distance_weight': -0,
-            'target_seeking': False,
-            'target_distance_weight': 1,
-
-            ### SPARSE REWARDS ###
-            'target_value': 10,
-            'collision_value': -50,
-
-            ### SUB-SPARSE REWARDS ###
-            'checkpoints': False,  # if true, use checkpoints rewards
-            'checkpoint_distance_proportion': 0.0,
-            'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
-            'checkpoint_value': 0.0,  # make sure checkpoint_value * checkpoint_number < 1
-
-            'time': False,  # if true, use time rewards
-            'time_penalty': 0,  # == penalty of -1 for "100" action steps
-
-            'history_size': 20,  # size of history to check for waiting and consistency
-
-            'waiting': False,  # if true, use waiting rewards # TODO: implement action history in step()
-            'waiting_value': 0.0,  # make sure waiting_value < 1
-            'max_waiting_steps': 20,  # make sure < history_size, punishment for waiting too long
-            # threshold
-
-            'consistency': False,  # if true, use consistency rewards # TODO: implement action history in step()
-            'consistency_step_number': 0,  # make sure consistency_step_number < history_size
-            'consistency_value': 0.0,  # make sure consistency_value * consistency_step_number < 1
-            # threshold
-
-            # fast moving etc. for sub actions for sparse rewards
-        }
+        self.reward_parameters = parameters.reward_parameters
 
         # TODO action space should be continuous now its bounded in [-3, 3]
         self.action_space = spaces.Discrete(4)  # Continuous 3 see gym examples
@@ -106,6 +68,7 @@ class GridWorldEnv(gym.Env):
             elements.update({"obstacle_{0}".format(idx_obstacle): self._obstacle_locations[str(idx_obstacle)]})
         return elements
 
+
     def _get_info(self):
         distances = {"distance_to_target":
                          np.linalg.norm(self._agent_location - self._target_location, ord=1)}
@@ -115,6 +78,8 @@ class GridWorldEnv(gym.Env):
                                   np.linalg.norm(self._agent_location - self._obstacle_locations[str(idx_obstacle)],
                                                  ord=1)})
         return distances
+
+
 
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random

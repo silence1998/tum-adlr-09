@@ -9,7 +9,11 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.distributions.normal import Normal
 
+import parameters
+
+
 torch.manual_seed(3407)
+iter_counter = 1
 
 class ReplayMemory(object):  # a memory buffer to store transitions
 
@@ -136,7 +140,10 @@ class ActorNetwork(nn.Module):
         mu = self.mu(prob)
         sigma = self.sigma(prob)  # log_std
 
+        #global iter_counter
         sigma = torch.clamp(sigma, min=self.reparam_noise, max=2)  # TODO: decaying sigma
+        #sigma = torch.clamp(sigma, min=self.reparam_noise, max=2/iter_counter)
+        #iter_counter += 1/parameters.hyper_parameters['batch_size']
 
         return mu, sigma
 

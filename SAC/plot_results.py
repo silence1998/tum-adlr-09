@@ -28,12 +28,15 @@ torch.load(model_path + "criticNet_2.pt", map_location=device)
 torch.load(model_path + "target_valueNet.pt", map_location=device)
 
 steps_done = 0
+seed_init_value = 3407
+seed = seed_init_value
 
 # env=GridWorldEnv(render_mode="human")
 i = 0
-while i < 3:  # run plot for 3 episodes to see what it learned
+while i < 10:  # run plot for 3 episodes to see what it learned
     i += 1
-    env.reset()
+    env.reset(seed=seed)
+    seed = seed + 1
     obs = env._get_obs()
 
     obs_values = [obs["agent"], obs["target"]]
