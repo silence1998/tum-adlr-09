@@ -49,12 +49,12 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)
 
-    if not len(memory) < hyper_parameters["batch_size"]:
-        ### Calculate average sigma per batch
-        mu, sigma = actorNet.forward(state_batch)
-        global average_sigma_per_batch
-        average_sigma_per_batch.append(
-            np.mean(sigma.detach().cpu().numpy(), axis=0))  # mean of sigma of the current batch
+    # if not len(memory) < hyper_parameters["batch_size"]:
+    #     ### Calculate average sigma per batch
+    #     mu, sigma = actorNet.forward(state_batch)
+    #     global average_sigma_per_batch
+    #     average_sigma_per_batch.append(
+    #         np.mean(sigma.detach().cpu().numpy(), axis=0))  # mean of sigma of the current batch
 
     value = valueNet(state_batch).view(-1)  # infer size of batch
     value_ = torch.zeros(hyper_parameters["batch_size"], device=device)
@@ -69,7 +69,7 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     critic_value = critic_value.view(-1)  # rhs SpinningUP SAC PC: line 12 big ()
 
     valueNet.optimizer.zero_grad()
-    value_target = critic_value - log_probs
+    value_target = critic_value - hyper_parameters['entropy_factor'] * log_probs
     value_loss = 0.5 * F.mse_loss(value, value_target)
     value_loss.backward(retain_graph=True)
     valueNet.optimizer.step()
@@ -83,7 +83,7 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     critic_value = torch.min(q1_new_policy, q2_new_policy)
     critic_value = critic_value.view(-1)
 
-    actor_loss = log_probs - critic_value
+    actor_loss = hyper_parameters['entropy_factor'] * log_probs - critic_value
     actor_loss = torch.mean(actor_loss)
 
     wandb.log({"actor_loss": actor_loss})
@@ -168,9 +168,10 @@ hyper_parameters = {
     'alpha': 0.0003,  # learning rate for actor
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
-    'num_episodes': 150,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'entropy_factor': 0.5,
+    'num_episodes': 250,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'pretrain': True,
-    'num_episodes_pretrain': 150
+    'num_episodes_pretrain': 500
 }
 wandb_dict = {}
 wandb_dict.update(env_parameters)
@@ -254,7 +255,7 @@ if __name__ == "__main__":
         for i_episode in range(hyper_parameters['num_episodes_pretrain']):
             # Initialize the environment and state
             seed += 1
-            env.reset(seed=seed)
+            env.reset()
             obs = env._get_obs()
             obs_values = [obs["agent"], obs["target"]]
             for idx_obstacle in range(env_parameters['num_obstacles']):
@@ -303,9 +304,9 @@ if __name__ == "__main__":
                 optimize_model()
                 if done:
                     episode_durations.append(t + 1)
-                    # plot_durations()
-                    if not len(memory) < hyper_parameters["batch_size"]:
-                        plot_sigma()
+                    plot_durations()
+                    # if not len(memory) < hyper_parameters["batch_size"]:
+                    #     plot_sigma()
                     break
             # Update the target network, using tau
             if t != len(actions):
@@ -330,7 +331,7 @@ if __name__ == "__main__":
         # Initialize the environment and state
         seed = seed + 1
         print(seed)
-        env.reset(seed=seed)
+        env.reset()
         obs = env._get_obs()
 
         obs_values = [obs["agent"], obs["target"]]
@@ -369,10 +370,10 @@ if __name__ == "__main__":
             optimize_model()
             if done:
                 episode_durations.append(t + 1)
-                # plot_durations()
+                plot_durations()
 
-                if not len(memory) < hyper_parameters["batch_size"]:
-                    plot_sigma()
+                # if not len(memory) < hyper_parameters["batch_size"]:
+                #     plot_sigma()
 
                 break
         # Update the target network, using tau
@@ -406,3 +407,55 @@ if __name__ == "__main__":
     torch.save(criticNet_2.state_dict(), model_path + "criticNet_2.pt")
     torch.save(target_valueNet.state_dict(), model_path + "target_valueNet.pt")
     print("torch.save")
+
+    env.render_mode = "human"
+
+
+    i = 0
+    while True:  # run plot for 3 episodes to see what it learned
+        i += 1
+        env.reset()
+        obs = env._get_obs()
+
+        obs_values = [obs["agent"], obs["target"]]
+        for idx_obstacle in range(env_parameters['num_obstacles']):
+            obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+        state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
+
+        state = state.view(1, -1)
+        for t in count():
+            # Select and perform an action
+            action = select_action(state, actorNet)
+            _, reward, done, _, _ = env.step(action)
+
+            action_ = torch.tensor(action, dtype=torch.float, device=device)
+            action_ = action_.view(1, 2)
+            mu, sigma = actorNet(state)
+            print(actorNet(state))
+            print(criticNet_1(state, action_))
+            print(criticNet_2(state, action_))
+            print(target_valueNet(state))
+
+            reward = torch.tensor([reward], device=device)
+            env._render_frame()
+            # Observe new state
+            obs = env._get_obs()
+            if not done:
+                obs_values = [obs["agent"], obs["target"]]
+                for idx_obstacle in range(env_parameters['num_obstacles']):
+                    obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+                next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
+
+                next_state = next_state.view(1, -1)
+            else:
+                next_state = None
+
+            # Store the transition in memory
+            memory.push(state, action, next_state, reward)
+
+            # Move to the next state
+            state = next_state
+            if done:
+                break
+
+

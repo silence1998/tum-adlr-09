@@ -136,7 +136,7 @@ class ActorNetwork(nn.Module):
         mu = self.mu(prob)
         sigma = self.sigma(prob)  # log_std
 
-        sigma = torch.clamp(sigma, min=self.reparam_noise, max=2)  # TODO: decaying sigma
+        sigma = torch.clamp(sigma, min=self.reparam_noise, max=0.5)  # TODO: decaying sigma
 
         return mu, sigma
 
@@ -163,3 +163,7 @@ class ActorNetwork(nn.Module):
 
     def load_checkpoint(self):
         self.load_state_dict(torch.load(self.checkpoint_file))
+
+
+
+

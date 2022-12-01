@@ -8,7 +8,7 @@ from model import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
+#env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
 
 env.render_mode = "human"
 
@@ -31,7 +31,7 @@ steps_done = 0
 
 # env=GridWorldEnv(render_mode="human")
 i = 0
-while i < 3:  # run plot for 3 episodes to see what it learned
+while True:  # run plot for 3 episodes to see what it learned
     i += 1
     env.reset()
     obs = env._get_obs()
