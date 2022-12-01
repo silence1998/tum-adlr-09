@@ -155,8 +155,8 @@ def plot_sigma():
 # initialize hyper-parameters
 
 env_parameters = {
-    'num_obstacles': 1,
-    'env_size': 10  # size of the environment
+    'num_obstacles': 5,
+    'env_size': 20  # size of the environment
 }
 env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
 
