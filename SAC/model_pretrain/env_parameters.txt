@@ -1,0 +1,1 @@
+{"num_obstacles": 1, "env_size": 10}

@@ -263,7 +263,7 @@ class ReplayMemory(object):  # a memory buffer to store transitions
 
 
 class CriticNetwork(nn.Module):
-    def __init__(self, beta, input_dims, n_actions, fc1_dims=128, fc2_dims=54,
+    def __init__(self, beta, input_dims, n_actions, fc1_dims=128, fc2_dims=64,
                  name='critic', chkpt_dir='tmp/sac'):
         super(CriticNetwork, self).__init__()
         self.input_dims = input_dims
@@ -397,6 +397,8 @@ class ActorNetwork(nn.Module):
         self.load_state_dict(torch.load(self.checkpoint_file))
 
 
+alpha_entropy = 0.5
+
 def optimize_model():
     if len(memory) < BATCH_SIZE:  # if memory is not full enough to start traning, return
         return
@@ -428,7 +430,7 @@ def optimize_model():
     critic_value = critic_value.view(-1)
 
     valueNet.optimizer.zero_grad()
-    value_target = critic_value - log_probs
+    value_target = critic_value - alpha_entropy * log_probs
     value_loss = 0.5 * F.mse_loss(value, value_target)
     value_loss.backward(retain_graph=True)
     valueNet.optimizer.step()
@@ -440,7 +442,7 @@ def optimize_model():
     critic_value = torch.min(q1_new_policy, q2_new_policy)
     critic_value = critic_value.view(-1)
 
-    actor_loss = log_probs - critic_value
+    actor_loss = alpha_entropy * log_probs - critic_value
     actor_loss = torch.mean(actor_loss)
     print(actor_loss)
     actorNet.optimizer.zero_grad()
@@ -609,7 +611,7 @@ for i_episode in range(num_episodes):
 
 print('Pretrain complete')
 
-num_episodes = 150
+num_episodes = 250
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     env.reset()
