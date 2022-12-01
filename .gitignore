@@ -4,6 +4,7 @@
 
 # ignore models .log files
 /SAC/model/
+/SAC/model_pretrain/
 /SAC-X/model/
 /SAC/model_with_astar/
 SAC/__pycache__/
