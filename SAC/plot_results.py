@@ -31,7 +31,7 @@ seed = feature_parameters['seed_init_value']
 
 # env=GridWorldEnv(render_mode="human")
 i = 0
-while i < 10:  # run plot for 3 episodes to see what it learned
+while True:  # run plot for 3 episodes to see what it learned
     i += 1
     env.reset(seed=seed)
     obs = env._get_obs()

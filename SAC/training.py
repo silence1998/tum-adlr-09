@@ -66,12 +66,12 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)
 
-    if not len(memory) < hyper_parameters["batch_size"]:
-        ### Calculate average sigma per batch
-        mu, sigma = actorNet.forward(state_batch)
-        global average_sigma_per_batch
-        average_sigma_per_batch.append(
-            np.mean(sigma.detach().cpu().numpy(), axis=0))  # mean of sigma of the current batch
+    # if not len(memory) < hyper_parameters["batch_size"]:
+    #     ### Calculate average sigma per batch
+    #     mu, sigma = actorNet.forward(state_batch)
+    #     global average_sigma_per_batch
+    #     average_sigma_per_batch.append(
+    #         np.mean(sigma.detach().cpu().numpy(), axis=0))  # mean of sigma of the current batch
 
     value = valueNet(state_batch).view(-1)  # infer size of batch
     value_ = torch.zeros(hyper_parameters["batch_size"], device=device)
@@ -100,7 +100,7 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     critic_value = torch.min(q1_new_policy, q2_new_policy)
     critic_value = critic_value.view(-1)
 
-    actor_loss = log_probs - critic_value
+    actor_loss = hyper_parameters['entropy_factor'] * log_probs - critic_value
     actor_loss = torch.mean(actor_loss)
 
     wandb.log({"actor_loss": actor_loss})
@@ -348,9 +348,9 @@ if __name__ == "__main__":
                 optimize_model()
                 if done:
                     episode_durations.append(t + 1)
-                    # plot_durations()
-                    if not len(memory) < hyper_parameters["batch_size"]:
-                        plot_sigma()
+                    plot_durations()
+                    # if not len(memory) < hyper_parameters["batch_size"]:
+                    #     plot_sigma()
                     break
             # Update the target network, using tau
             if t != len(actions):
@@ -435,7 +435,7 @@ if __name__ == "__main__":
                                      (1 - hyper_parameters["tau"]) * target_value_state_dict[name].clone()
         target_valueNet.load_state_dict(value_state_dict)
 
-    print('Completed Training')
+    print('Complete')
 
     save_models()
 
