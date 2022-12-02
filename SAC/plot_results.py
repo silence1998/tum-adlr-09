@@ -4,11 +4,10 @@ from itertools import count
 
 from environment import GridWorldEnv
 from training import *
-from model import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
+#env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
 
 env.render_mode = "human"
 
@@ -18,8 +17,8 @@ actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_mod
 
 # Load the model
 # TODO: Select model to load
-model_path = "model_pretrain/"
-#model_path = "model/"
+#model_path = "model_pretrain/"
+model_path = "model/"
 
 # load model
 torch.load(model_path + "actor.pt", map_location=device)
@@ -28,15 +27,13 @@ torch.load(model_path + "criticNet_2.pt", map_location=device)
 torch.load(model_path + "target_valueNet.pt", map_location=device)
 
 steps_done = 0
-seed_init_value = 3407
-seed = seed_init_value
+seed = feature_parameters['seed_init_value']
 
 # env=GridWorldEnv(render_mode="human")
 i = 0
 while i < 10:  # run plot for 3 episodes to see what it learned
     i += 1
     env.reset(seed=seed)
-    seed = seed + 1
     obs = env._get_obs()
 
     obs_values = [obs["agent"], obs["target"]]

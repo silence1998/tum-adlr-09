@@ -69,14 +69,13 @@ class GridWorldEnv(gym.Env):
         return elements
 
 
-    def _get_info(self):
+    def _get_info(self):  # not used!!
         distances = {"distance_to_target":
                          np.linalg.norm(self._agent_location - self._target_location, ord=1)}
         # ord=1: max(sum(abs(x), axis=0))
         for idx_obstacle in range(self.num_obstacles):
             distances.update({"distance_to_obstacle_{0}".format(idx_obstacle):
-                                  np.linalg.norm(self._agent_location - self._obstacle_locations[str(idx_obstacle)],
-                                                 ord=1)})
+                                  np.linalg.norm(self._agent_location - self._obstacle_locations[str(idx_obstacle)], ord=1)})
         return distances
 
 

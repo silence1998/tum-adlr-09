@@ -8,13 +8,26 @@ hyper_parameters = {
     'batch_size': 512,
     'gamma': 0.999,  # discount factor
     'target_update': 10,  # update target network every 10 episodes TODO: UNUSED if code for now
-    'entropy_factor': 0.5,  # entropy factor
     'alpha': 0.0003,  # learning rate for actor
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
-    'num_episodes': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
-    'pretrain': False,
-    'num_episodes_pretrain': 150  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'entropy_factor': 0.5,  # entropy factor
+    'num_episodes': 70,  # set min 70 for tests as some parts of code starts after ~40 episodes
+}
+
+feature_parameters = {
+    'pretrain': False,  # pretrain the model
+    'num_episodes_pretrain': 500,  # set min 70 for tests as some parts of code starts after ~40 episodes
+
+    'select_action_filter': False,  # filter actions to be directed towards target
+
+    'sort_obstacles': False,  # sort obstacles by distance to target
+
+    'apply_environment_seed': False,  # apply seed to environment to have comparable results
+    'seed_init_value': 3407,
+
+    'plot_durations': True,  # plot durations of episodes
+    'plot_sigma': False  # plot sigma of actor
 }
 
 reward_parameters = {
@@ -36,23 +49,23 @@ reward_parameters = {
 
     ### SUB-SPARSE REWARDS ###
     'checkpoints': False,  # if true, use checkpoints rewards
-    'checkpoint_distance_proportion': 0.0,
+    'checkpoint_distance_proportion': 1.0,
     'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
-    'checkpoint_value': 0.0,  # make sure checkpoint_value * checkpoint_number < 1
+    'checkpoint_value': 1.0,  # make sure checkpoint_value * checkpoint_number < 1
 
     'time': False,  # if true, use time rewards
-    'time_penalty': 0,  # == penalty of -1 for "100" action steps
+    'time_penalty': 1,  # == penalty of -1 for "100" action steps
 
     'history_size': 20,  # size of history to check for waiting and consistency
 
     'waiting': False,  # if true, use waiting rewards # TODO: implement action history in step()
-    'waiting_value': 0.0,  # make sure waiting_value < 1
+    'waiting_value': 1.0,  # make sure waiting_value < 1
     'max_waiting_steps': 20,  # make sure < history_size, punishment for waiting too long
     # threshold
 
     'consistency': False,  # if true, use consistency rewards # TODO: implement action history in step()
-    'consistency_step_number': 0,  # make sure consistency_step_number < history_size
-    'consistency_value': 0.0,  # make sure consistency_value * consistency_step_number < 1
+    'consistency_step_number': 1,  # make sure consistency_step_number < history_size
+    'consistency_value': 1.0,  # make sure consistency_value * consistency_step_number < 1
     # threshold
 
     # fast moving etc. for sub actions for sparse rewards

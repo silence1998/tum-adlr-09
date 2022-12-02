@@ -9,6 +9,7 @@ import numpy as np
 import json
 import matplotlib.pyplot as plt
 from itertools import count
+import time
 
 import torch
 import torch.nn.functional as F
@@ -34,6 +35,7 @@ Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'
 env_parameters = parameters.env_parameters
 env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
 hyper_parameters = parameters.hyper_parameters
+feature_parameters = parameters.feature_parameters
 
 wandb_dict = {}
 wandb_dict.update(env_parameters)
@@ -102,7 +104,9 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     actor_loss = torch.mean(actor_loss)
 
     wandb.log({"actor_loss": actor_loss})
-    print(str(i_episode) + "-actor_loss: " + str(actor_loss.detach().cpu().numpy()))
+    print(str(i_episode) + " - " + str(actor_loss))
+    #print(str(i_episode) + "-actor_loss: " + str(actor_loss.detach().cpu().numpy()))
+    # too slow to switch to cpu everytime
 
     actorNet.optimizer.zero_grad()
     actor_loss.backward(retain_graph=True)
@@ -187,6 +191,17 @@ def select_action_filter(state, actorNet):
     return actions.cpu().detach().numpy()[0]
 
 
+def action_selection(state, actorNet):
+    if feature_parameters['select_action_filter']:
+        if len(episode_durations) < 100:
+            action = select_action(state, actorNet)
+        else:
+            action = select_action_filter(state, actorNet)
+    else:
+        action = select_action(state, actorNet)
+    return action
+
+
 def select_action_A_star(state):
     size = env.size
     grid = np.zeros((size, size))
@@ -225,7 +240,7 @@ def obstacle_sort(obs):
 
 
 def save_models():
-    if hyper_parameters['pretrain']:
+    if feature_parameters['pretrain']:
         model_path = "model_pretrain/"
     else:
         model_path = "model/"
@@ -273,16 +288,18 @@ if __name__ == "__main__":
 
     episode_durations = []
     average_sigma_per_batch = []
-    seed_init_value = 3407
-    seed = seed_init_value
+    seed = feature_parameters['seed_init_value']
 
     print("Testing random seed: " + str(torch.rand(2)))
 
-    if hyper_parameters['pretrain']:
-        for i_episode in range(hyper_parameters['num_episodes_pretrain']):
+    if feature_parameters['pretrain']:
+        for i_episode in range(feature_parameters['num_episodes_pretrain']):
             # Initialize the environment and state
-            env.reset(seed=seed)
-            seed += 1
+            if feature_parameters['apply_environment_seed']:
+                env.reset(seed=seed)
+                seed += 1
+            else:
+                env.reset()
             obs = env._get_obs()
             obs_values = [obs["agent"], obs["target"]]
             for idx_obstacle in range(env_parameters['num_obstacles']):
@@ -297,7 +314,6 @@ if __name__ == "__main__":
                 print("error: doesn't find a path")
                 continue
             t = 0
-            actual_path = []
             for action in actions:
                 # Select and perform an action
                 t += 1
@@ -308,11 +324,11 @@ if __name__ == "__main__":
                 # Observe new state
                 obs = env._get_obs()
                 if not done:
-                    actual_path.append(obs["agent"])
+                    if feature_parameters['sort_obstacles']:
+                        obs = obstacle_sort(obs)
                     obs_values = [obs["agent"], obs["target"]]
                     for idx_obstacle in range(env_parameters['num_obstacles']):
                         obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-                    obs_values = obstacle_sort(obs_values)
                     next_state = torch.tensor(np.array(obs_values).reshape(-1),
                                               dtype=torch.float,
                                               device=device)
@@ -350,15 +366,16 @@ if __name__ == "__main__":
                                          (1 - hyper_parameters['tau']) * target_value_state_dict[name].clone()
             target_valueNet.load_state_dict(value_state_dict)
 
-        # model_path = "model_with_astar/"
         print('Pretrain complete')
 
-    seed = seed_init_value
+    seed = feature_parameters['seed_init_value']
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
-        #print("Episode: " + str(len(episode_durations)))
         # Initialize the environment and state
-        env.reset(seed=seed)
-        seed = seed + 1
+        if feature_parameters['apply_environment_seed']:
+            env.reset(seed=seed)
+            seed += 1
+        else:
+            env.reset()
         obs = env._get_obs()
 
         obs_values = [obs["agent"], obs["target"]]
@@ -369,17 +386,15 @@ if __name__ == "__main__":
         state = state.view(1, -1)
         for t in count():  # every step of the environment
             # Select and perform an action
-            #if i_episode < 100:
-            action = select_action(state, actorNet)
-            #else:
-            #    action = select_action_filter(state, actorNet)
+            action = action_selection(state, actorNet)
             _, reward, done, _, _ = env.step(action)
             reward = torch.tensor([reward], dtype=torch.float, device=device)
 
             # Observe new state
             obs = env._get_obs()
             if not done:
-                obs = obstacle_sort(obs)
+                if feature_parameters['sort_obstacles']:
+                    obs = obstacle_sort(obs)
                 obs_values = [obs["agent"], obs["target"]]
                 for idx_obstacle in range(env_parameters['num_obstacles']):
                     obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
@@ -401,10 +416,11 @@ if __name__ == "__main__":
             optimize_model()
             if done:
                 episode_durations.append(t + 1)
-                # plot_durations()
-
-                if not len(memory) < hyper_parameters["batch_size"]:
-                    plot_sigma()
+                if feature_parameters['plot_durations']:
+                    plot_durations()
+                if feature_parameters['plot_sigma']:
+                    if not len(memory) < hyper_parameters["batch_size"]:
+                        plot_sigma()
 
                 break
         # Update the target network, using tau
@@ -422,3 +438,51 @@ if __name__ == "__main__":
     print('Completed Training')
 
     save_models()
+
+    i = 0
+    while True:  # run plot for 3 episodes to see what it learned
+        i += 1
+        time.sleep(1) # wait for 1 second
+        env.reset(seed=seed)
+        obs = env._get_obs()
+
+        obs_values = [obs["agent"], obs["target"]]
+        for idx_obstacle in range(env_parameters['num_obstacles']):
+            obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+        state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
+
+        state = state.view(1, -1)
+        for t in count():
+            # Select and perform an action
+            action = select_action(state, actorNet)
+            _, reward, done, _, _ = env.step(action)
+
+            action_ = torch.tensor(action, dtype=torch.float, device=device)
+            action_ = action_.view(1, 2)
+            mu, sigma = actorNet(state)
+            print(actorNet(state))
+            print(criticNet_1(state, action_))
+            print(criticNet_2(state, action_))
+            print(target_valueNet(state))
+
+            reward = torch.tensor([reward], device=device)
+            env._render_frame()
+            # Observe new state
+            obs = env._get_obs()
+            if not done:
+                obs_values = [obs["agent"], obs["target"]]
+                for idx_obstacle in range(env_parameters['num_obstacles']):
+                    obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+                next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
+
+                next_state = next_state.view(1, -1)
+            else:
+                next_state = None
+
+            # Store the transition in memory
+            memory.push(state, action, next_state, reward)
+
+            # Move to the next state
+            state = next_state
+            if done:
+                break
