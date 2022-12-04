@@ -9,39 +9,22 @@ import numpy as np
 import json
 import matplotlib.pyplot as plt
 from itertools import count
-import time
+from collections import namedtuple
 
 import torch
+import torch.nn as nn
+import torch.optim as optim
 import torch.nn.functional as F
 
-from model import *
-from environment import *
+
+
+from model import ActorNetwork, CriticNetwork, ValueNetwork, ReplayMemory
+from environment import GridWorldEnv
 
 import A_star.algorithm
 import parameters
 
 import wandb
-
-wandb.init(project="SAC", entity="tum-adlr-09")
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-
-Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
-
-# initialize hyper-parameters
-
-env_parameters = parameters.env_parameters
-env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
-hyper_parameters = parameters.hyper_parameters
-feature_parameters = parameters.feature_parameters
-
-wandb_dict = {}
-wandb_dict.update(env_parameters)
-wandb_dict.update(hyper_parameters)
-print("dict: " + str(wandb_dict))
-wandb.config.update(wandb_dict)
 
 
 def optimize_model():  # SpinningUP SAC PC: lines 12-14
@@ -276,8 +259,28 @@ def init_model():
 
     return actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory
 
+# initialize hyper-parameters
+hyper_parameters = parameters.hyper_parameters
+feature_parameters = parameters.feature_parameters
+env_parameters = parameters.env_parameters
 
 if __name__ == "__main__":
+
+    wandb.init(project="SAC", entity="tum-adlr-09")
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
+
+
+    env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
+
+
+    wandb_dict = {}
+    wandb_dict.update(env_parameters)
+    wandb_dict.update(hyper_parameters)
+    print("dict: " + str(wandb_dict))
+    wandb.config.update(wandb_dict)
 
     actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
     wandb.watch(actorNet)
@@ -438,51 +441,3 @@ if __name__ == "__main__":
     print('Complete')
 
     save_models()
-
-    i = 0
-    while True:  # run plot for 3 episodes to see what it learned
-        i += 1
-        time.sleep(1) # wait for 1 second
-        env.reset(seed=seed)
-        obs = env._get_obs()
-
-        obs_values = [obs["agent"], obs["target"]]
-        for idx_obstacle in range(env_parameters['num_obstacles']):
-            obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-        state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
-
-        state = state.view(1, -1)
-        for t in count():
-            # Select and perform an action
-            action = select_action(state, actorNet)
-            _, reward, done, _, _ = env.step(action)
-
-            action_ = torch.tensor(action, dtype=torch.float, device=device)
-            action_ = action_.view(1, 2)
-            mu, sigma = actorNet(state)
-            print(actorNet(state))
-            print(criticNet_1(state, action_))
-            print(criticNet_2(state, action_))
-            print(target_valueNet(state))
-
-            reward = torch.tensor([reward], device=device)
-            env._render_frame()
-            # Observe new state
-            obs = env._get_obs()
-            if not done:
-                obs_values = [obs["agent"], obs["target"]]
-                for idx_obstacle in range(env_parameters['num_obstacles']):
-                    obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-                next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
-
-                next_state = next_state.view(1, -1)
-            else:
-                next_state = None
-
-            # Store the transition in memory
-            memory.push(state, action, next_state, reward)
-
-            # Move to the next state
-            state = next_state
-            if done:
-                break

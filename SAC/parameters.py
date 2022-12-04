@@ -12,11 +12,11 @@ hyper_parameters = {
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
-    'num_episodes': 70,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 250,  # set min 70 for tests as some parts of code starts after ~40 episodes
 }
 
 feature_parameters = {
-    'pretrain': False,  # pretrain the model
+    'pretrain': True,  # pretrain the model
     'num_episodes_pretrain': 500,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
     'select_action_filter': False,  # filter actions to be directed towards target
@@ -27,7 +27,7 @@ feature_parameters = {
     'seed_init_value': 3407,
 
     'plot_durations': True,  # plot durations of episodes
-    'plot_sigma': False  # plot sigma of actor
+    'plot_sigma': True  # plot sigma of actor
 }
 
 reward_parameters = {
