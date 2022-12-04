@@ -156,7 +156,7 @@ def plot_sigma():
 
 env_parameters = {
     'num_obstacles': 5,
-    'env_size': 20  # size of the environment
+    'env_size': 10  # size of the environment
 }
 env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
 
@@ -411,51 +411,51 @@ if __name__ == "__main__":
     env.render_mode = "human"
 
 
-    i = 0
-    while True:  # run plot for 3 episodes to see what it learned
-        i += 1
-        env.reset()
-        obs = env._get_obs()
-
-        obs_values = [obs["agent"], obs["target"]]
-        for idx_obstacle in range(env_parameters['num_obstacles']):
-            obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-        state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
-
-        state = state.view(1, -1)
-        for t in count():
-            # Select and perform an action
-            action = select_action(state, actorNet)
-            _, reward, done, _, _ = env.step(action)
-
-            action_ = torch.tensor(action, dtype=torch.float, device=device)
-            action_ = action_.view(1, 2)
-            mu, sigma = actorNet(state)
-            print(actorNet(state))
-            print(criticNet_1(state, action_))
-            print(criticNet_2(state, action_))
-            print(target_valueNet(state))
-
-            reward = torch.tensor([reward], device=device)
-            env._render_frame()
-            # Observe new state
-            obs = env._get_obs()
-            if not done:
-                obs_values = [obs["agent"], obs["target"]]
-                for idx_obstacle in range(env_parameters['num_obstacles']):
-                    obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-                next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
-
-                next_state = next_state.view(1, -1)
-            else:
-                next_state = None
-
-            # Store the transition in memory
-            memory.push(state, action, next_state, reward)
-
-            # Move to the next state
-            state = next_state
-            if done:
-                break
+    # i = 0
+    # while True:  # run plot for 3 episodes to see what it learned
+    #     i += 1
+    #     env.reset()
+    #     obs = env._get_obs()
+    #
+    #     obs_values = [obs["agent"], obs["target"]]
+    #     for idx_obstacle in range(env_parameters['num_obstacles']):
+    #         obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+    #     state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
+    #
+    #     state = state.view(1, -1)
+    #     for t in count():
+    #         # Select and perform an action
+    #         action = select_action(state, actorNet)
+    #         _, reward, done, _, _ = env.step(action)
+    #
+    #         action_ = torch.tensor(action, dtype=torch.float, device=device)
+    #         action_ = action_.view(1, 2)
+    #         mu, sigma = actorNet(state)
+    #         print(actorNet(state))
+    #         print(criticNet_1(state, action_))
+    #         print(criticNet_2(state, action_))
+    #         print(target_valueNet(state))
+    #
+    #         reward = torch.tensor([reward], device=device)
+    #         env._render_frame()
+    #         # Observe new state
+    #         obs = env._get_obs()
+    #         if not done:
+    #             obs_values = [obs["agent"], obs["target"]]
+    #             for idx_obstacle in range(env_parameters['num_obstacles']):
+    #                 obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+    #             next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
+    #
+    #             next_state = next_state.view(1, -1)
+    #         else:
+    #             next_state = None
+    #
+    #         # Store the transition in memory
+    #         memory.push(state, action, next_state, reward)
+    #
+    #         # Move to the next state
+    #         state = next_state
+    #         if done:
+    #             break
 
 
