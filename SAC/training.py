@@ -254,6 +254,7 @@ if __name__ == "__main__":
 
     if hyper_parameters['pretrain']:
         for i_episode in range(hyper_parameters['num_episodes_pretrain']):
+            print("Pretrain episode: " + str(i_episode))
             seed += 1
             # Initialize the environment and state
             env.reset()
@@ -341,7 +342,7 @@ if __name__ == "__main__":
 
     seed = seed_init_value
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
-        print("Episode: " + str(len(episode_durations)))
+        print("Normal training episode: " + str(i_episode))
         # Initialize the environment and state
         seed = seed + 1
         print(seed)

@@ -5,7 +5,8 @@
 
 - get the gCloud VM instance command from and ssh in to the VM
 ```
-gcloud compute ssh --zone "us-west1-b" "instance-1" --project "tum-adlr-09"
+gcloud compute ssh --zone "europe-west1-b" "i2-n2-std-2vcpu-8gbmemory-ubuntu2004-size64gb-spot-0-03usd-h"  --project "tum-adlr-09"
+gcloud compute ssh --zone "europe-west1-b" "instance-2" --project "tum-adlr-09"
 ```
 
 - https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
@@ -38,3 +39,11 @@ pip install torch
 pip install gym
 pip install wandb
 ```
+
+- exit ssh via Ctrl+D or
+```
+exit
+```
+
+- tmux useful shortcuts
+- 
