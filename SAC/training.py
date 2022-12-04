@@ -325,12 +325,14 @@ if __name__ == "__main__":
                                          (1 - hyper_parameters['tau']) * target_value_state_dict[name].clone()
             target_valueNet.load_state_dict(value_state_dict)
 
-            if i_episode//25 == 0:
+            if i_episode % 25 == 0:
                 actorNet.save_checkpoint()
                 criticNet_1.save_checkpoint()
                 criticNet_2.save_checkpoint()
                 valueNet.save_checkpoint()
                 target_valueNet.save_checkpoint()
+                with open('tmp/sac/i_episode_pretrain.txt', 'w+') as file:
+                    file.write(json.dumps(i_episode))
                 # print("checkpoint saved")
 
 
@@ -406,6 +408,8 @@ if __name__ == "__main__":
             criticNet_2.save_checkpoint()
             valueNet.save_checkpoint()
             target_valueNet.save_checkpoint()
+            with open('tmp/sac/i_episode.txt', 'w+') as file:
+                file.write(json.dumps(i_episode))
 
     print('Complete')
 
