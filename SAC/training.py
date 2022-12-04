@@ -170,7 +170,7 @@ hyper_parameters = {
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,
-    'num_episodes': 1000,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 5000,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'pretrain': True,
     'num_episodes_pretrain': 2000
 }
