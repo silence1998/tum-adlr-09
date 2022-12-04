@@ -87,7 +87,7 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     actor_loss = torch.mean(actor_loss)
 
     wandb.log({"actor_loss": actor_loss})
-    print(actor_loss)
+    # print(actor_loss)
 
     actorNet.optimizer.zero_grad()
     actor_loss.backward(retain_graph=True)
@@ -156,7 +156,7 @@ def plot_sigma():
 
 env_parameters = {
     'num_obstacles': 5,
-    'env_size': 10  # size of the environment
+    'env_size': 20  # size of the environment
 }
 env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
 
@@ -169,9 +169,9 @@ hyper_parameters = {
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,
-    'num_episodes': 250,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 1000,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'pretrain': True,
-    'num_episodes_pretrain': 500
+    'num_episodes_pretrain': 2000
 }
 wandb_dict = {}
 wandb_dict.update(env_parameters)
@@ -253,8 +253,8 @@ if __name__ == "__main__":
 
     if hyper_parameters['pretrain']:
         for i_episode in range(hyper_parameters['num_episodes_pretrain']):
-            # Initialize the environment and state
             seed += 1
+            # Initialize the environment and state
             env.reset()
             obs = env._get_obs()
             obs_values = [obs["agent"], obs["target"]]
@@ -304,13 +304,15 @@ if __name__ == "__main__":
                 optimize_model()
                 if done:
                     episode_durations.append(t + 1)
-                    plot_durations()
-                    # if not len(memory) < hyper_parameters["batch_size"]:
-                    #     plot_sigma()
+                    # plot_durations()
+                    if not len(memory) < hyper_parameters["batch_size"]:
+                        plot_sigma()
                     break
             # Update the target network, using tau
             if t != len(actions):
                 print("error: actual step is not equal to precalculated steps")
+
+
             target_value_params = target_valueNet.named_parameters()
             value_params = valueNet.named_parameters()
 
@@ -321,6 +323,15 @@ if __name__ == "__main__":
                 value_state_dict[name] = hyper_parameters['tau'] * value_state_dict[name].clone() + \
                                          (1 - hyper_parameters['tau']) * target_value_state_dict[name].clone()
             target_valueNet.load_state_dict(value_state_dict)
+
+            if i_episode//25 == 0:
+                actorNet.save_checkpoint()
+                criticNet_1.save_checkpoint()
+                criticNet_2.save_checkpoint()
+                valueNet.save_checkpoint()
+                target_valueNet.save_checkpoint()
+                # print("checkpoint saved")
+
 
         # model_path = "model_with_astar/"
         print('Pretrain complete')
@@ -370,10 +381,10 @@ if __name__ == "__main__":
             optimize_model()
             if done:
                 episode_durations.append(t + 1)
-                plot_durations()
+                # plot_durations()
 
-                # if not len(memory) < hyper_parameters["batch_size"]:
-                #     plot_sigma()
+                if not len(memory) < hyper_parameters["batch_size"]:
+                    plot_sigma()
 
                 break
         # Update the target network, using tau
@@ -387,6 +398,13 @@ if __name__ == "__main__":
             value_state_dict[name] = hyper_parameters["tau"] * value_state_dict[name].clone() + \
                                      (1 - hyper_parameters["tau"]) * target_value_state_dict[name].clone()
         target_valueNet.load_state_dict(value_state_dict)
+
+        if i_episode // 25 == 0:
+            actorNet.save_checkpoint()
+            criticNet_1.save_checkpoint()
+            criticNet_2.save_checkpoint()
+            valueNet.save_checkpoint()
+            target_valueNet.save_checkpoint()
 
     print('Complete')
 
