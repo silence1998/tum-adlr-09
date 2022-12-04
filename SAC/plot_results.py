@@ -3,8 +3,20 @@ import numpy as np
 from itertools import count
 
 from environment import GridWorldEnv
-from training import env_parameters, init_model, select_action
+from training import init_model, select_action
 from model import *
+import json
+# Load the model
+# TODO: Select model to load
+model_path = "model_pretrain/"
+#model_path = "model/"
+
+with open(model_path + 'env_parameters.txt', 'r') as file:
+    env_parameters = json.load(file)
+with open(model_path + 'hyper_parameters.txt', 'r') as file:
+    hyper_parameters = json.load(file)
+with open(model_path + 'reward_parameters.txt', 'r') as file:
+    reward_parameters = json.load(file)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -16,10 +28,7 @@ env.render_mode = "human"
 
 actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
 
-# Load the model
-# TODO: Select model to load
-model_path = "model_pretrain/"
-#model_path = "model/"
+
 
 # load model
 actorNet.load_state_dict(torch.load(model_path + "actor.pt", map_location=device))
