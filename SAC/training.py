@@ -2,7 +2,7 @@ import numpy as np
 import json
 import matplotlib.pyplot as plt
 from itertools import count
-
+from collections import deque
 import torch
 import torch.nn.functional as F
 
@@ -156,7 +156,7 @@ def plot_sigma():
 
 env_parameters = {
     'num_obstacles': 5,
-    'env_size': 20  # size of the environment
+    'env_size': 10  # size of the environment
 }
 env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
 
@@ -169,9 +169,11 @@ hyper_parameters = {
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,
-    'num_episodes': 1000,  # set min 70 for tests as some parts of code starts after ~40 episodes
-    'pretrain': True,
-    'num_episodes_pretrain': 2000
+    'num_episodes': 250,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'pretrain': False,
+    'num_episodes_pretrain': 500,
+    'action_smoothing': True,
+    'action_history_size': 3
 }
 wandb_dict = {}
 wandb_dict.update(env_parameters)
@@ -186,7 +188,12 @@ def select_action(state, actorNet):
 
     return actions.cpu().detach().numpy()[0]
 
+def select_action_smooth(action_history):
+    action_history_ = np.array(action_history)
+    return np.mean(action_history_, axis=0)
 
+
+# maybe no effect
 def select_action_filter(state, actorNet):
     # state = torch.Tensor([state]).to(actorNet.device)
     delta_x = state[0, 2] - state[0, 0]
@@ -304,9 +311,9 @@ if __name__ == "__main__":
                 optimize_model()
                 if done:
                     episode_durations.append(t + 1)
-                    # plot_durations()
-                    if not len(memory) < hyper_parameters["batch_size"]:
-                        plot_sigma()
+                    plot_durations()
+                    # if not len(memory) < hyper_parameters["batch_size"]:
+                    #     plot_sigma()
                     break
             # Update the target network, using tau
             if t != len(actions):
@@ -324,7 +331,7 @@ if __name__ == "__main__":
                                          (1 - hyper_parameters['tau']) * target_value_state_dict[name].clone()
             target_valueNet.load_state_dict(value_state_dict)
 
-            if i_episode//25 == 0:
+            if i_episode%25 == 0:
                 actorNet.save_checkpoint()
                 criticNet_1.save_checkpoint()
                 criticNet_2.save_checkpoint()
@@ -335,7 +342,7 @@ if __name__ == "__main__":
 
         # model_path = "model_with_astar/"
         print('Pretrain complete')
-
+    action_history = deque(maxlen=hyper_parameters['action_history_size'])
     seed = seed_init_value
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
         print("Episode: " + str(len(episode_durations)))
@@ -354,6 +361,9 @@ if __name__ == "__main__":
         for t in count():  # every step of the environment
             # Select and perform an action
             action = select_action(state, actorNet)
+            if hyper_parameters['action_smoothing']:
+                action_history.extend([action])
+                action = select_action_smooth(action_history)
             _, reward, done, _, _ = env.step(action)
             reward = torch.tensor([reward], dtype=torch.float, device=device)
 
@@ -381,10 +391,10 @@ if __name__ == "__main__":
             optimize_model()
             if done:
                 episode_durations.append(t + 1)
-                # plot_durations()
+                plot_durations()
 
-                if not len(memory) < hyper_parameters["batch_size"]:
-                    plot_sigma()
+                # if not len(memory) < hyper_parameters["batch_size"]:
+                #     plot_sigma()
 
                 break
         # Update the target network, using tau
@@ -399,7 +409,7 @@ if __name__ == "__main__":
                                      (1 - hyper_parameters["tau"]) * target_value_state_dict[name].clone()
         target_valueNet.load_state_dict(value_state_dict)
 
-        if i_episode // 25 == 0:
+        if i_episode % 25 == 0:
             actorNet.save_checkpoint()
             criticNet_1.save_checkpoint()
             criticNet_2.save_checkpoint()
