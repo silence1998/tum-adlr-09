@@ -1,5 +1,5 @@
 env_parameters = {
-    'num_obstacles': 1,
+    'num_obstacles': 5,
     'env_size': 10  # size of the environment in one dimension (environment is square)
 }
 
@@ -19,7 +19,7 @@ feature_parameters = {
     'pretrain': True,  # pretrain the model
     'num_episodes_pretrain': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
-    'select_action_filter': True,  # filter actions to be directed towards target
+    'select_action_filter': False,  # filter actions to be directed towards target
     'select_action_filter_after_episode': 100,  # start filtering after this episode
 
     'sort_obstacles': False,  # sort obstacles by distance to target
@@ -27,7 +27,7 @@ feature_parameters = {
     'apply_environment_seed': False,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
 
-    'plot_durations': False,  # plot durations of episodes
+    'plot_durations': True,  # plot durations of episodes
     'plot_sigma': False  # plot sigma of actor
 }
 

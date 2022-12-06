@@ -28,6 +28,7 @@ import wandb
 
 
 def optimize_model():  # SpinningUP SAC PC: lines 12-14
+    #print("optimize_model")
     if len(memory) < hyper_parameters["batch_size"]:  # if memory is not full enough to start training, return
         return
     ### Sample a batch of transitions from memory
@@ -291,9 +292,9 @@ if __name__ == "__main__":
 
     episode_durations = []
     average_sigma_per_batch = []
-    seed = feature_parameters['seed_init_value']
-
-    print("Testing random seed: " + str(torch.rand(2)))
+    if feature_parameters['apply_environment_seed']:
+        seed = feature_parameters['seed_init_value']
+        print("Testing random seed: " + str(torch.rand(2)))
 
     if feature_parameters['pretrain']:
         for i_episode in range(feature_parameters['num_episodes_pretrain']):
@@ -351,6 +352,14 @@ if __name__ == "__main__":
                 optimize_model()
                 if done:
                     episode_durations.append(t + 1)
+                    if feature_parameters['plot_durations']:
+                        plot_durations()
+                    if feature_parameters['plot_sigma']:
+                        if not len(memory) < hyper_parameters["batch_size"]:
+                            plot_sigma()
+                    break
+                if done:
+                    episode_durations.append(t + 1)
                     plot_durations()
                     # if not len(memory) < hyper_parameters["batch_size"]:
                     #     plot_sigma()
@@ -371,8 +380,11 @@ if __name__ == "__main__":
 
         print('Pretrain complete')
 
-    seed = feature_parameters['seed_init_value']
+    if feature_parameters['apply_environment_seed']:
+        seed = feature_parameters['seed_init_value']
+
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
+        print('Starting normal training')
         # Initialize the environment and state
         if feature_parameters['apply_environment_seed']:
             env.reset(seed=seed)
@@ -424,7 +436,6 @@ if __name__ == "__main__":
                 if feature_parameters['plot_sigma']:
                     if not len(memory) < hyper_parameters["batch_size"]:
                         plot_sigma()
-
                 break
         # Update the target network, using tau
         target_value_params = target_valueNet.named_parameters()

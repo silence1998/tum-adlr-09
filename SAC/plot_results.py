@@ -26,16 +26,19 @@ if __name__ == '__main__':
         model_path = "model_pretrain/"
 
     # load model
-    torch.load(model_path + "actor.pt", map_location=device)
-    torch.load(model_path + "criticNet_1.pt", map_location=device)
-    torch.load(model_path + "criticNet_2.pt", map_location=device)
-    torch.load(model_path + "target_valueNet.pt", map_location=device)
+    #torch.load(model_path + "actor.pt", map_location=device)
+    #torch.load(model_path + "criticNet_1.pt", map_location=device)
+    #torch.load(model_path + "criticNet_2.pt", map_location=device)
+    #torch.load(model_path + "target_valueNet.pt", map_location=device)
 
-
+    actorNet.load_state_dict(torch.load(model_path + "actor.pt", map_location=device))
+    criticNet_1.load_state_dict(torch.load(model_path + "criticNet_1.pt", map_location=device))
+    criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
+    target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
 
     # env=GridWorldEnv(render_mode="human")
     i = 0
-    while True:  # run plot for 3 episodes to see what it learned
+    while i < 10:  # run plot for 10 episodes to see what it learned
         i += 1
         if feature_parameters['apply_environment_seed']:
             env.reset(seed=seed)
