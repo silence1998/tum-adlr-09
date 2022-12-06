@@ -27,7 +27,7 @@ feature_parameters = {
     'apply_environment_seed': True,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
 
-    'plot_durations': False,  # plot durations of episodes
+    'plot_durations': True,  # plot durations of episodes
     'plot_sigma': True  # plot sigma of actor
 }
 
