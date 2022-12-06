@@ -49,12 +49,12 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)
 
-    # if not len(memory) < hyper_parameters["batch_size"]:
-    #     ### Calculate average sigma per batch
-    #     mu, sigma = actorNet.forward(state_batch)
-    #     global average_sigma_per_batch
-    #     average_sigma_per_batch.append(
-    #         np.mean(sigma.detach().cpu().numpy(), axis=0))  # mean of sigma of the current batch
+    if not len(memory) < hyper_parameters["batch_size"]:
+        ### Calculate average sigma per batch
+        mu, sigma = actorNet.forward(state_batch)
+        global average_sigma_per_batch
+        average_sigma_per_batch.append(
+            np.mean(sigma.detach().cpu().numpy(), axis=0))  # mean of sigma of the current batch
 
     value = valueNet(state_batch).view(-1)  # infer size of batch
     value_ = torch.zeros(hyper_parameters["batch_size"], device=device)
