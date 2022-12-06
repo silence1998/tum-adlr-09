@@ -12,14 +12,15 @@ hyper_parameters = {
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
-    'num_episodes': 250,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
 }
 
 feature_parameters = {
     'pretrain': True,  # pretrain the model
-    'num_episodes_pretrain': 500,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes_pretrain': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
-    'select_action_filter': False,  # filter actions to be directed towards target
+    'select_action_filter': True,  # filter actions to be directed towards target
+    'select_action_filter_after_episode': 100,  # start filtering after this episode
 
     'sort_obstacles': False,  # sort obstacles by distance to target
 

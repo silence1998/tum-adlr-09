@@ -176,7 +176,7 @@ def select_action_filter(state, actorNet):
 
 def action_selection(state, actorNet):
     if feature_parameters['select_action_filter']:
-        if len(episode_durations) < 100:
+        if len(episode_durations) < feature_parameters['select_action_filter_after_episode']:
             action = select_action(state, actorNet)
         else:
             action = select_action_filter(state, actorNet)
