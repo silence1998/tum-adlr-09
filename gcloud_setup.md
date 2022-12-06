@@ -36,10 +36,12 @@ git clone git@github.com:silence1998/tum-adlr-09.git
 pip install numpy
 pip install matplotlib
 pip install torch
+pip install torch==1.12.1+cpu torchvision==0.13.1+cpu torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cpu
 pip install gym
 pip install wandb
 ```
 
+<<<<<<< HEAD
 - exit ssh via Ctrl+D or
 ```
 exit
@@ -47,3 +49,11 @@ exit
 
 - tmux useful shortcuts
 - 
+=======
+
+gcloud auth login
+gsutil cp file gs://tum-adlr-09/
+gsutil cp -r folder-name gs://tum-adlr-09/
+
+
+>>>>>>> 9cfb8085b975ea485fb4e2f880e5b8e2c5154898
