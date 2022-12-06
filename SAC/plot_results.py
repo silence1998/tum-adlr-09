@@ -19,17 +19,13 @@ actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_mod
 
 if __name__ == '__main__':
 
-    m = input("Select normal Model (0) OR Model with pretrain (1): ")
+    m = "1" #input("Select normal Model (0) OR Model with pretrain (1): ")
     if m == "0":
         model_path = "model/"
     elif m == "1":
         model_path = "model_pretrain/"
 
     # load model
-    #torch.load(model_path + "actor.pt", map_location=device)
-    #torch.load(model_path + "criticNet_1.pt", map_location=device)
-    #torch.load(model_path + "criticNet_2.pt", map_location=device)
-    #torch.load(model_path + "target_valueNet.pt", map_location=device)
 
     actorNet.load_state_dict(torch.load(model_path + "actor.pt", map_location=device))
     criticNet_1.load_state_dict(torch.load(model_path + "criticNet_1.pt", map_location=device))

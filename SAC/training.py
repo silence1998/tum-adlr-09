@@ -12,8 +12,6 @@ from itertools import count
 from collections import namedtuple
 
 import torch
-import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
 
 
@@ -88,7 +86,7 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     actor_loss = torch.mean(actor_loss)
 
     wandb.log({"actor_loss": actor_loss})
-    print(str(i_episode) + " - " + str(actor_loss))
+    #print(str(i_episode) + " - " + str(actor_loss))
     #print(str(i_episode) + "-actor_loss: " + str(actor_loss.detach().cpu().numpy()))
     # too slow to switch to cpu everytime
 
@@ -298,6 +296,7 @@ if __name__ == "__main__":
 
     if feature_parameters['pretrain']:
         for i_episode in range(feature_parameters['num_episodes_pretrain']):
+            print("Pretraining episode: " + str(i_episode))
             # Initialize the environment and state
             if feature_parameters['apply_environment_seed']:
                 env.reset(seed=seed)
@@ -383,9 +382,8 @@ if __name__ == "__main__":
     if feature_parameters['apply_environment_seed']:
         seed = feature_parameters['seed_init_value']
 
-    print('Starting normal training')
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
-
+        print("Normal training episode: " + str(i_episode))
         # Initialize the environment and state
         if feature_parameters['apply_environment_seed']:
             env.reset(seed=seed)
