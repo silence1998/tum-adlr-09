@@ -383,8 +383,9 @@ if __name__ == "__main__":
     if feature_parameters['apply_environment_seed']:
         seed = feature_parameters['seed_init_value']
 
+    print('Starting normal training')
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
-        print('Starting normal training')
+
         # Initialize the environment and state
         if feature_parameters['apply_environment_seed']:
             env.reset(seed=seed)
