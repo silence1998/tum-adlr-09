@@ -2,7 +2,7 @@ import numpy as np
 import json
 import matplotlib.pyplot as plt
 from itertools import count
-
+from collections import deque
 import torch
 import torch.nn.functional as F
 
@@ -27,7 +27,7 @@ https://github.com/Farama-Foundation/gym-examples/blob/main/gym_examples/envs/gr
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
 
-def optimize_model():  # SpinningUP SAC PC: lines 12-14
+def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
     if len(memory) < hyper_parameters["batch_size"]:  # if memory is not full enough to start training, return
         return
     ### Sample a batch of transitions from memory
@@ -69,7 +69,7 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     critic_value = critic_value.view(-1)  # rhs SpinningUP SAC PC: line 12 big ()
 
     valueNet.optimizer.zero_grad()
-    value_target = critic_value - hyper_parameters['entropy_factor'] * log_probs
+    value_target = critic_value - entropy_factor * log_probs
     value_loss = 0.5 * F.mse_loss(value, value_target)
     value_loss.backward(retain_graph=True)
     valueNet.optimizer.step()
@@ -83,11 +83,11 @@ def optimize_model():  # SpinningUP SAC PC: lines 12-14
     critic_value = torch.min(q1_new_policy, q2_new_policy)
     critic_value = critic_value.view(-1)
 
-    actor_loss = hyper_parameters['entropy_factor'] * log_probs - critic_value
+    actor_loss = entropy_factor * log_probs - critic_value
     actor_loss = torch.mean(actor_loss)
 
     wandb.log({"actor_loss": actor_loss})
-    print(actor_loss)
+    # print(actor_loss)
 
     actorNet.optimizer.zero_grad()
     actor_loss.backward(retain_graph=True)
@@ -156,7 +156,7 @@ def plot_sigma():
 
 env_parameters = {
     'num_obstacles': 5,
-    'env_size': 20  # size of the environment
+    'env_size': 10  # size of the environment
 }
 env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
 
@@ -169,9 +169,12 @@ hyper_parameters = {
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,
+    'entropy_factor_final': 0.3,
     'num_episodes': 250,  # set min 70 for tests as some parts of code starts after ~40 episodes
-    'pretrain': True,
-    'num_episodes_pretrain': 500
+    'pretrain': False,
+    'num_episodes_pretrain': 500,
+    'action_smoothing': True,
+    'action_history_size': 3
 }
 wandb_dict = {}
 wandb_dict.update(env_parameters)
@@ -187,6 +190,12 @@ def select_action(state, actorNet):
     return actions.cpu().detach().numpy()[0]
 
 
+def select_action_smooth(action_history):
+    action_history_ = np.array(action_history)
+    return np.mean(action_history_, axis=0)
+
+
+# maybe no effect
 def select_action_filter(state, actorNet):
     # state = torch.Tensor([state]).to(actorNet.device)
     delta_x = state[0, 2] - state[0, 0]
@@ -253,8 +262,8 @@ if __name__ == "__main__":
 
     if hyper_parameters['pretrain']:
         for i_episode in range(hyper_parameters['num_episodes_pretrain']):
-            # Initialize the environment and state
             seed += 1
+            # Initialize the environment and state
             env.reset()
             obs = env._get_obs()
             obs_values = [obs["agent"], obs["target"]]
@@ -301,7 +310,7 @@ if __name__ == "__main__":
                 state = next_state
 
                 # Perform one step of the optimization (on the policy network)
-                optimize_model()
+                optimize_model(hyper_parameters['entropy_factor'])
                 if done:
                     episode_durations.append(t + 1)
                     plot_durations()
@@ -311,6 +320,7 @@ if __name__ == "__main__":
             # Update the target network, using tau
             if t != len(actions):
                 print("error: actual step is not equal to precalculated steps")
+
             target_value_params = target_valueNet.named_parameters()
             value_params = valueNet.named_parameters()
 
@@ -322,12 +332,23 @@ if __name__ == "__main__":
                                          (1 - hyper_parameters['tau']) * target_value_state_dict[name].clone()
             target_valueNet.load_state_dict(value_state_dict)
 
+            if i_episode % 25 == 0:
+                actorNet.save_checkpoint()
+                criticNet_1.save_checkpoint()
+                criticNet_2.save_checkpoint()
+                valueNet.save_checkpoint()
+                target_valueNet.save_checkpoint()
+                # print("checkpoint saved")
+
         # model_path = "model_with_astar/"
         print('Pretrain complete')
-
+    action_history = deque(maxlen=hyper_parameters['action_history_size'])
     seed = seed_init_value
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
         print("Episode: " + str(len(episode_durations)))
+        entropy_factor = hyper_parameters['entropy_factor'] + i_episode * (
+                    hyper_parameters['entropy_factor_final'] - hyper_parameters['entropy_factor']) / (
+                                     hyper_parameters["num_episodes"] - 1)
         # Initialize the environment and state
         seed = seed + 1
         print(seed)
@@ -343,6 +364,9 @@ if __name__ == "__main__":
         for t in count():  # every step of the environment
             # Select and perform an action
             action = select_action(state, actorNet)
+            if hyper_parameters['action_smoothing']:
+                action_history.extend([action])
+                action = select_action_smooth(action_history)
             _, reward, done, _, _ = env.step(action)
             reward = torch.tensor([reward], dtype=torch.float, device=device)
 
@@ -367,7 +391,7 @@ if __name__ == "__main__":
             state = next_state
 
             # Perform one step of the optimization (on the policy network)
-            optimize_model()
+            optimize_model(entropy_factor)
             if done:
                 episode_durations.append(t + 1)
                 plot_durations()
@@ -388,8 +412,16 @@ if __name__ == "__main__":
                                      (1 - hyper_parameters["tau"]) * target_value_state_dict[name].clone()
         target_valueNet.load_state_dict(value_state_dict)
 
-    print('Complete')
+        if i_episode % 25 == 0:
+            actorNet.save_checkpoint()
+            criticNet_1.save_checkpoint()
+            criticNet_2.save_checkpoint()
+            valueNet.save_checkpoint()
+            target_valueNet.save_checkpoint()
 
+    print('Complete')
+    print('final entropy_factor')
+    print(entropy_factor)
     if hyper_parameters['pretrain']:
         model_path = "model_pretrain/"
     else:
@@ -410,52 +442,49 @@ if __name__ == "__main__":
 
     env.render_mode = "human"
 
-
-    i = 0
-    while True:  # run plot for 3 episodes to see what it learned
-        i += 1
-        env.reset()
-        obs = env._get_obs()
-
-        obs_values = [obs["agent"], obs["target"]]
-        for idx_obstacle in range(env_parameters['num_obstacles']):
-            obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-        state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
-
-        state = state.view(1, -1)
-        for t in count():
-            # Select and perform an action
-            action = select_action(state, actorNet)
-            _, reward, done, _, _ = env.step(action)
-
-            action_ = torch.tensor(action, dtype=torch.float, device=device)
-            action_ = action_.view(1, 2)
-            mu, sigma = actorNet(state)
-            print(actorNet(state))
-            print(criticNet_1(state, action_))
-            print(criticNet_2(state, action_))
-            print(target_valueNet(state))
-
-            reward = torch.tensor([reward], device=device)
-            env._render_frame()
-            # Observe new state
-            obs = env._get_obs()
-            if not done:
-                obs_values = [obs["agent"], obs["target"]]
-                for idx_obstacle in range(env_parameters['num_obstacles']):
-                    obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-                next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
-
-                next_state = next_state.view(1, -1)
-            else:
-                next_state = None
-
-            # Store the transition in memory
-            memory.push(state, action, next_state, reward)
-
-            # Move to the next state
-            state = next_state
-            if done:
-                break
-
-
+    # i = 0
+    # while True:  # run plot for 3 episodes to see what it learned
+    #     i += 1
+    #     env.reset()
+    #     obs = env._get_obs()
+    #
+    #     obs_values = [obs["agent"], obs["target"]]
+    #     for idx_obstacle in range(env_parameters['num_obstacles']):
+    #         obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+    #     state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
+    #
+    #     state = state.view(1, -1)
+    #     for t in count():
+    #         # Select and perform an action
+    #         action = select_action(state, actorNet)
+    #         _, reward, done, _, _ = env.step(action)
+    #
+    #         action_ = torch.tensor(action, dtype=torch.float, device=device)
+    #         action_ = action_.view(1, 2)
+    #         mu, sigma = actorNet(state)
+    #         print(actorNet(state))
+    #         print(criticNet_1(state, action_))
+    #         print(criticNet_2(state, action_))
+    #         print(target_valueNet(state))
+    #
+    #         reward = torch.tensor([reward], device=device)
+    #         env._render_frame()
+    #         # Observe new state
+    #         obs = env._get_obs()
+    #         if not done:
+    #             obs_values = [obs["agent"], obs["target"]]
+    #             for idx_obstacle in range(env_parameters['num_obstacles']):
+    #                 obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+    #             next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
+    #
+    #             next_state = next_state.view(1, -1)
+    #         else:
+    #             next_state = None
+    #
+    #         # Store the transition in memory
+    #         memory.push(state, action, next_state, reward)
+    #
+    #         # Move to the next state
+    #         state = next_state
+    #         if done:
+    #             break

@@ -3,29 +3,38 @@ import numpy as np
 from itertools import count
 
 from environment import GridWorldEnv
-from training import *
+from training import init_model, select_action
 from model import *
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-#env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
-
-env.render_mode = "human"
-
-
-# initialize NN
-actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
-
+import json
 # Load the model
 # TODO: Select model to load
 model_path = "model_pretrain/"
 #model_path = "model/"
 
+with open(model_path + 'env_parameters.txt', 'r') as file:
+    env_parameters = json.load(file)
+with open(model_path + 'hyper_parameters.txt', 'r') as file:
+    hyper_parameters = json.load(file)
+with open(model_path + 'reward_parameters.txt', 'r') as file:
+    reward_parameters = json.load(file)
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
+
+env.render_mode = "human"
+
+
+
+actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
+
+
+
 # load model
-torch.load(model_path + "actor.pt", map_location=device)
-torch.load(model_path + "criticNet_1.pt", map_location=device)
-torch.load(model_path + "criticNet_2.pt", map_location=device)
-torch.load(model_path + "target_valueNet.pt", map_location=device)
+actorNet.load_state_dict(torch.load(model_path + "actor.pt", map_location=device))
+criticNet_1.load_state_dict(torch.load(model_path + "criticNet_1.pt", map_location=device))
+criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
+target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
 
 steps_done = 0
 
