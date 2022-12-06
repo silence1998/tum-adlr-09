@@ -172,7 +172,7 @@ hyper_parameters = {
     'entropy_factor': 0.5,
     'entropy_factor_final': 0.3,
     'num_episodes': 250,  # set min 70 for tests as some parts of code starts after ~40 episodes
-    'pretrain': False,
+    'pretrain': True,
     'num_episodes_pretrain': 500,
     'action_smoothing': True,
     'action_history_size': 3
