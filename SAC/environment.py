@@ -6,6 +6,9 @@ import gym
 from gym import spaces
 import pygame
 import parameters
+
+from collections import deque
+
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
@@ -17,6 +20,8 @@ class GridWorldEnv(gym.Env):
         self._agent_location = None
         self._target_location = None
         self._obstacle_locations = None
+        if parameters.reward_parameters['history']:
+            self._agent_location_history = deque(maxlen=parameters.reward_parameters['history_size'])
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
         elements = {"agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
@@ -87,6 +92,8 @@ class GridWorldEnv(gym.Env):
 
         # Choose the agent's location uniformly at random
         self._agent_location = self.np_random.integers(0, self.size, size=2, dtype=int)
+        if parameters.reward_parameters['history']:
+            self._agent_location_history.extend(self._agent_location)
 
         # We will sample the target's location randomly until it does not coincide with the agent's location
         self._target_location = self._agent_location
@@ -126,6 +133,8 @@ class GridWorldEnv(gym.Env):
                 "action_step_scaling"] * action_step)  # scale action to e.g. [-2, 2] -> reach is 5x5 grid
         previous_position = self._agent_location
         self._agent_location = self._agent_location + action_step
+        if parameters.reward_parameters['history']:
+            self._agent_location_history.extend(self._agent_location)
         self._max_distance = math.sqrt(2) * self.size
 
         ### COLLISION SPARSE REWARD ###
@@ -157,7 +166,8 @@ class GridWorldEnv(gym.Env):
         else:
             ### Distances
             # Distance to target
-            if self.reward_parameters['obstacle_avoidance'] or self.reward_parameters['target_seeking']:
+            if self.reward_parameters['obstacle_avoidance'] \
+                    or self.reward_parameters['target_seeking']:
                 previous_distance_to_target = math.sqrt((previous_position[0] - self._target_location[0]) ** 2
                                                         + (previous_position[1] - self._target_location[1]) ** 2)
 
@@ -181,13 +191,13 @@ class GridWorldEnv(gym.Env):
                 previous_distance_to_wall = np.amin(np.vstack((previous_position + 1, self.size - previous_position)))
                 # get the distance to the closest wall in the previous step
                 distance_to_wall = np.amin(np.vstack((self._agent_location + 1, self.size - self._agent_location)))
-                # get the distance to the closest wall in the current step # TODO: check if this is correct (@Mo)
+                # get the distance to the closest wall in the current step # TODO: check if this is correct (MO)
 
                 ### Distance differences
                 # Difference to target
                 diff_distance_to_target = np.abs(previous_distance_to_target - distance_to_target)
 
-                # Difference to obstacles TODO: make this a parameter, is this a good idea?
+                # Difference to obstacles # TODO: make this a parameter, is this a good idea?
                 distances_to_obstacles[distances_to_obstacles > 0.3 * self.size] = 0  # set distances to obstacles > 5 to 0
                 previous_distances_to_obstacles[distances_to_obstacles == 0] = 0
                 # set previous distances to obstacles 0 with the same indices as distances to obstacles
@@ -212,6 +222,8 @@ class GridWorldEnv(gym.Env):
             ### SUB-SPARSE REWARDS ###
             # Distance checkpoint rewards
             if self.reward_parameters['checkpoints']:
+                distance_to_target = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2
+                                               + (self._agent_location[1] - self._target_location[1]) ** 2)
                 checkpoint_reward_given = [False] * (self.reward_parameters['checkpoint_number'] + 1)
                 for i in np.invert(range(1, self.reward_parameters['checkpoint_number'] + 1)):
                     if (distance_to_target < i * self.reward_parameters['checkpoint_distance_proportion'] * self.size) \
@@ -221,21 +233,30 @@ class GridWorldEnv(gym.Env):
 
             # Time penalty
             if self.reward_parameters['time']:
-                reward += self.reward_parameters['time_penalty']  # time penalty
+                reward += self.reward_parameters['time_penalty']
 
-            # last_x_positions = self._agent_location_history[-self.reward_parameters['history_size']:]
-            # # Waiting reward # TODO: add step history to check if the agent is waiting
-            # if self.reward_parameters['waiting']:
-            #     if last_x_positions.count(last_x_positions[0]) == len(last_x_positions):  # Checks if all positions are equal
-            #         reward += self.reward_parameters['waiting_value']
-            #
-            # # Consistency reward # TODO: add step history to check if the agent is waiting
-            # if self.reward_parameters['consistency']:
-            #     last_x_steps = []
-            #     for i in np.invert((range(1, self.reward_parameters['consistency_step_number'] + 1))):  # csn,...,1
-            #         last_x_steps.append(last_x_positions[i] - last_x_positions[i - 1])
-            #         if last_x_steps.count(last_x_steps[0]) == len(last_x_steps):  # Checks if all directions are equal
-            #             reward += self.reward_parameters['consistency_value']
+            if parameters.reward_parameters['history']:
+                # Waiting penalty
+                last_x_positions = list(self._agent_location_history)
+                last_x_positions = last_x_positions[-self.reward_parameters['max_waiting_steps']:]
+                if self.reward_parameters['waiting']:
+                    if last_x_positions.count(last_x_positions[-1]) == len(last_x_positions):  # Checks if all positions are equal
+                        reward += self.reward_parameters['waiting_penalty']
+
+                # Waiting reward
+                last_x_positions = list(self._agent_location_history)
+                last_x_positions = last_x_positions[-self.reward_parameters['waiting_step_number_to_check']:]
+                if self.reward_parameters['waiting']:
+                    if last_x_positions.count(last_x_positions[-1]) == len(last_x_positions):  # Checks if all positions are equal
+                        reward += self.reward_parameters['waiting_value']
+
+                # Consistency reward
+                if self.reward_parameters['consistency']:
+                    last_x_steps = self._agent_location_history[-self.reward_parameters['consistency_step_number_to_check']:]
+                    for i in np.invert((range(1, self.reward_parameters['consistency_step_number_to_check'] + 1))):  # csn,...,1
+                        last_x_steps.append(last_x_positions[-1] - last_x_positions[i - 1])
+                        if last_x_steps.count(last_x_steps[0]) == len(last_x_steps):  # Checks if all directions are equal
+                            reward += self.reward_parameters['consistency_value']
 
         observation = self._get_obs()
         info = self._get_info()

@@ -1,6 +1,6 @@
 env_parameters = {
     'num_obstacles': 5,
-    'env_size': 10  # size of the environment in one dimension (environment is square)
+    'env_size': 20  # size of the environment in one dimension (environment is square)
 }
 
 hyper_parameters = {
@@ -13,6 +13,7 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'num_episodes': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'action_history_size': 3  # number of actions to remember for the action history
 }
 
 feature_parameters = {
@@ -38,35 +39,44 @@ reward_parameters = {
     # the above are not used in the current version which is sparse reward based
 
     'action_step_scaling': 1,  # 1 step -> "2" grids of movement reach in x and y directions
-    ### DENSE REWARDS ###
+    ### DENSE REWARDS ### # TODO: check after midterm
     'obstacle_avoidance': False,
-    'obstacle_distance_weight': -1,
+    'obstacle_distance_weight': -0.01,
     'target_seeking': False,
-    'target_distance_weight': 1,
+    'target_distance_weight': 0.01,
 
     ### SPARSE REWARDS ###
     'target_value': 1,
-    'collision_value': -1,
+    'collision_value': -5,
 
     ### SUB-SPARSE REWARDS ###
     'checkpoints': False,  # if true, use checkpoints rewards
-    'checkpoint_distance_proportion': 1.0,
+    'checkpoint_distance_proportion': 0.1,  # distance proportion to environment size in 1 dimension
     'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
-    'checkpoint_value': 1.0,  # make sure checkpoint_value * checkpoint_number < 1
+    'checkpoint_value': 0.1,  # make sure checkpoint_value * checkpoint_number < 1
 
-    'time': False,  # if true, use time rewards
-    'time_penalty': 1,  # == penalty of -1 for "100" action steps
+    'time': True,  # if true, use time penalty
+    'time_penalty': -0.01,  # 0.01 == penalty of -1 for "100" action steps
 
-    'history_size': 20,  # size of history to check for waiting and consistency
+    ###
 
-    'waiting': False,  # if true, use waiting rewards # TODO: implement action history in step()
-    'waiting_value': 1.0,  # make sure waiting_value < 1
-    'max_waiting_steps': 20,  # make sure < history_size, punishment for waiting too long
+    'history': False,  # if true, use history
+    'history_size': 15,  # >= hyper_parameters['action_history_size'] above
+    # size of history to check for waiting and consistency
+    # can be chosen bigger to have longer checks for below features
+
+    'waiting': False,  # if true, use waiting rewards
+    'waiting_value': 0.01,  # make sure waiting_value < 1
+    'waiting_step_number_to_check': 5,  # number of steps to check for waiting (in history)
+    # make sure waiting_step_number_to_check < history_size
+    'max_waiting_steps': 10,  # make sure < history_size, punishment for waiting too long
+    'waiting_penalty': -0.05,
     # threshold
 
-    'consistency': False,  # if true, use consistency rewards # TODO: implement action history in step()
-    'consistency_step_number': 1,  # make sure consistency_step_number < history_size
-    'consistency_value': 1.0,  # make sure consistency_value * consistency_step_number < 1
+    'consistency': False,  # if true, use consistency rewards
+    'consistency_step_number_to_check': 3,  # number of steps to check for consistency (in history)
+    # make sure consistency_step_number_to_check < history_size
+    'consistency_value': 0.01,  # make sure consistency_value * consistency_step_number < 1
     # threshold
 
     # fast moving etc. for sub actions for sparse rewards
