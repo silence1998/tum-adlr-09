@@ -234,7 +234,7 @@ def obstacle_sort(obs):
 
 
 def save_models():
-    if hyper_parameters['pretrain']:
+    if feature_parameters['pretrain']:
         model_path = "model_pretrain/"
         if not os.path.isdir(model_path):
             os.makedirs(model_path)
@@ -418,7 +418,7 @@ if __name__ == "__main__":
 
     if feature_parameters['apply_environment_seed']:
         seed = feature_parameters['seed_init_value']
-    action_history = deque(maxlen=hyper_parameters['action_history_size'])
+    action_history = deque(maxlen=feature_parameters['action_history_size'])
 
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
 
@@ -443,7 +443,7 @@ if __name__ == "__main__":
         for t in count():  # every step of the environment
             # Select and perform an action
             action = select_action(state, actorNet)
-            if hyper_parameters['action_smoothing']:
+            if feature_parameters['action_smoothing']:
                 action_history.extend([action])
                 action = select_action_smooth(action_history)
             _, reward, done, _, _ = env.step(action)

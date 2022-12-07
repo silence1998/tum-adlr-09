@@ -35,7 +35,7 @@ class GridWorldEnv(gym.Env):
         for idx_obstacle in range(self.num_obstacles):
             elements.update({"obstacle_{0}".format(idx_obstacle): spaces.Box(0, size - 1, shape=(2,), dtype=int)})
         self.observation_space = spaces.Dict(elements)
-
+        
         # TODO action space should be continuous now its bounded in [-3, 3]
         self.action_space = spaces.Discrete(4)  # Continuous 3 see gym examples
         #Box(low=np.array([-1.0, -2.0]), high=np.array([2.0, 4.0]), dtype=np.float32) - Box(3,) x,y velocity
