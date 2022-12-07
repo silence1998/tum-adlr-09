@@ -5,6 +5,10 @@ import numpy as np
 import gym
 from gym import spaces
 import pygame
+import parameters
+
+from collections import deque
+
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
@@ -13,9 +17,17 @@ class GridWorldEnv(gym.Env):
         self.window_size = 512  # The size of the PyGame window
         self.num_obstacles = num_obstacles
 
+        ### REWARD PARAMETERS ###
+        self.reward_parameters = parameters.reward_parameters
+
         self._agent_location = None
         self._target_location = None
         self._obstacle_locations = None
+        if parameters.reward_parameters['checkpoints']:
+            self.checkpoint_reward_given = [False] * (self.reward_parameters['checkpoint_number'] + 1)
+        if parameters.reward_parameters['history']:
+            self._agent_location_history = deque(maxlen=parameters.reward_parameters['history_size'])
+
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
         elements = {"agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
@@ -23,48 +35,6 @@ class GridWorldEnv(gym.Env):
         for idx_obstacle in range(self.num_obstacles):
             elements.update({"obstacle_{0}".format(idx_obstacle): spaces.Box(0, size - 1, shape=(2,), dtype=int)})
         self.observation_space = spaces.Dict(elements)
-
-        ### REWARD PARAMETERS ###
-        self.reward_parameters = {
-            # 'field_of_view': 5,  # see min_collision_distance
-            # 'collision_weight': 0.3,
-            # 'time_weight': 1,
-            # the above are not used in the current version which is sparse reward based
-
-            'action_step_scaling': 2,  # 1 step -> "2" grids of movement reach in x and y directions
-            ### DENSE REWARDS ###
-            'obstacle_avoidance': False,
-            'obstacle_distance_weight': -0,
-            'target_seeking': False,
-            'target_distance_weight': 1,
-
-            ### SPARSE REWARDS ###
-            'target_value': 10,
-            'collision_value': -50,
-
-            ### SUB-SPARSE REWARDS ###
-            'checkpoints': False,  # if true, use checkpoints rewards
-            'checkpoint_distance_proportion': 0.0,
-            'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
-            'checkpoint_value': 0.0,  # make sure checkpoint_value * checkpoint_number < 1
-
-            'time': False,  # if true, use time rewards
-            'time_penalty': 0,  # == penalty of -1 for "100" action steps
-
-            'history_size': 20,  # size of history to check for waiting and consistency
-
-            'waiting': False,  # if true, use waiting rewards # TODO: implement action history in step()
-            'waiting_value': 0.0,  # make sure waiting_value < 1
-            'max_waiting_steps': 20,  # make sure < history_size, punishment for waiting too long
-            # threshold
-
-            'consistency': False,  # if true, use consistency rewards # TODO: implement action history in step()
-            'consistency_step_number': 0,  # make sure consistency_step_number < history_size
-            'consistency_value': 0.0,  # make sure consistency_value * consistency_step_number < 1
-            # threshold
-
-            # fast moving etc. for sub actions for sparse rewards
-        }
 
         # TODO action space should be continuous now its bounded in [-3, 3]
         self.action_space = spaces.Discrete(4)  # Continuous 3 see gym examples
@@ -106,15 +76,17 @@ class GridWorldEnv(gym.Env):
             elements.update({"obstacle_{0}".format(idx_obstacle): self._obstacle_locations[str(idx_obstacle)]})
         return elements
 
-    def _get_info(self):
+
+    def _get_info(self):  # not used!!
         distances = {"distance_to_target":
                          np.linalg.norm(self._agent_location - self._target_location, ord=1)}
         # ord=1: max(sum(abs(x), axis=0))
         for idx_obstacle in range(self.num_obstacles):
             distances.update({"distance_to_obstacle_{0}".format(idx_obstacle):
-                                  np.linalg.norm(self._agent_location - self._obstacle_locations[str(idx_obstacle)],
-                                                 ord=1)})
+                                  np.linalg.norm(self._agent_location - self._obstacle_locations[str(idx_obstacle)], ord=1)})
         return distances
+
+
 
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
@@ -123,6 +95,8 @@ class GridWorldEnv(gym.Env):
 
         # Choose the agent's location uniformly at random
         self._agent_location = self.np_random.integers(0, self.size, size=2, dtype=int)
+        if parameters.reward_parameters['history']:
+            self._agent_location_history.extend(self._agent_location)
 
         # We will sample the target's location randomly until it does not coincide with the agent's location
         self._target_location = self._agent_location
@@ -162,6 +136,8 @@ class GridWorldEnv(gym.Env):
                 "action_step_scaling"] * action_step)  # scale action to e.g. [-2, 2] -> reach is 5x5 grid
         previous_position = self._agent_location
         self._agent_location = self._agent_location + action_step
+        if parameters.reward_parameters['history']:
+            self._agent_location_history.extend(self._agent_location)
         self._max_distance = math.sqrt(2) * self.size
 
         ### COLLISION SPARSE REWARD ###
@@ -189,89 +165,100 @@ class GridWorldEnv(gym.Env):
         if terminated:
             reward = self.reward_parameters['target_value']  # sparse target reward
 
-        ### OTHER REWARDS ###
-        # else:
-        #     ### Distances
-        #     # Distance to target
-        #
-        #     previous_distance_to_target = math.sqrt((previous_position[0] - self._target_location[0]) ** 2
-        #                                             + (previous_position[1] - self._target_location[1]) ** 2)
-        #
-        #     distance_to_target = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2
-        #                                    + (self._agent_location[1] - self._target_location[1]) ** 2)
-        #
-        #     # Distances to obstacles
-        #     previous_distances_to_obstacles = np.array([])
-        #     distances_to_obstacles = np.array([])
-        #     for idx_obstacle in self._obstacle_locations:
-        #         previous_distance_to_obstacle = math.sqrt(
-        #             (previous_position[0] - self._obstacle_locations[str(idx_obstacle)][0]) ** 2
-        #             + (previous_position[1] - self._obstacle_locations[str(idx_obstacle)][1]) ** 2)
-        #         distance_to_obstacle = math.sqrt(
-        #             (self._agent_location[0] - self._obstacle_locations[str(idx_obstacle)][0]) ** 2
-        #             + (self._agent_location[1] - self._obstacle_locations[str(idx_obstacle)][1]) ** 2)
-        #         np.append(previous_distances_to_obstacles, previous_distance_to_obstacle)
-        #         np.append(distances_to_obstacles, distance_to_obstacle)
-        #
-        #     # Distance to the closest wall
-        #     previous_distance_to_wall = np.amin(np.vstack((previous_position + 1, self.size - previous_position)))
-        #     # get the distance to the closest wall in the previous step
-        #     distance_to_wall = np.amin(np.vstack((self._agent_location + 1, self.size - self._agent_location)))
-        #     # get the distance to the closest wall in the current step # TODO: check if this is correct (@Mo)
-        #
-        #     ### Distance differences
-        #     # Difference to target
-        #     diff_distance_to_target = np.abs(previous_distance_to_target - distance_to_target)
-        #
-        #     # Difference to obstacles TODO: make this a parameter, is this a good idea?
-        #     distances_to_obstacles[distances_to_obstacles > 0.3 * self.size] = 0  # set distances to obstacles > 5 to 0
-        #     previous_distances_to_obstacles[distances_to_obstacles == 0] = 0
-        #     # set previous distances to obstacles 0 with the same indices as distances to obstacles
-        #     diff_obstacle_distances = np.abs(
-        #         previous_distances_to_obstacles - distances_to_obstacles)  # TODO: make use of this
-        #
-        #     # Difference to wall
-        #     diff_distance_to_wall = np.abs(distance_to_wall - previous_distance_to_wall)  # TODO: make use of this
-        #
-        #     reward = 0
-        #
-        #     ### DENSE REWARDS ###
-        #     # Reward for avoiding obstacles
-        #     if self.reward_parameters['obstacle_avoidance']:
-        #         min_collision_distance = np.min(np.append(distances_to_obstacles, [distance_to_wall]))
-        #         penalty_distance_collision = np.max(np.array([1.0 - min_collision_distance / self._max_distance, 0.0]))
-        #         reward += self.reward_parameters['obstacle_distance_weight'] * penalty_distance_collision
-        #
-        #     if self.reward_parameters['target_seeking']:
-        #         reward += self.reward_parameters['target_distance_weight'] * distance_to_target / self._max_distance
-        #
-        #     ### SUB-SPARSE REWARDS ###
-        #     # Distance checkpoint rewards
-        #     if self.reward_parameters['checkpoints']:
-        #         checkpoint_reward_given = [False] * (self.reward_parameters['checkpoint_number'] + 1)
-        #         for i in np.invert(range(1, self.reward_parameters['checkpoint_number'] + 1)):
-        #             if (distance_to_target < i * self.reward_parameters['checkpoint_distance_proportion'] * self.size) \
-        #                     and not checkpoint_reward_given[i]:
-        #                 checkpoint_reward_given[i] = True
-        #                 reward += self.reward_parameters['checkpoint_value']  # checkpoint reward
-        #
-        #     # Time penalty
-        #     if self.reward_parameters['time']:
-        #         reward += self.reward_parameters['time_penalty']  # time penalty
-        #
-        #     # last_x_positions = self._agent_location_history[-self.reward_parameters['history_size']:]
-        #     # # Waiting reward # TODO: add step history to check if the agent is waiting
-        #     # if self.reward_parameters['waiting']:
-        #     #     if last_x_positions.count(last_x_positions[0]) == len(last_x_positions):  # Checks if all positions are equal
-        #     #         reward += self.reward_parameters['waiting_value']
-        #     #
-        #     # # Consistency reward # TODO: add step history to check if the agent is waiting
-        #     # if self.reward_parameters['consistency']:
-        #     #     last_x_steps = []
-        #     #     for i in np.invert((range(1, self.reward_parameters['consistency_step_number'] + 1))):  # csn,...,1
-        #     #         last_x_steps.append(last_x_positions[i] - last_x_positions[i - 1])
-        #     #         if last_x_steps.count(last_x_steps[0]) == len(last_x_steps):  # Checks if all directions are equal
-        #     #             reward += self.reward_parameters['consistency_value']
+        ## OTHER REWARDS ###
+        else:
+            ### Distances
+            # Distance to target
+            if self.reward_parameters['obstacle_avoidance'] \
+                    or self.reward_parameters['target_seeking']:
+                previous_distance_to_target = math.sqrt((previous_position[0] - self._target_location[0]) ** 2
+                                                        + (previous_position[1] - self._target_location[1]) ** 2)
+
+                distance_to_target = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2
+                                               + (self._agent_location[1] - self._target_location[1]) ** 2)
+
+                # Distances to obstacles
+                previous_distances_to_obstacles = np.array([])
+                distances_to_obstacles = np.array([])
+                for idx_obstacle in self._obstacle_locations:
+                    previous_distance_to_obstacle = math.sqrt(
+                        (previous_position[0] - self._obstacle_locations[str(idx_obstacle)][0]) ** 2
+                        + (previous_position[1] - self._obstacle_locations[str(idx_obstacle)][1]) ** 2)
+                    distance_to_obstacle = math.sqrt(
+                        (self._agent_location[0] - self._obstacle_locations[str(idx_obstacle)][0]) ** 2
+                        + (self._agent_location[1] - self._obstacle_locations[str(idx_obstacle)][1]) ** 2)
+                    np.append(previous_distances_to_obstacles, previous_distance_to_obstacle)
+                    np.append(distances_to_obstacles, distance_to_obstacle)
+
+                # Distance to the closest wall
+                previous_distance_to_wall = np.amin(np.vstack((previous_position + 1, self.size - previous_position)))
+                # get the distance to the closest wall in the previous step
+                distance_to_wall = np.amin(np.vstack((self._agent_location + 1, self.size - self._agent_location)))
+                # get the distance to the closest wall in the current step # TODO: check if this is correct (MO)
+
+                ### Distance differences
+                # Difference to target
+                diff_distance_to_target = np.abs(previous_distance_to_target - distance_to_target)
+
+                # Difference to obstacles # TODO: make this a parameter, is this a good idea?
+                distances_to_obstacles[distances_to_obstacles > 0.3 * self.size] = 0  # set distances to obstacles > 5 to 0
+                previous_distances_to_obstacles[distances_to_obstacles == 0] = 0
+                # set previous distances to obstacles 0 with the same indices as distances to obstacles
+                diff_obstacle_distances = np.abs(
+                    previous_distances_to_obstacles - distances_to_obstacles)  # TODO: make use of this
+
+                # Difference to wall
+                diff_distance_to_wall = np.abs(distance_to_wall - previous_distance_to_wall)  # TODO: make use of this
+
+            reward = 0
+
+            ### DENSE REWARDS ###
+            # Reward for avoiding obstacles
+            if self.reward_parameters['obstacle_avoidance']:
+                min_collision_distance = np.min(np.append(distances_to_obstacles, [distance_to_wall]))
+                penalty_distance_collision = np.max(np.array([1.0 - min_collision_distance / self._max_distance, 0.0]))
+                reward += self.reward_parameters['obstacle_distance_weight'] * penalty_distance_collision
+
+            if self.reward_parameters['target_seeking']:
+                reward += self.reward_parameters['target_distance_weight'] * distance_to_target / self._max_distance
+
+            ### SUB-SPARSE REWARDS ###
+            # Distance checkpoint rewards
+            if self.reward_parameters['checkpoints']:
+                distance_to_target = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2
+                                               + (self._agent_location[1] - self._target_location[1]) ** 2)
+                for i in np.flip(range(1, self.reward_parameters['checkpoint_number'] + 1)):
+                    if not self.checkpoint_reward_given[i]:
+                        if (distance_to_target < i * self.reward_parameters['checkpoint_distance_proportion'] * self.size):
+                            self.checkpoint_reward_given[i] = True
+                            reward += self.reward_parameters['checkpoint_value']  # checkpoint reward
+
+            # Time penalty
+            if self.reward_parameters['time']:
+                reward += self.reward_parameters['time_penalty']
+
+            if parameters.reward_parameters['history']:
+                # Waiting penalty
+                last_x_positions = list(self._agent_location_history)
+                last_x_positions = last_x_positions[-self.reward_parameters['max_waiting_steps']:]
+                if self.reward_parameters['waiting']:
+                    if last_x_positions.count(last_x_positions[-1]) == len(last_x_positions):  # Checks if all positions are equal
+                        reward += self.reward_parameters['waiting_penalty']
+
+                # Waiting reward
+                last_x_positions = list(self._agent_location_history)
+                last_x_positions = last_x_positions[-self.reward_parameters['waiting_step_number_to_check']:]
+                if self.reward_parameters['waiting']:
+                    if last_x_positions.count(last_x_positions[-1]) == len(last_x_positions):  # Checks if all positions are equal
+                        reward += self.reward_parameters['waiting_value']
+
+                # Consistency reward
+                if self.reward_parameters['consistency']:
+                    last_x_steps = self._agent_location_history[-self.reward_parameters['consistency_step_number_to_check']:]
+                    for i in np.flip((range(1, self.reward_parameters['consistency_step_number_to_check'] + 1))):  # csn,...,1
+                        last_x_steps.append(last_x_positions[-1] - last_x_positions[i - 1])
+                        if last_x_steps.count(last_x_steps[0]) == len(last_x_steps):  # Checks if all directions are equal
+                            reward += self.reward_parameters['consistency_value']
 
         observation = self._get_obs()
         info = self._get_info()
