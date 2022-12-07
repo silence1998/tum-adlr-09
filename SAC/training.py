@@ -233,7 +233,7 @@ def obstacle_sort(obs):
     return obs
 
 
-def save_models():
+def save_models(actorNet, criticNet_1, criticNet_2, target_valueNet):
     if feature_parameters['pretrain']:
         model_path = "model_pretrain/"
         if not os.path.isdir(model_path):
@@ -329,6 +329,8 @@ if __name__ == "__main__":
                 env.reset()
 
             obs = env._get_obs()
+            if feature_parameters['sort_obstacles']:
+                obs = obstacle_sort(obs)
             obs_values = [obs["agent"], obs["target"]]
             for idx_obstacle in range(env_parameters['num_obstacles']):
                 obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
@@ -505,4 +507,4 @@ if __name__ == "__main__":
 
     print('Normal training complete')
 
-    save_models()
+    save_models(actorNet, criticNet_1, criticNet_2, target_valueNet)
