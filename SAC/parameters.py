@@ -12,7 +12,7 @@ hyper_parameters = {
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
-    'entropy_factor_final': 0.3,
+    'entropy_factor_final': 0.2,
     'num_episodes': 250  # set min 70 for tests as some parts of code starts after ~40 episodes
 }
 
@@ -49,8 +49,8 @@ reward_parameters = {
     'target_distance_weight': 0.01,
 
     ### SPARSE REWARDS ###
-    'target_value': 1,
-    'collision_value': -5,
+    'target_value': 10,
+    'collision_value': -50,
 
     ### SUB-SPARSE REWARDS ###
     'checkpoints': False,  # if true, use checkpoints rewards
@@ -61,8 +61,7 @@ reward_parameters = {
     'time': False,  # if true, use time penalty
     'time_penalty': -0.01,  # 0.01 == penalty of -1 for "100" action steps
 
-    ###
-
+    # Rewards below depend on action history
     'history': False,  # if true, use history
     'history_size': 15,  # >= hyper_parameters['action_history_size'] above
     # size of history to check for waiting and consistency
