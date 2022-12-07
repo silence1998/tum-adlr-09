@@ -168,7 +168,7 @@ def select_action_smooth(action_history):
     return np.mean(action_history_, axis=0)
 
 
-# maybe no effect
+### The following code is unused, maybe useful for future work vvv
 def select_action_filter(state, actorNet):
     """
     erases the actions which are directed away from the goal
@@ -192,7 +192,7 @@ def action_selection(state, actorNet):
     else:
         action = select_action(state, actorNet)
     return action
-
+### The above code is unused, maybe useful for future work ^^^
 
 def select_action_A_star(state):
     size = env.size
@@ -244,7 +244,7 @@ def save_models():
     with open(model_path + 'reward_parameters.txt', 'w+') as file:
         file.write(json.dumps(env.reward_parameters))  # use `json.loads` to do the reverse
     with open(model_path + 'feature_parameters.txt', 'w+') as file:
-        file.write(json.dumps(env.feature_parameters))  # use `json.loads` to do the reverse
+        file.write(json.dumps(feature_parameters))  # use `json.loads` to do the reverse
 
     print("Saving models ...")
     torch.save(actorNet.state_dict(), model_path + "actor.pt")
@@ -485,6 +485,6 @@ if __name__ == "__main__":
             valueNet.save_checkpoint()
             target_valueNet.save_checkpoint()
 
-        print('Complete')
+    print('Normal training complete')
 
     save_models()
