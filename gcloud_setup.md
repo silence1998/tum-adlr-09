@@ -75,5 +75,15 @@ source env/bin/activate  # run from home folder
 ```
 gsutil cp file gs://tum-adlr-09/
 gsutil cp -r folder-name gs://tum-adlr-09/
+```
+
+### to rename files in the project bucket 
+```
 gsutil mv gs://my_bucket/olddir gs://my_bucket/newdir
+```
+
+### to copy files from the the project bucket to current dir
+```
+gsutil -m cp -r "gs://tum-adlr-09/tmp" .
+gsutil -m cp -r "gs://tum-adlr-09/model_pretrain" .
 ```
