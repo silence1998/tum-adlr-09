@@ -17,11 +17,17 @@ class GridWorldEnv(gym.Env):
         self.window_size = 512  # The size of the PyGame window
         self.num_obstacles = num_obstacles
 
+        ### REWARD PARAMETERS ###
+        self.reward_parameters = parameters.reward_parameters
+
         self._agent_location = None
         self._target_location = None
         self._obstacle_locations = None
+        if parameters.reward_parameters['checkpoints']:
+            self.checkpoint_reward_given = [False] * (self.reward_parameters['checkpoint_number'] + 1)
         if parameters.reward_parameters['history']:
             self._agent_location_history = deque(maxlen=parameters.reward_parameters['history_size'])
+
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
         elements = {"agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
@@ -30,8 +36,7 @@ class GridWorldEnv(gym.Env):
             elements.update({"obstacle_{0}".format(idx_obstacle): spaces.Box(0, size - 1, shape=(2,), dtype=int)})
         self.observation_space = spaces.Dict(elements)
 
-        ### REWARD PARAMETERS ###
-        self.reward_parameters = parameters.reward_parameters
+
 
         # TODO action space should be continuous now its bounded in [-3, 3]
         self.action_space = spaces.Discrete(4)  # Continuous 3 see gym examples
@@ -224,12 +229,11 @@ class GridWorldEnv(gym.Env):
             if self.reward_parameters['checkpoints']:
                 distance_to_target = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2
                                                + (self._agent_location[1] - self._target_location[1]) ** 2)
-                checkpoint_reward_given = [False] * (self.reward_parameters['checkpoint_number'] + 1)
-                for i in np.invert(range(1, self.reward_parameters['checkpoint_number'] + 1)):
-                    if (distance_to_target < i * self.reward_parameters['checkpoint_distance_proportion'] * self.size) \
-                            and not checkpoint_reward_given[i]:
-                        checkpoint_reward_given[i] = True
-                        reward += self.reward_parameters['checkpoint_value']  # checkpoint reward
+                for i in np.flip(range(1, self.reward_parameters['checkpoint_number'] + 1)):
+                    if not self.checkpoint_reward_given[i]:
+                        if (distance_to_target < i * self.reward_parameters['checkpoint_distance_proportion'] * self.size):
+                            self.checkpoint_reward_given[i] = True
+                            reward += self.reward_parameters['checkpoint_value']  # checkpoint reward
 
             # Time penalty
             if self.reward_parameters['time']:
@@ -253,7 +257,7 @@ class GridWorldEnv(gym.Env):
                 # Consistency reward
                 if self.reward_parameters['consistency']:
                     last_x_steps = self._agent_location_history[-self.reward_parameters['consistency_step_number_to_check']:]
-                    for i in np.invert((range(1, self.reward_parameters['consistency_step_number_to_check'] + 1))):  # csn,...,1
+                    for i in np.flip((range(1, self.reward_parameters['consistency_step_number_to_check'] + 1))):  # csn,...,1
                         last_x_steps.append(last_x_positions[-1] - last_x_positions[i - 1])
                         if last_x_steps.count(last_x_steps[0]) == len(last_x_steps):  # Checks if all directions are equal
                             reward += self.reward_parameters['consistency_value']

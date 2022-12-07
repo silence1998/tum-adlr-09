@@ -320,7 +320,7 @@ if __name__ == "__main__":
             for action in actions:
                 # Select and perform an action
                 t += 1
-                action = action / env.reward_parameters['action_step_scaling']
+                action = action * env.reward_parameters['action_step_scaling']
                 _, reward, done, _, _ = env.step(action)
                 reward = torch.tensor([reward], dtype=torch.float, device=device)
 
