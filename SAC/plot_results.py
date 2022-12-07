@@ -4,20 +4,13 @@ from itertools import count
 
 from environment import GridWorldEnv
 from training import init_model, select_action
-from parameters import env_parameters, feature_parameters, hyper_parameters
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
-
-env.render_mode = "human"
-
-seed = feature_parameters['seed_init_value']
-# initialize NN
-actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
-
+from model import *
+import json
 
 if __name__ == '__main__':
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     m = "1" #input("Select normal Model (0) OR Model with pretrain (1): ")
     if m == "0":
@@ -25,8 +18,24 @@ if __name__ == '__main__':
     elif m == "1":
         model_path = "model_pretrain/"
 
-    # load model
+    # Load the model parameters
+    with open(model_path + 'env_parameters.txt', 'r') as file:
+        env_parameters = json.load(file)
+    with open(model_path + 'hyper_parameters.txt', 'r') as file:
+        hyper_parameters = json.load(file)
+    with open(model_path + 'reward_parameters.txt', 'r') as file:
+        reward_parameters = json.load(file)
+    with open(model_path + 'feature_parameters.txt', 'r') as file:
+        feature_parameters = json.load(file)
 
+    # initialize environment
+    env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
+    env.render_mode = "human"
+
+    # initialize NN
+    actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
+    seed = feature_parameters['seed_init_value']
+    # Load model
     actorNet.load_state_dict(torch.load(model_path + "actor.pt", map_location=device))
     criticNet_1.load_state_dict(torch.load(model_path + "criticNet_1.pt", map_location=device))
     criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
