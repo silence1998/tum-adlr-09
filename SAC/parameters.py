@@ -13,7 +13,9 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'entropy_factor_final': 0.2,
-    'num_episodes': 250  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 250,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'sigma_init': 2.0,
+    'sigma_final': 0.5
 }
 
 feature_parameters = {
@@ -28,11 +30,11 @@ feature_parameters = {
 
     'sort_obstacles': True,  # sort obstacles by distance to target
 
-    'apply_environment_seed': True,  # apply seed to environment to have comparable results
+    'apply_environment_seed': False,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
 
-    'plot_durations': True,  # plot durations of episodes
-    'plot_sigma': True  # plot sigma of actor
+    'plot_durations': False,  # plot durations of episodes
+    'plot_sigma': False  # plot sigma of actor
 }
 
 reward_parameters = {

@@ -267,7 +267,7 @@ def init_model():
     # initialize NN
     n_actions = 2  # velocity in 2 directions
     actorNet = ActorNetwork(hyper_parameters["alpha"], hyper_parameters["input_dims"], n_actions=n_actions,
-                            name='actor', max_action=[1, 1])  # TODO max_action value and min_action value
+                            name='actor', max_action=[1, 1], sigma=2.0)  # TODO max_action value and min_action value
     criticNet_1 = CriticNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], n_actions=n_actions,
                                 name='critic_1')
     criticNet_2 = CriticNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], n_actions=n_actions,
@@ -329,6 +329,8 @@ if __name__ == "__main__":
                 env.reset()
 
             obs = env._get_obs()
+            if feature_parameters['sort_obstacles']:
+                obs = obstacle_sort(obs)
             obs_values = [obs["agent"], obs["target"]]
             for idx_obstacle in range(env_parameters['num_obstacles']):
                 obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
@@ -426,6 +428,12 @@ if __name__ == "__main__":
         entropy_factor = hyper_parameters['entropy_factor'] + i_episode * (
                 hyper_parameters['entropy_factor_final'] - hyper_parameters['entropy_factor']) / (
                                  hyper_parameters["num_episodes"] - 1)
+
+        sigma_ = hyper_parameters['sigma_init'] + i_episode * (
+                hyper_parameters['sigma_final'] - hyper_parameters['sigma_init']) / (
+                                 hyper_parameters["num_episodes"] - 1)
+        actorNet.max_sigma = sigma_
+
         # Initialize the environment and state
         if feature_parameters['apply_environment_seed']:
             env.reset(seed=seed)
@@ -433,7 +441,8 @@ if __name__ == "__main__":
         else:
             env.reset()
         obs = env._get_obs()
-
+        if feature_parameters['sort_obstacles']:
+            obs = obstacle_sort(obs)
         obs_values = [obs["agent"], obs["target"]]
         for idx_obstacle in range(env_parameters['num_obstacles']):
             obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
