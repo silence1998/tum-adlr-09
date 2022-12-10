@@ -41,7 +41,7 @@ reward_parameters = {
     # 'time_weight': 1,
     # the above are not used in the current version which is sparse reward based
 
-    'action_step_scaling': 1,  # 1 step -> "2" grids of movement reach in x and y directions
+    'action_step_scaling': 2,  # 1 step -> "2" grids of movement reach in x and y directions
     ### DENSE REWARDS ### # TODO: check after midterm
     'obstacle_avoidance': False,
     'obstacle_distance_weight': -0.01,
@@ -49,8 +49,8 @@ reward_parameters = {
     'target_distance_weight': 0.01,
 
     ### SPARSE REWARDS ###
-    'target_value': 1,
-    'collision_value': -5,
+    'target_value': 10,
+    'collision_value': -50,
 
     ### SUB-SPARSE REWARDS ###
     'checkpoints': False,  # if true, use checkpoints rewards
