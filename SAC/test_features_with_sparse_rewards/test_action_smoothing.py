@@ -22,7 +22,7 @@ feature_parameters = {
     'pretrain': True,  # pretrain the model
     'num_episodes_pretrain': 500,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
-    'action_smoothing': True,
+    'action_smoothing': False,
     'action_history_size': 3,  # number of actions to remember for the action history
 
     'select_action_filter': False,  # filter actions to be directed towards target # TODO: last test

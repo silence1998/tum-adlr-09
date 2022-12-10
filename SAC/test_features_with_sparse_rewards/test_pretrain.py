@@ -1,6 +1,6 @@
 env_parameters = {
     'num_obstacles': 5,
-    'env_size': 10  # size of the environment in one dimension (environment is square)
+    'env_size': 10 # size of the environment in one dimension (environment is square)
 }
 
 hyper_parameters = {
@@ -19,7 +19,7 @@ hyper_parameters = {
 }
 
 feature_parameters = {
-    'pretrain': True,  # pretrain the model
+    'pretrain': False,  # pretrain the model
     'num_episodes_pretrain': 500,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
     'action_smoothing': True,

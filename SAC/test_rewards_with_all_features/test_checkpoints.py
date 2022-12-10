@@ -1,6 +1,6 @@
 env_parameters = {
     'num_obstacles': 5,
-    'env_size': 10  # size of the environment in one dimension (environment is square)
+    'env_size': 10 # size of the environment in one dimension (environment is square)
 }
 
 hyper_parameters = {
@@ -55,7 +55,7 @@ reward_parameters = {
     'collision_value': -50,
 
     ### SUB-SPARSE REWARDS ###
-    'checkpoints': False,  # if true, use checkpoints rewards
+    'checkpoints': True,  # if true, use checkpoints rewards
     'checkpoint_distance_proportion': 0.1,  # distance proportion to environment size in 1 dimension
     'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
     'checkpoint_value': 0.1,  # make sure checkpoint_value * checkpoint_number < 1

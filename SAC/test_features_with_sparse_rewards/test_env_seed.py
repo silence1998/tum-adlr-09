@@ -1,6 +1,6 @@
 env_parameters = {
     'num_obstacles': 5,
-    'env_size': 10  # size of the environment in one dimension (environment is square)
+    'env_size': 10 # size of the environment in one dimension (environment is square)
 }
 
 hyper_parameters = {
@@ -30,7 +30,7 @@ feature_parameters = {
 
     'sort_obstacles': True,  # sort obstacles by distance to target
 
-    'apply_environment_seed': True,  # apply seed to environment to have comparable results
+    'apply_environment_seed': False,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
 
     'plot_durations': False,  # plot durations of episodes

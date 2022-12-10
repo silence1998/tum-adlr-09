@@ -1,6 +1,6 @@
 env_parameters = {
     'num_obstacles': 5,
-    'env_size': 10  # size of the environment in one dimension (environment is square)
+    'env_size': 10 # size of the environment in one dimension (environment is square)
 }
 
 hyper_parameters = {
@@ -60,7 +60,7 @@ reward_parameters = {
     'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
     'checkpoint_value': 0.1,  # make sure checkpoint_value * checkpoint_number < 1
 
-    'time': False,  # if true, use time penalty
+    'time': True,  # if true, use time penalty
     'time_penalty': -0.01,  # 0.01 == penalty of -1 for "100" action steps
 
     # Rewards below depend on action history

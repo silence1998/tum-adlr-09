@@ -133,7 +133,7 @@ class GridWorldEnv(gym.Env):
         global penalty_distance_collision
         action_step = np.round(
             self.reward_parameters[
-                "action_step_scaling"] * action_step)  # scale action to e.g. [-2, 2] -> reach is 5x5 grid
+                "action_step_scaling"] * action_step)  # scale action to e.g. [-2, 2] -> action reach is 5x5 grid
         previous_position = self._agent_location
         self._agent_location = self._agent_location + action_step
         if parameters.reward_parameters['history']:
