@@ -1,6 +1,6 @@
 env_parameters = {
     'num_obstacles': 5,
-    'env_size': 20  # size of the environment in one dimension (environment is square)
+    'env_size': 10  # size of the environment in one dimension (environment is square)
 }
 
 hyper_parameters = {
@@ -12,7 +12,7 @@ hyper_parameters = {
     'beta': 0.0003,  # learning rate for critic
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
-    'entropy_factor_final': 0.2,
+    'entropy_factor_final': 0.3,
     'num_episodes': 250,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'sigma_init': 2.0,
     'sigma_final': 0.5
