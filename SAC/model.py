@@ -105,8 +105,9 @@ class ValueNetwork(nn.Module):
 
 class ActorNetwork(nn.Module):
     def __init__(self, alpha, input_dims, max_action, fc1_dims=128,
-                 fc2_dims=64, n_actions=2, name='actor', chkpt_dir='tmp/sac'):
+                 fc2_dims=64, n_actions=2, name='actor', chkpt_dir='tmp/sac', sigma=2.0):
         super(ActorNetwork, self).__init__()
+        self.max_sigma = sigma
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
@@ -136,7 +137,7 @@ class ActorNetwork(nn.Module):
         mu = self.mu(prob)
         sigma = self.sigma(prob)  # log_std
 
-        sigma = torch.clamp(sigma, min=self.reparam_noise, max=0.5)  # TODO: decaying sigma
+        sigma = torch.clamp(sigma, min=self.reparam_noise, max=self.max_sigma)  # TODO: decaying sigma
 
         return mu, sigma
 
