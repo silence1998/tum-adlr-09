@@ -12,12 +12,12 @@ if __name__ == '__main__':
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    m = "1"  # input("Select normal Model (0) OR Model with pretrain (1): ")
-    if m == "0":
-        model_path = "model/"
-    elif m == "1":
-        model_path = "model_pretrain/"
-
+    # m = "1"  # input("Select normal Model (0) OR Model with pretrain (1): ")
+    # if m == "0":
+    #     model_path = "model/"
+    # elif m == "1":
+    #     model_path = "model_pretrain/"
+    model_path = "model_pretrain/model_5/"
     # Load the model parameters
     with open(model_path + 'env_parameters.txt', 'r') as file:
         env_parameters = json.load(file)
@@ -42,13 +42,15 @@ if __name__ == '__main__':
     criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
     target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
 
-    init_seed = 1
+    init_seed = 0
     actual_reward = []
     issuccess_ = []
     actual_step = []
     i = 0
+    seed = init_seed
     while i < 100:  # run plot for 10 episodes to see what it learned
         i += 1
+        seed += 1
         env.reset(seed=seed)
         obs = env._get_obs()
 
@@ -91,7 +93,7 @@ if __name__ == '__main__':
             # Move to the next state
             state = next_state
             if done:
-                reward_=reward.cpu().detach().numpy()[0]
+                reward_ = reward.cpu().detach().numpy()[0]
                 actual_reward.append(reward_)
                 actual_step.append(t)
                 if reward > 0:
@@ -107,6 +109,6 @@ if __name__ == '__main__':
 
     # print(issuccess_)
     # print(actual_reward)
-    print("accuracy=", np.sum(issuccess_)/len(issuccess_))
+    print("accuracy=", np.sum(issuccess_) / len(issuccess_))
     print("mean_reward=", np.mean(actual_reward))
     print("mean_step=", np.mean(actual_step))
