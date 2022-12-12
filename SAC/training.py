@@ -425,13 +425,16 @@ if __name__ == "__main__":
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
 
         print("Normal training episode: " + str(i_episode))
-        entropy_factor = hyper_parameters['entropy_factor'] + i_episode * (
-                hyper_parameters['entropy_factor_final'] - hyper_parameters['entropy_factor']) / (
-                                 hyper_parameters["num_episodes"] - 1)
-
-        sigma_ = hyper_parameters['sigma_init'] + i_episode * (
-                hyper_parameters['sigma_final'] - hyper_parameters['sigma_init']) / (
-                                 hyper_parameters["num_episodes"] - 1)
+        if i_episode == 0 or i_episode == 1:
+            entropy_factor = hyper_parameters['entropy_factor']
+            sigma_ = hyper_parameters['sigma_init']
+        else:
+            entropy_factor = hyper_parameters['entropy_factor'] + i_episode * (
+                    hyper_parameters['entropy_factor_final'] - hyper_parameters['entropy_factor']) / (
+                                     hyper_parameters["num_episodes"] - 1)
+            sigma_ = hyper_parameters['sigma_init'] + i_episode * (
+                    hyper_parameters['sigma_final'] - hyper_parameters['sigma_init']) / (
+                                     hyper_parameters["num_episodes"] - 1)
         actorNet.max_sigma = sigma_
 
         # Initialize the environment and state
