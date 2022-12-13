@@ -1,6 +1,6 @@
 env_parameters = {
     'num_obstacles': 5,
-    'env_size': 10 # size of the environment in one dimension (environment is square)
+    'env_size': 10  # size of the environment in one dimension (environment is square)
 }
 
 hyper_parameters = {
@@ -19,18 +19,18 @@ hyper_parameters = {
 }
 
 feature_parameters = {
-    'pretrain': False,  # pretrain the model
+    'pretrain': True,  # pretrain the model
     'num_episodes_pretrain': 500,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
-    'action_smoothing': True,
+    'action_smoothing': False,
     'action_history_size': 3,  # number of actions to remember for the action history
 
     'select_action_filter': False,  # filter actions to be directed towards target # TODO: last test
     'select_action_filter_after_episode': 70,  # start filtering after this episode
 
-    'sort_obstacles': True,  # sort obstacles by distance to target
+    'sort_obstacles': False,  # sort obstacles by distance to target
 
-    'apply_environment_seed': True,  # apply seed to environment to have comparable results
+    'apply_environment_seed': False,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
 
     'plot_durations': False,  # plot durations of episodes
@@ -84,4 +84,10 @@ reward_parameters = {
     # threshold
 
     # fast moving etc. for sub actions for sparse rewards
+}
+
+test_parameters = {
+    "time_limit": 1500
+    #"num_tests": 10,
+    #"num_episodes": 100
 }
