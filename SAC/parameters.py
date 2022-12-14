@@ -22,13 +22,13 @@ feature_parameters = {
     'pretrain': True,  # pretrain the model
     'num_episodes_pretrain': 500,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
-    'action_smoothing': False,
+    'action_smoothing': True,
     'action_history_size': 3,  # number of actions to remember for the action history
 
     'select_action_filter': False,  # filter actions to be directed towards target # TODO: last test
     'select_action_filter_after_episode': 70,  # start filtering after this episode
 
-    'sort_obstacles': False,  # sort obstacles by distance to target
+    'sort_obstacles': True,  # sort obstacles by distance to target
 
     'apply_environment_seed': False,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
@@ -37,6 +37,11 @@ feature_parameters = {
     'plot_sigma': False  # plot sigma of actor
 }
 
+test_parameters = {
+    "time_limit": 1500
+    #"num_tests": 10,
+    #"num_episodes": 100
+}
 reward_parameters = {
     # 'field_of_view': 5,  # see min_collision_distance
     # 'collision_weight': 0.3,
@@ -55,10 +60,10 @@ reward_parameters = {
     'collision_value': -50,
 
     ### SUB-SPARSE REWARDS ###
-    'checkpoints': False,  # if true, use checkpoints rewards
+    'checkpoints': True,  # if true, use checkpoints rewards
     'checkpoint_distance_proportion': 0.1,  # distance proportion to environment size in 1 dimension
     'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
-    'checkpoint_value': 0.1,  # make sure checkpoint_value * checkpoint_number < 1
+    'checkpoint_value': 1,  # make sure checkpoint_value * checkpoint_number < 1
 
     'time': False,  # if true, use time penalty
     'time_penalty': -0.01,  # 0.01 == penalty of -1 for "100" action steps
@@ -86,8 +91,3 @@ reward_parameters = {
     # fast moving etc. for sub actions for sparse rewards
 }
 
-test_parameters = {
-    "time_limit": 1500
-    #"num_tests": 10,
-    #"num_episodes": 100
-}

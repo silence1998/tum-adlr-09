@@ -22,15 +22,15 @@ feature_parameters = {
     'pretrain': True,  # pretrain the model
     'num_episodes_pretrain': 500,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
-    'action_smoothing': True,
+    'action_smoothing': False,
     'action_history_size': 3,  # number of actions to remember for the action history
 
     'select_action_filter': False,  # filter actions to be directed towards target # TODO: last test
     'select_action_filter_after_episode': 70,  # start filtering after this episode
 
-    'sort_obstacles': False,  # sort obstacles by distance to target
+    'sort_obstacles': True,  # sort obstacles by distance to target
 
-    'apply_environment_seed': True,  # apply seed to environment to have comparable results
+    'apply_environment_seed': False,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
 
     'plot_durations': False,  # plot durations of episodes
