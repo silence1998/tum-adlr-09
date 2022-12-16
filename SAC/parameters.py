@@ -55,12 +55,16 @@ reward_parameters = {
     'collision_value': -50,
 
     ### SUB-SPARSE REWARDS ###
+
+    'total_step_limit': 1000,
+    'reward_reach_limit': -0.1,
+
     'checkpoints': False,  # if true, use checkpoints rewards
     'checkpoint_distance_proportion': 0.1,  # distance proportion to environment size in 1 dimension
     'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
     'checkpoint_value': 0.1,  # make sure checkpoint_value * checkpoint_number < 1
 
-    'time': False,  # if true, use time penalty
+    'time': True,  # if true, use time penalty
     'time_penalty': -0.01,  # 0.01 == penalty of -1 for "100" action steps
 
     # Rewards below depend on action history
