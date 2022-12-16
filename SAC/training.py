@@ -422,7 +422,7 @@ if __name__ == "__main__":
 
 
     if feature_parameters['apply_environment_seed']:
-        seed = feature_parameters['seed_init_value']
+        seed = 0#feature_parameters['seed_init_value']
     action_history = deque(maxlen=feature_parameters['action_history_size'])
 
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
@@ -541,7 +541,7 @@ if __name__ == "__main__":
     actual_step = []
     i = 0
     seed = init_seed
-    time_limit = 1500
+    time_limit = test_parameters["time_limit"]
 
     while i < 100:  # run plot for 10 episodes to see what it learned
         i += 1

@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     # initialize NN
     actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
-    seed = feature_parameters['seed_init_value'] + 10
+    seed = feature_parameters['seed_init_value'] + 20
     # Load model
     actorNet.load_state_dict(torch.load(model_path + "actor.pt", map_location=device))
     actorNet.max_sigma = hyper_parameters['sigma_final']
@@ -106,7 +106,7 @@ if __name__ == '__main__':
                 break
 
     images_rev = images[::-1]
-    images_full = images + images_rev
+    images_full = images #+ images_rev
 
     t = datetime.datetime.now()
     time_path = ("_%s_%s_%s_%s-%s-%s" % (t.year, t.month, t.day, t.hour, t.minute, t.second))

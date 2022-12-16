@@ -1,5 +1,5 @@
 env_parameters = {
-    'num_obstacles': 5,
+    'num_obstacles': 10,
     'env_size': 10  # size of the environment in one dimension (environment is square)
 }
 
@@ -49,7 +49,7 @@ reward_parameters = {
     # the above are not used in the current version which is sparse reward based
 
     'action_step_scaling': 1,  # 1 step -> "2" grids of movement reach in x and y directions
-    ### DENSE REWARDS ### # TODO: check after midterm
+    ### DENSE REWARDS ###  # TODO: check after midterm
     'obstacle_avoidance': False,
     'obstacle_distance_weight': -0.01,
     'target_seeking': False,
