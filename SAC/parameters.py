@@ -1,11 +1,11 @@
 env_parameters = {
     'num_obstacles': 5,
-    'env_size': 10  # size of the environment in one dimension (environment is square)
+    'env_size': 20  # size of the environment in one dimension (environment is square)
 }
 
 hyper_parameters = {
     'input_dims': 4 + env_parameters['num_obstacles'] * 2,  # original position of actor, target and obstacle positions
-    'batch_size': 512,
+    'batch_size': 4096,
     'gamma': 0.999,  # discount factor
     'target_update': 10,  # update target network every 10 episodes TODO: UNUSED if code for now
     'alpha': 0.0003,  # learning rate for actor
@@ -20,7 +20,7 @@ hyper_parameters = {
 
 feature_parameters = {
     'pretrain': True,  # pretrain the model
-    'num_episodes_pretrain': 500,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes_pretrain': 250,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
     'action_smoothing': True,
     'action_history_size': 3,  # number of actions to remember for the action history
