@@ -1,0 +1,43 @@
+# 22 12 12 Weekly Meeting Questions
+
+## Organizational
+
+## Environment
+- 20x20 grid problems
+  - variance jump
+### Obstacles
+
+### Collision Check
+### Reward Func
+#### Sub sparse Rewards
+  
+## Algorithm
+#### SAC-X
+#### SAC
+##### JUMP START IDEA
+
+### Policy
+### Networks
+#### Inputs
+#### Outputs
+
+## Optimizer -> **after midterm**
+### Loss
+## Performance -> **after midterm**
+
+### Curves -> **after midterm**
+
+
+### Google Cloud -> **after midterm**
+
+
+## MILE STONES
+
+### MIDTERM
+
+
+### MIDTERM PRESENTATION
+
+### ENDTERM PRESENTATION
+
+#### ENDTERM REPORT
