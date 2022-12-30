@@ -16,3 +16,6 @@ SAC/A_star/__pycache__/
 /SAC/model_pretrain/
 
 /SAC/tmp/
+/SAC-X/model_pretrain/
+/SAC-X/tmp/
+/SAC-X/wandb/
