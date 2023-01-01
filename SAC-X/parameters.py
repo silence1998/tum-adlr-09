@@ -34,7 +34,8 @@ feature_parameters = {
     'seed_init_value': 3407,
 
     'plot_durations': True,  # plot durations of episodes
-    'plot_sigma': False  # plot sigma of actor
+    'plot_sigma': False,  # plot sigma of actor
+    'scheduler_period': 2
 }
 
 reward_parameters = {
@@ -64,7 +65,7 @@ reward_parameters = {
     'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
     'checkpoint_value': 0.1,  # make sure checkpoint_value * checkpoint_number < 1
 
-    'time': True,  # if true, use time penalty
+    'time': False,  # if true, use time penalty
     'time_penalty': -0.01,  # 0.01 == penalty of -1 for "100" action steps
 
     # Rewards below depend on action history

@@ -1,12 +1,16 @@
 import torch
 import numpy as np
 from itertools import count
+import pickle
 
 from environment import GridWorldEnv
-from training import init_model, select_action
+from training import init_model, select_action, schedule_task
 
 from model import *
 import json
+
+from util_sacx.q_table import QTable
+from util_sacx.policy import BoltzmannPolicy
 
 if __name__ == '__main__':
 
@@ -28,6 +32,14 @@ if __name__ == '__main__':
     with open(model_path + 'feature_parameters.txt', 'r') as file:
         feature_parameters = json.load(file)
 
+    tasks = (0, 1, 2)
+    xi = feature_parameters['scheduler_period']
+    Q_task = QTable()
+    scheduler = Q_task.derive_policy(BoltzmannPolicy, lambda x: tasks, temperature=1)
+
+    with open(model_path + "Q_task.pkl", "rb") as tf:
+        Q_task.store = pickle.load(tf)
+
     # initialize environment
     env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
     env.render_mode = "human"
@@ -43,10 +55,11 @@ if __name__ == '__main__':
     target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
 
     # env=GridWorldEnv(render_mode="human")
-    task = 2
+    task = 1
     i = 0
     while i < 10:  # run plot for 10 episodes to see what it learned
         i += 1
+        List_Tau = []
         if feature_parameters['apply_environment_seed']:
             env.reset(seed=seed)
             seed += 1
@@ -61,6 +74,10 @@ if __name__ == '__main__':
 
         state = state.view(1, -1)
         for t in count():
+            if t % xi == 0:
+                # task = random.choice(tasks) ## sac-u
+                task = schedule_task(Q_task, scheduler, List_Tau) ## sac-q
+                List_Tau.append(task)
             # Select and perform an action
             action = select_action(state, actorNet, task)
             _, reward, done, _, _ = env.step(action)
