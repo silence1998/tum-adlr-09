@@ -4,7 +4,7 @@ from itertools import count
 import pickle
 
 from environment import GridWorldEnv
-from training import init_model, select_action, schedule_task
+from training import init_model, select_action, Scheduler
 
 from model import *
 import json
@@ -33,12 +33,10 @@ if __name__ == '__main__':
         feature_parameters = json.load(file)
 
     tasks = (0, 1, 2)
-    xi = feature_parameters['scheduler_period']
-    Q_task = QTable()
-    scheduler = Q_task.derive_policy(BoltzmannPolicy, lambda x: tasks, temperature=1)
+    sac_schedule = Scheduler(tasks)
 
     with open(model_path + "Q_task.pkl", "rb") as tf:
-        Q_task.store = pickle.load(tf)
+        sac_schedule.Q_task.store = pickle.load(tf)
 
     # initialize environment
     env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
@@ -74,9 +72,9 @@ if __name__ == '__main__':
 
         state = state.view(1, -1)
         for t in count():
-            if t % xi == 0:
+            if t % sac_schedule.xi == 0:
                 # task = random.choice(tasks) ## sac-u
-                task = schedule_task(Q_task, scheduler, List_Tau) ## sac-q
+                task = sac_schedule.schedule_task(List_Tau) ## sac-q
                 List_Tau.append(task)
             # Select and perform an action
             action = select_action(state, actorNet, task)

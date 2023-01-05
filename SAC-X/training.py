@@ -241,7 +241,7 @@ def obstacle_sort(obs):
     return obs
 
 
-def save_models():
+def save_models(sac_schedule):
     if feature_parameters['pretrain']:
         model_path = "model_pretrain/"
         if not os.path.isdir(model_path):
@@ -264,7 +264,7 @@ def save_models():
         file.write(json.dumps(feature_parameters))  # use `json.loads` to do the reverse
 
     with open(model_path + "Q_task.pkl", "wb") as tf:
-        pickle.dump(Q_task.store, tf)
+        pickle.dump(sac_schedule.Q_task.store, tf)
 
     print("Saving models ...")
     torch.save(actorNet.state_dict(), model_path + "actor.pt")
@@ -291,39 +291,46 @@ def init_model():
     return actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory
 
 
-def train_scheduler(Q, main_rewards, Tau):
-    xi = feature_parameters['scheduler_period']
-    for h in range(len(Tau)):
-        R = sum([r * hyper_parameters["gamma"] ** k for k, r in enumerate(main_rewards[h * xi:])])
-        # We used a Q-Table with 0.1 learning rate to update the values in the table.
-        # Change 0.1 to the desired learning rate
-        if h < 3:
-            Q[tuple(Tau[:h]), Tau[h]] += 0.1 * (R - Q[tuple(Tau[:h]), Tau[h]])
-        else:
-            Q[tuple(Tau[h - 3:h]), Tau[h]] += 0.1 * (R - Q[tuple(Tau[h - 3:h]), Tau[h]])
-
-def schedule_task(Q, scheduler, Tau):
-    h = len(Tau)
-
-    if h < 3:
-        dist = scheduler.distribution(tuple(Tau))
-    else:
-        dist = scheduler.distribution(tuple(Tau[-3:]))
-
-    choice = np.random.random()
-    cumulative_p = 0
-
-    for a, p in dist.items():
-        cumulative_p += p
-        if cumulative_p > choice:
-            return a
-
 
 
 # initialize hyper-parameters
 hyper_parameters = parameters.hyper_parameters
 feature_parameters = parameters.feature_parameters
 env_parameters = parameters.env_parameters
+
+class Scheduler:
+    def __init__(self, tasks):
+        self.xi = feature_parameters['scheduler_period']
+        self.Q_task = QTable()
+        self.scheduler = self.Q_task.derive_policy(BoltzmannPolicy, lambda x: tasks, temperature=1)
+
+    def train_scheduler(self, main_rewards, Tau):
+        xi = self.xi
+        for h in range(len(Tau)):
+            R = sum([r * hyper_parameters["gamma"] ** k for k, r in enumerate(main_rewards[h * xi:])])
+            # We used a Q-Table with 0.1 learning rate to update the values in the table.
+            # Change 0.1 to the desired learning rate
+            if h < 3:
+                self.Q_task[tuple(Tau[:h]), Tau[h]] += 0.1 * (R - self.Q_task[tuple(Tau[:h]), Tau[h]])
+            else:
+                self.Q_task[tuple(Tau[h - 3:h]), Tau[h]] += 0.1 * (R - self.Q_task[tuple(Tau[h - 3:h]), Tau[h]])
+
+    def schedule_task(self, Tau):
+        h = len(Tau)
+
+        if h < 3:
+            dist = self.scheduler.distribution(tuple(Tau))
+        else:
+            dist = self.scheduler.distribution(tuple(Tau[-3:]))
+
+        choice = np.random.random()
+        cumulative_p = 0
+
+        for a, p in dist.items():
+            cumulative_p += p
+            if cumulative_p > choice:
+                return a
+
 
 if __name__ == "__main__":
 
@@ -334,7 +341,7 @@ if __name__ == "__main__":
     Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
     env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
-    tasks = (0, 1, 2)
+
 
     wandb_dict = {}
     wandb_dict.update(env_parameters)
@@ -348,17 +355,117 @@ if __name__ == "__main__":
     # wandb.watch(criticNet_2)
     # wandb.watch(valueNet)
     # wandb.watch(target_valueNet)
-
-    xi = feature_parameters['scheduler_period']
-    Q_task = QTable()
-    scheduler = Q_task.derive_policy(BoltzmannPolicy, lambda x: tasks, temperature=1)
+    tasks = (0, 1, 2)
+    sac_schedule = Scheduler(tasks)
 
     episode_durations = []
     average_sigma_per_batch = []
+    seed = 10
+
+    if feature_parameters['pretrain']:
+        for i_episode in range(feature_parameters['num_episodes_pretrain']):
+            #print("Pretrain episode: " + str(i_episode))
+
+            # Initialize the environment and state
+            if feature_parameters['apply_environment_seed']:
+                env.reset(seed=seed)
+                seed += 1
+            else:
+                env.reset()
+
+            obs = env._get_obs()
+            if feature_parameters['sort_obstacles']:
+                obs = obstacle_sort(obs)
+            obs_values = [obs["agent"], obs["target"]]
+            for idx_obstacle in range(env_parameters['num_obstacles']):
+                obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+            obs_values = np.array(obs_values).reshape(-1)
+
+            state = torch.tensor(obs_values, dtype=torch.float, device=device)
+            state = state.view(1, -1)
+            actions = select_action_A_star(obs_values)
+
+            if actions is None:
+                print("error: doesn't find a path")
+                continue
+            t = 0
+            for action in actions:
+                # Select and perform an action
+                t += 1
+                action = action / env.reward_parameters['action_step_scaling']
+                _, reward, done, _, _ = env.step(action)
+                reward = torch.tensor([[reward[0], reward[1], reward[2]]], dtype=torch.float, device=device)
+
+                # Observe new state
+                obs = env._get_obs()
+                if not done:
+                    if feature_parameters['sort_obstacles']:
+                        obs = obstacle_sort(obs)
+                    obs_values = [obs["agent"], obs["target"]]
+                    for idx_obstacle in range(env_parameters['num_obstacles']):
+                        obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+                    next_state = torch.tensor(np.array(obs_values).reshape(-1),
+                                              dtype=torch.float,
+                                              device=device)
+                    next_state = next_state.view(1, -1)
+                else:
+
+                    next_state = None
+
+                # Store the transition in memory
+                action_torch = torch.tensor(np.array([action]), dtype=torch.float).to(actorNet.device)
+                memory.push(state, action_torch, next_state, reward)
+
+                # Move to the next state
+                state = next_state
+
+                # Perform one step of the optimization (on the policy network)
+                optimize_model(hyper_parameters['entropy_factor'])
+                if done:
+                    episode_durations.append(t + 1)
+                    if feature_parameters['plot_durations']:
+                        plot_durations()
+                    if feature_parameters['plot_sigma']:
+                        if not len(memory) < hyper_parameters["batch_size"]:
+                            plot_sigma()
+                    break
+                if done:
+                    episode_durations.append(t + 1)
+                    plot_durations()
+                    if not len(memory) < hyper_parameters["batch_size"]:
+                        plot_sigma()
+                    break
+            # Update the target network, using tau
+            if t != len(actions):
+                print("error: actual step is not equal to precalculated steps")
+
+            target_value_params = target_valueNet.named_parameters()
+            value_params = valueNet.named_parameters()
+
+            target_value_state_dict = dict(target_value_params)
+            value_state_dict = dict(value_params)
+
+            for name in value_state_dict:
+                value_state_dict[name] = hyper_parameters['tau'] * value_state_dict[name].clone() + \
+                                         (1 - hyper_parameters['tau']) * target_value_state_dict[name].clone()
+            target_valueNet.load_state_dict(value_state_dict)
+
+            if i_episode % 25 == 0:
+                actorNet.save_checkpoint()
+                criticNet_1.save_checkpoint()
+                criticNet_2.save_checkpoint()
+                valueNet.save_checkpoint()
+                target_valueNet.save_checkpoint()
+
+                with open('tmp/sac/i_episode_pretrain.txt', 'w+') as file:
+                    file.write(json.dumps(i_episode))
+
+        print('Pretrain complete')
 
     if feature_parameters['apply_environment_seed']:
         seed = feature_parameters['seed_init_value']
     action_history = deque(maxlen=feature_parameters['action_history_size'])
+
 
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
 
@@ -391,9 +498,9 @@ if __name__ == "__main__":
         state = state.view(1, -1)
         for t in count():  # every step of the environment
             # Select and perform an action
-            if t % xi == 0:
+            if t % sac_schedule.xi == 0:
                 # task = random.choice(tasks) ## sac-u
-                task = schedule_task(Q_task, scheduler, List_Tau) ## sac-q
+                task = sac_schedule.schedule_task(List_Tau) ## sac-q
                 List_Tau.append(task)
             action = select_action(state, actorNet, task)
             if feature_parameters['action_smoothing']:
@@ -436,7 +543,7 @@ if __name__ == "__main__":
                         plot_sigma()
                 break
 
-        train_scheduler(Q_task, main_reward, List_Tau)
+        sac_schedule.train_scheduler(main_reward, List_Tau)
         # Update the target network, using tau
         target_value_params = target_valueNet.named_parameters()
         value_params = valueNet.named_parameters()
@@ -460,4 +567,4 @@ if __name__ == "__main__":
 
     print('Normal training complete')
 
-    save_models()
+    save_models(sac_schedule)
