@@ -35,17 +35,18 @@ class GridWorldEnv(gym.Env):
         for idx_obstacle in range(self.num_obstacles):
             elements.update({"obstacle_{0}".format(idx_obstacle): spaces.Box(0, size - 1, shape=(2,), dtype=int)})
         self.observation_space = spaces.Dict(elements)
-        
+
+        """
         # TODO action space should be continuous now its bounded in [-3, 3]
         self.action_space = spaces.Discrete(4)  # Continuous 3 see gym examples
         #Box(low=np.array([-1.0, -2.0]), high=np.array([2.0, 4.0]), dtype=np.float32) - Box(3,) x,y velocity
         #no polar coord as its already encoded
 
-        """
+        
         The following dictionary maps abstract actions from `self.action_space` to 
         the direction we will walk in if that action is taken.
         I.e. 0 corresponds to "right", 1 to "up" etc.
-        """
+        
         self._action_to_direction = {
             # TODO: a normalized direction vector and a scalar amount of velocity [-1,1]
             # if time, dynamics
@@ -54,7 +55,7 @@ class GridWorldEnv(gym.Env):
             2: np.array([-1, 0]),
             3: np.array([0, -1]),
         }
-
+        """
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
 
