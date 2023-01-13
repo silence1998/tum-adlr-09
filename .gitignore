@@ -31,3 +31,6 @@ SAC/A_star/__pycache__/
 /SAC/test_rewards_with_all_features/
 /SAC/test_features_with_sparse_rewards/
 /SAC/plots/
+/SAC-X/model_pretrain/
+/SAC-X/tmp/
+/SAC-X/wandb/
