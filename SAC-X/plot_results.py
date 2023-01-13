@@ -72,10 +72,10 @@ if __name__ == '__main__':
 
         state = state.view(1, -1)
         for t in count():
-            if t % sac_schedule.xi == 0:
-                # task = random.choice(tasks) ## sac-u
-                task = sac_schedule.schedule_task(List_Tau) ## sac-q
-                List_Tau.append(task)
+            # if t % sac_schedule.xi == 0:
+            #     # task = random.choice(tasks) ## sac-u
+            #     task = sac_schedule.schedule_task(List_Tau) ## sac-q
+            #     List_Tau.append(task)
             # Select and perform an action
             action = select_action(state, actorNet, task)
             _, reward, done, _, _ = env.step(action)
