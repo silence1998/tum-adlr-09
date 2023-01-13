@@ -1,6 +1,6 @@
 env_parameters = {
     'num_obstacles': 10,
-    'env_size': 10  # size of the environment in one dimension (environment is square)
+    'env_size': 2000  # size of the environment in one dimension (environment is square) # TODO: now radius of elemtns
 }
 
 hyper_parameters = {

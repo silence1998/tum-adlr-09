@@ -29,7 +29,9 @@ if __name__ == '__main__':
         feature_parameters = json.load(file)
 
     # initialize environment
-    env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
+    env = GridWorldEnv(render_mode=None,
+                       size=200,#env_parameters['env_size'], #TODO: change back to env_size to radius objects
+                       num_obstacles=env_parameters['num_obstacles'])
     env.render_mode = "human"
 
     # initialize NN
