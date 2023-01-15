@@ -485,6 +485,9 @@ if __name__ == "__main__":
                 if feature_parameters['plot_sigma']:
                     if not len(memory) < hyper_parameters["batch_size"]:
                         plot_sigma()
+                if len(memory) > feature_parameters['maxsize_ReplayMemory'] / 2 and reward <= 0:
+                    memory.delete_fail(t)
+                    print('delete')
                 break
 
         # Update the target network, using tau
@@ -507,8 +510,6 @@ if __name__ == "__main__":
             target_valueNet.save_checkpoint()
             with open('tmp/sac/i_episode.txt', 'w+') as file:
                 file.write(json.dumps(i_episode))
-        if len(memory) > feature_parameters['maxsize_ReplayMemory'] / 2:
-            memory.delete_fail(feature_parameters['maxsize_ReplayMemory'] / 4)
 
     print('Normal training complete')
 

@@ -28,13 +28,9 @@ class ReplayMemory(object):  # a memory buffer to store transitions
         return len(self.memory)
 
     def delete_fail(self, len_):
-        i = 0
         j = 0
         while j < len_:
-            if self.memory[i].reward <= 0:
-                self.memory.remove(self.memory[i])
-            else:
-                i = i + 1
+            self.memory.pop()
             j = j + 1
 
 
