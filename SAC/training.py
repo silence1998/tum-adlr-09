@@ -17,8 +17,6 @@ from collections import deque
 import torch
 import torch.nn.functional as F
 
-
-
 from model import ActorNetwork, CriticNetwork, ValueNetwork, ReplayMemory
 from environment import GridWorldEnv
 
@@ -26,7 +24,6 @@ import A_star.algorithm
 import parameters
 
 import wandb
-
 
 
 def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
@@ -90,8 +87,8 @@ def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
 
     wandb.log({"actor_loss": actor_loss})
 
-    #print(str(i_episode) + " - " + str(actor_loss))
-    #print(str(i_episode) + "-actor_loss: " + str(actor_loss.detach().cpu().numpy()))
+    # print(str(i_episode) + " - " + str(actor_loss))
+    # print(str(i_episode) + "-actor_loss: " + str(actor_loss.detach().cpu().numpy()))
     # too slow to switch to cpu everytime
 
     actorNet.optimizer.zero_grad()
@@ -194,6 +191,8 @@ def action_selection(state, actorNet):
     else:
         action = select_action(state, actorNet)
     return action
+
+
 ### The above code is unused, maybe useful for future work ^^^
 
 def select_action_A_star(state):
@@ -225,7 +224,8 @@ def obstacle_sort(obs):
     distances = []
     obs_temp = obs.copy()  # copy the dict elements in the env
     for idx_obstacle in range(env_parameters["num_obstacles"]):
-        distances.append(np.sqrt(np.sum(np.power((obs_temp["agent"] - obs_temp["obstacle_{0}".format(idx_obstacle)]), 2))))
+        distances.append(
+            np.sqrt(np.sum(np.power((obs_temp["agent"] - obs_temp["obstacle_{0}".format(idx_obstacle)]), 2))))
     idx_obstacle_sorted = np.argsort(distances)  # min to max
     num_obstacles = range(env_parameters["num_obstacles"])
     for i, j in zip(num_obstacles, idx_obstacle_sorted):
@@ -275,9 +275,10 @@ def init_model():
     valueNet = ValueNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], name='value')
     target_valueNet = ValueNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], name='target_value')
 
-    memory = ReplayMemory(50000)  # replay buffer size
+    memory = ReplayMemory(feature_parameters['maxsize_ReplayMemory'])  # replay buffer size
 
     return actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory
+
 
 # initialize hyper-parameters
 hyper_parameters = parameters.hyper_parameters
@@ -292,9 +293,7 @@ if __name__ == "__main__":
 
     Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
-
     env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
-
 
     wandb_dict = {}
     wandb_dict.update(env_parameters)
@@ -315,11 +314,9 @@ if __name__ == "__main__":
         seed = feature_parameters['seed_init_value']
         print("Testing random seed: " + str(torch.rand(2)))
 
-
-
     if feature_parameters['pretrain']:
         for i_episode in range(feature_parameters['num_episodes_pretrain']):
-            #print("Pretrain episode: " + str(i_episode))
+            # print("Pretrain episode: " + str(i_episode))
 
             # Initialize the environment and state
             if feature_parameters['apply_environment_seed']:
@@ -417,7 +414,6 @@ if __name__ == "__main__":
 
         print('Pretrain complete')
 
-
     if feature_parameters['apply_environment_seed']:
         seed = feature_parameters['seed_init_value']
     action_history = deque(maxlen=feature_parameters['action_history_size'])
@@ -431,7 +427,7 @@ if __name__ == "__main__":
 
         sigma_ = hyper_parameters['sigma_init'] + i_episode * (
                 hyper_parameters['sigma_final'] - hyper_parameters['sigma_init']) / (
-                                 hyper_parameters["num_episodes"] - 1)
+                         hyper_parameters["num_episodes"] - 1)
         actorNet.max_sigma = sigma_
 
         # Initialize the environment and state
@@ -490,6 +486,7 @@ if __name__ == "__main__":
                     if not len(memory) < hyper_parameters["batch_size"]:
                         plot_sigma()
                 break
+
         # Update the target network, using tau
         target_value_params = target_valueNet.named_parameters()
         value_params = valueNet.named_parameters()
@@ -510,7 +507,8 @@ if __name__ == "__main__":
             target_valueNet.save_checkpoint()
             with open('tmp/sac/i_episode.txt', 'w+') as file:
                 file.write(json.dumps(i_episode))
-
+        if len(memory) > feature_parameters['maxsize_ReplayMemory'] / 2:
+            memory.delete_fail(feature_parameters['maxsize_ReplayMemory'] / 4)
 
     print('Normal training complete')
 

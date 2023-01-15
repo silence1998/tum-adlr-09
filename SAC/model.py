@@ -27,6 +27,17 @@ class ReplayMemory(object):  # a memory buffer to store transitions
     def __len__(self):
         return len(self.memory)
 
+    def delete_fail(self, len_):
+        i = 0
+        j = 0
+        while j < len_:
+            if self.memory[i].reward <= 0:
+                self.memory.remove(self.memory[i])
+            else:
+                i = i + 1
+            j = j + 1
+
+
 
 class CriticNetwork(nn.Module):
     def __init__(self, beta, input_dims, n_actions, fc1_dims=128, fc2_dims=64,
