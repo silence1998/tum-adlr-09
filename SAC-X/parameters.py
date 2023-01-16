@@ -1,11 +1,11 @@
 env_parameters = {
-    'num_obstacles': 10,
-    'env_size': 2000  # size of the environment in one dimension (environment is square) # TODO: now radius of elemtns
+    'num_obstacles': 5,
+    'env_size': 10  # size of the environment in one dimension (environment is square)
 }
 
 hyper_parameters = {
     'input_dims': 4 + env_parameters['num_obstacles'] * 2,  # original position of actor, target and obstacle positions
-    'batch_size': 4096,
+    'batch_size': 128,
     'gamma': 0.999,  # discount factor
     'target_update': 10,  # update target network every 10 episodes TODO: UNUSED if code for now
     'alpha': 0.0003,  # learning rate for actor
@@ -13,16 +13,15 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'entropy_factor_final': 0.5,
-    'num_episodes': 2500,  # set min 70 for tests as some parts of code starts after ~40 episodes
-
+    'num_episodes': 250,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'sigma_init': 2.0,
     'sigma_final': 2.0
 }
 
 feature_parameters = {
     'pretrain': True,  # pretrain the model
-    'num_episodes_pretrain': 1000,  # set min 70 for tests as some parts of code starts after ~40 episodes
-    'maxsize_ReplayMemory': 100000,
+    'num_episodes_pretrain': 250,  # set min 70 for tests as some parts of code starts after ~40 episodes
+
     'action_smoothing': False,
     'action_history_size': 3,  # number of actions to remember for the action history
 
@@ -34,15 +33,11 @@ feature_parameters = {
     'apply_environment_seed': False,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
 
-    'plot_durations': False,  # plot durations of episodes
-    'plot_sigma': False  # plot sigma of actor
+    'plot_durations': True,  # plot durations of episodes
+    'plot_sigma': False,  # plot sigma of actor
+    'scheduler_period': 2
 }
 
-test_parameters = {
-    "time_limit": 1500
-    #"num_tests": 10,
-    #"num_episodes": 100
-}
 reward_parameters = {
     # 'field_of_view': 5,  # see min_collision_distance
     # 'collision_weight': 0.3,
@@ -50,7 +45,7 @@ reward_parameters = {
     # the above are not used in the current version which is sparse reward based
 
     'action_step_scaling': 1,  # 1 step -> "2" grids of movement reach in x and y directions
-    ### DENSE REWARDS ###  # TODO: check after midterm
+    ### DENSE REWARDS ### # TODO: check after midterm
     'obstacle_avoidance': False,
     'obstacle_distance_weight': -0.01,
     'target_seeking': False,
@@ -68,9 +63,9 @@ reward_parameters = {
     'checkpoints': False,  # if true, use checkpoints rewards
     'checkpoint_distance_proportion': 0.1,  # distance proportion to environment size in 1 dimension
     'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
-    'checkpoint_value': 1,  # make sure checkpoint_value * checkpoint_number < 1
+    'checkpoint_value': 0.1,  # make sure checkpoint_value * checkpoint_number < 1
 
-    'time': True,  # if true, use time penalty
+    'time': False,  # if true, use time penalty
     'time_penalty': -0.01,  # 0.01 == penalty of -1 for "100" action steps
 
     # Rewards below depend on action history
@@ -95,4 +90,3 @@ reward_parameters = {
 
     # fast moving etc. for sub actions for sparse rewards
 }
-

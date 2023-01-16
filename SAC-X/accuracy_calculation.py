@@ -17,7 +17,7 @@ if __name__ == '__main__':
         model_path = "model/"
     elif m == "1":
         model_path = "model_pretrain/"
-
+    # model_path = "model_pretrain/model_5/"
     # Load the model parameters
     with open(model_path + 'env_parameters.txt', 'r') as file:
         env_parameters = json.load(file)
@@ -101,7 +101,6 @@ if __name__ == '__main__':
                 else:
                     issuccess_.append(0)
                 break
-
             elif t >= 500:
                 issuccess_.append(0)
                 actual_reward.append(0)
@@ -112,6 +111,4 @@ if __name__ == '__main__':
     # print(actual_reward)
     print("accuracy=", np.sum(issuccess_) / len(issuccess_))
     print("mean_reward=", np.mean(actual_reward))
-
-    print("mean_step=", np.mean(actual_step))  # mean step duration
-
+    print("mean_step=", np.mean(actual_step))

@@ -10,6 +10,8 @@ import json
 import os
 import matplotlib.pyplot as plt
 from itertools import count
+import random
+import pickle
 
 from collections import namedtuple
 from collections import deque
@@ -17,13 +19,17 @@ from collections import deque
 import torch
 import torch.nn.functional as F
 
+from util_sacx.q_table import QTable
+from util_sacx.policy import BoltzmannPolicy
+
 from model import ActorNetwork, CriticNetwork, ValueNetwork, ReplayMemory
 from environment import GridWorldEnv
 
 import A_star.algorithm
 import parameters
 
-import wandb
+
+# import wandb
 
 
 def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
@@ -48,66 +54,67 @@ def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)
 
-    if not len(memory) < hyper_parameters["batch_size"]:
+    for task_ in [0, 1, 2]:
         ### Calculate average sigma per batch
-        mu, sigma = actorNet.forward(state_batch)
+        mu, sigma = actorNet.forward(state_batch, task_)
         global average_sigma_per_batch
         average_sigma_per_batch.append(
             np.mean(sigma.detach().cpu().numpy(), axis=0))  # mean of sigma of the current batch
 
-    value = valueNet(state_batch).view(-1)  # infer size of batch
-    value_ = torch.zeros(hyper_parameters["batch_size"], device=device)
-    value_[non_final_mask] = target_valueNet(non_final_next_states).view(-1)
+        value = valueNet(state_batch, task_).view(-1)  # infer size of batch
+        value_ = torch.zeros(hyper_parameters["batch_size"], device=device)
+        value_[non_final_mask] = target_valueNet(non_final_next_states, task_).view(-1)
 
-    # Compute the target Q value -> Q_phi_target_1/2
-    actions, log_probs = actorNet.sample_normal(state_batch, reparametrize=False)
-    log_probs = log_probs.view(-1)
-    q1_new_policy = criticNet_1.forward(state_batch, actions)
-    q2_new_policy = criticNet_2.forward(state_batch, actions)
-    critic_value = torch.min(q1_new_policy, q2_new_policy)
-    critic_value = critic_value.view(-1)  # rhs SpinningUP SAC PC: line 12 big ()
+        # Compute the target Q value -> Q_phi_target_1/2
+        actions, log_probs = actorNet.sample_normal(state_batch, task_, reparametrize=False)
+        log_probs = log_probs.view(-1)
+        q1_new_policy = criticNet_1.forward(state_batch, actions, task_)
+        q2_new_policy = criticNet_2.forward(state_batch, actions, task_)
+        critic_value = torch.min(q1_new_policy, q2_new_policy)
+        critic_value = critic_value.view(-1)  # rhs SpinningUP SAC PC: line 12 big ()
 
-    valueNet.optimizer.zero_grad()
-    value_target = critic_value - entropy_factor * log_probs
-    value_loss = 0.5 * F.mse_loss(value, value_target)
-    value_loss.backward(retain_graph=True)
-    valueNet.optimizer.step()
+        valueNet.optimizer.zero_grad()
+        value_target = critic_value - entropy_factor * log_probs
+        value_loss = 0.5 * F.mse_loss(value, value_target)
+        value_loss.backward(retain_graph=True)
+        valueNet.optimizer.step()
 
-    # Update the target value network
-    actions, log_probs = actorNet.sample_normal(state_batch,
-                                                reparametrize=True)  # line 14 big () right term a_tilde_theta(s)
-    log_probs = log_probs.view(-1)
-    q1_new_policy = criticNet_1.forward(state_batch, actions)
-    q2_new_policy = criticNet_2.forward(state_batch, actions)
-    critic_value = torch.min(q1_new_policy, q2_new_policy)
-    critic_value = critic_value.view(-1)
+        # Update the target value network
+        actions, log_probs = actorNet.sample_normal(state_batch, task_,
+                                                    reparametrize=True)  # line 14 big () right term a_tilde_theta(s)
+        log_probs = log_probs.view(-1)
+        q1_new_policy = criticNet_1.forward(state_batch, actions, task_)
+        q2_new_policy = criticNet_2.forward(state_batch, actions, task_)
+        critic_value = torch.min(q1_new_policy, q2_new_policy)
+        critic_value = critic_value.view(-1)
 
-    actor_loss = entropy_factor * log_probs - critic_value
-    actor_loss = torch.mean(actor_loss)
+        actor_loss = entropy_factor * log_probs - critic_value
+        actor_loss = torch.mean(actor_loss)
 
-    wandb.log({"actor_loss": actor_loss})
+        # wandb.log({"actor_loss": actor_loss})
 
-    # print(str(i_episode) + " - " + str(actor_loss))
-    # print(str(i_episode) + "-actor_loss: " + str(actor_loss.detach().cpu().numpy()))
-    # too slow to switch to cpu everytime
+        # print(str(i_episode) + " - " + str(actor_loss))
+        # print(str(i_episode) + "-actor_loss: " + str(actor_loss.detach().cpu().numpy()))
+        # too slow to switch to cpu everytime
 
-    actorNet.optimizer.zero_grad()
-    actor_loss.backward(retain_graph=True)
-    actorNet.optimizer.step()
+        actorNet.optimizer.zero_grad()
+        actor_loss.backward(retain_graph=True)
+        actorNet.optimizer.step()
 
-    criticNet_1.optimizer.zero_grad()
-    criticNet_2.optimizer.zero_grad()
-    q_hat = reward_batch + hyper_parameters["gamma"] * value_  # SpinningUP SAC PC: line 12 -> calc y (target)
-    q1_old_policy = criticNet_1.forward(state_batch, action_batch).view(-1)
-    q2_old_policy = criticNet_2.forward(state_batch, action_batch).view(-1)
-    critic_1_loss = 0.5 * F.mse_loss(q1_old_policy, q_hat)  # line 13 in s.u. pseudocode
-    critic_2_loss = 0.5 * F.mse_loss(q2_old_policy, q_hat)
+        criticNet_1.optimizer.zero_grad()
+        criticNet_2.optimizer.zero_grad()
+        q_hat = reward_batch[:, task_] + hyper_parameters[
+            "gamma"] * value_  # SpinningUP SAC PC: line 12 -> calc y (target)
+        q1_old_policy = criticNet_1.forward(state_batch, action_batch, task_).view(-1)
+        q2_old_policy = criticNet_2.forward(state_batch, action_batch, task_).view(-1)
+        critic_1_loss = 0.5 * F.mse_loss(q1_old_policy, q_hat)  # line 13 in s.u. pseudocode
+        critic_2_loss = 0.5 * F.mse_loss(q2_old_policy, q_hat)
 
-    # Update Q-functions (critic) by one step of gradient descent # SpinningUP SAC PC: line 13
-    critic_loss = critic_1_loss + critic_2_loss
-    critic_loss.backward()
-    criticNet_1.optimizer.step()  # line 13 in s.u. pseudocode
-    criticNet_2.optimizer.step()
+        # Update Q-functions (critic) by one step of gradient descent # SpinningUP SAC PC: line 13
+        critic_loss = critic_1_loss + critic_2_loss
+        critic_loss.backward()
+        criticNet_1.optimizer.step()  # line 13 in s.u. pseudocode
+        criticNet_2.optimizer.step()
 
 
 def plot_durations():
@@ -150,14 +157,15 @@ def plot_sigma():
         means_y = torch.cat((torch.zeros(avg_last_X_batches - 1), means_y))  # pad with zeros for the first X episodes
         plt.plot(means_x.numpy())
         plt.plot(means_y.numpy())
-        wandb.log({"means_x": means_x.numpy()[-1]})
-        wandb.log({"means_y": means_y.numpy()[-1]})
+        # wandb.log({"means_x": means_x.numpy()[-1]})
+        # wandb.log({"means_y": means_y.numpy()[-1]})
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-def select_action(state, actorNet):
+def select_action(state, actorNet, task):
     # state = torch.Tensor([state]).to(actorNet.device)
-    actions, _ = actorNet.sample_normal(state, reparametrize=False)
+    # task_ = torch.tensor([task], dtype=torch.int, device=device)
+    actions, _ = actorNet.sample_normal(state, task, reparametrize=False)
 
     return actions.cpu().detach().numpy()[0]
 
@@ -233,7 +241,7 @@ def obstacle_sort(obs):
     return obs
 
 
-def save_models():
+def save_models(sac_schedule):
     if feature_parameters['pretrain']:
         model_path = "model_pretrain/"
         if not os.path.isdir(model_path):
@@ -255,6 +263,9 @@ def save_models():
     with open(model_path + 'feature_parameters.txt', 'w+') as file:
         file.write(json.dumps(feature_parameters))  # use `json.loads` to do the reverse
 
+    with open(model_path + "Q_task.pkl", "wb") as tf:
+        pickle.dump(sac_schedule.Q_task.store, tf)
+
     print("Saving models ...")
     torch.save(actorNet.state_dict(), model_path + "actor.pt")
     torch.save(criticNet_1.state_dict(), model_path + "criticNet_1.pt")
@@ -275,20 +286,55 @@ def init_model():
     valueNet = ValueNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], name='value')
     target_valueNet = ValueNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], name='target_value')
 
-    memory = ReplayMemory(feature_parameters['maxsize_ReplayMemory'])  # replay buffer size
+    memory = ReplayMemory(50000)  # replay buffer size
 
     return actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory
+
+
 
 
 # initialize hyper-parameters
 hyper_parameters = parameters.hyper_parameters
 feature_parameters = parameters.feature_parameters
 env_parameters = parameters.env_parameters
-test_parameters = parameters.test_parameters
+
+class Scheduler:
+    def __init__(self, tasks):
+        self.xi = feature_parameters['scheduler_period']
+        self.Q_task = QTable()
+        self.scheduler = self.Q_task.derive_policy(BoltzmannPolicy, lambda x: tasks, temperature=1)
+
+    def train_scheduler(self, main_rewards, Tau):
+        xi = self.xi
+        for h in range(len(Tau)):
+            R = sum([r * hyper_parameters["gamma"] ** k for k, r in enumerate(main_rewards[h * xi:])])
+            # We used a Q-Table with 0.1 learning rate to update the values in the table.
+            # Change 0.1 to the desired learning rate
+            if h < 3:
+                self.Q_task[tuple(Tau[:h]), Tau[h]] += 0.1 * (R - self.Q_task[tuple(Tau[:h]), Tau[h]])
+            else:
+                self.Q_task[tuple(Tau[h - 3:h]), Tau[h]] += 0.1 * (R - self.Q_task[tuple(Tau[h - 3:h]), Tau[h]])
+
+    def schedule_task(self, Tau):
+        h = len(Tau)
+
+        if h < 3:
+            dist = self.scheduler.distribution(tuple(Tau))
+        else:
+            dist = self.scheduler.distribution(tuple(Tau[-3:]))
+
+        choice = np.random.random()
+        cumulative_p = 0
+
+        for a, p in dist.items():
+            cumulative_p += p
+            if cumulative_p > choice:
+                return a
+
 
 if __name__ == "__main__":
 
-    wandb.init(project="SAC", entity="tum-adlr-09")
+    # wandb.init(project="SAC", entity="tum-adlr-09")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -296,30 +342,29 @@ if __name__ == "__main__":
 
     env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
 
+
     wandb_dict = {}
     wandb_dict.update(env_parameters)
     wandb_dict.update(hyper_parameters)
-    wandb_dict.update(feature_parameters)
-    wandb_dict.update(test_parameters)
     print("dict: " + str(wandb_dict))
-    wandb.config.update(wandb_dict)
+    # wandb.config.update(wandb_dict)
 
     actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
-    wandb.watch(actorNet)
-    wandb.watch(criticNet_1)
-    wandb.watch(criticNet_2)
-    wandb.watch(valueNet)
-    wandb.watch(target_valueNet)
+    # wandb.watch(actorNet)
+    # wandb.watch(criticNet_1)
+    # wandb.watch(criticNet_2)
+    # wandb.watch(valueNet)
+    # wandb.watch(target_valueNet)
+    tasks = (0, 1, 2)
+    sac_schedule = Scheduler(tasks)
 
     episode_durations = []
     average_sigma_per_batch = []
-    if feature_parameters['apply_environment_seed']:
-        seed = feature_parameters['seed_init_value']
-        print("Testing random seed: " + str(torch.rand(2)))
+    seed = 10
 
     if feature_parameters['pretrain']:
         for i_episode in range(feature_parameters['num_episodes_pretrain']):
-            # print("Pretrain episode: " + str(i_episode))
+            #print("Pretrain episode: " + str(i_episode))
 
             # Initialize the environment and state
             if feature_parameters['apply_environment_seed']:
@@ -349,7 +394,7 @@ if __name__ == "__main__":
                 t += 1
                 action = action / env.reward_parameters['action_step_scaling']
                 _, reward, done, _, _ = env.step(action)
-                reward = torch.tensor([reward], dtype=torch.float, device=device)
+                reward = torch.tensor([[reward[0], reward[1], reward[2]]], dtype=torch.float, device=device)
 
                 # Observe new state
                 obs = env._get_obs()
@@ -418,13 +463,15 @@ if __name__ == "__main__":
         print('Pretrain complete')
 
     if feature_parameters['apply_environment_seed']:
-        seed = 0#feature_parameters['seed_init_value']
+        seed = feature_parameters['seed_init_value']
     action_history = deque(maxlen=feature_parameters['action_history_size'])
+
 
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
 
         print("Normal training episode: " + str(i_episode))
-
+        main_reward = []
+        List_Tau = []
         entropy_factor = hyper_parameters['entropy_factor'] + i_episode * (
                 hyper_parameters['entropy_factor_final'] - hyper_parameters['entropy_factor']) / (
                                  hyper_parameters["num_episodes"] - 1)
@@ -432,7 +479,6 @@ if __name__ == "__main__":
         sigma_ = hyper_parameters['sigma_init'] + i_episode * (
                 hyper_parameters['sigma_final'] - hyper_parameters['sigma_init']) / (
                          hyper_parameters["num_episodes"] - 1)
-
         actorNet.max_sigma = sigma_
 
         # Initialize the environment and state
@@ -452,12 +498,17 @@ if __name__ == "__main__":
         state = state.view(1, -1)
         for t in count():  # every step of the environment
             # Select and perform an action
-            action = select_action(state, actorNet)
+            if t % sac_schedule.xi == 0:
+                # task = random.choice(tasks) ## sac-u
+                task = sac_schedule.schedule_task(List_Tau) ## sac-q
+                List_Tau.append(task)
+            action = select_action(state, actorNet, task)
             if feature_parameters['action_smoothing']:
                 action_history.extend([action])
                 action = select_action_smooth(action_history)
             _, reward, done, _, _ = env.step(action)
-            reward = torch.tensor([reward], dtype=torch.float, device=device)
+            main_reward.append(reward[0])
+            reward = torch.tensor([[reward[0], reward[1], reward[2]]], dtype=torch.float, device=device)
 
             # Observe new state
             obs = env._get_obs()
@@ -490,11 +541,9 @@ if __name__ == "__main__":
                 if feature_parameters['plot_sigma']:
                     if not len(memory) < hyper_parameters["batch_size"]:
                         plot_sigma()
-                if len(memory) > feature_parameters['maxsize_ReplayMemory'] / 2 and reward <= 0:
-                    memory.delete_fail(t)
-                    print('delete')
                 break
 
+        sac_schedule.train_scheduler(main_reward, List_Tau)
         # Update the target network, using tau
         target_value_params = target_valueNet.named_parameters()
         value_params = valueNet.named_parameters()
@@ -518,99 +567,4 @@ if __name__ == "__main__":
 
     print('Normal training complete')
 
-    save_models()
-
-    print('Complete')
-
-
-    #TESTING
-    model_path = "model_pretrain/"
-
-    # Load model
-    actorNet.load_state_dict(torch.load(model_path + "actor.pt", map_location=device))
-    actorNet.max_sigma = hyper_parameters['sigma_final']
-    criticNet_1.load_state_dict(torch.load(model_path + "criticNet_1.pt", map_location=device))
-    criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
-    target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
-
-    init_seed = 0
-    actual_reward = []
-    issuccess_ = []
-    actual_step = []
-    i = 0
-    seed = init_seed
-    time_limit = test_parameters["time_limit"]
-
-    while i < 100:  # run plot for 10 episodes to see what it learned
-        i += 1
-        seed += 1
-        env.reset(seed=seed)
-        obs = env._get_obs()
-
-        obs_values = [obs["agent"], obs["target"]]
-        for idx_obstacle in range(env_parameters['num_obstacles']):
-            obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-        state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
-
-        state = state.view(1, -1)
-
-
-        for t in count():
-            # Select and perform an action
-            action = select_action(state, actorNet)
-            _, reward, done, _, _ = env.step(action)
-
-            action_ = torch.tensor(action, dtype=torch.float, device=device)
-            action_ = action_.view(1, 2)
-            mu, sigma = actorNet(state)
-            # print(actorNet(state))
-            # print(criticNet_1(state, action_))
-            # print(criticNet_2(state, action_))
-            # print(target_valueNet(state))
-
-            reward = torch.tensor([reward], device=device)
-            env._render_frame()
-            # Observe new state
-            obs = env._get_obs()
-            if not done:
-                obs_values = [obs["agent"], obs["target"]]
-                for idx_obstacle in range(env_parameters['num_obstacles']):
-                    obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
-                next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
-
-                next_state = next_state.view(1, -1)
-            else:
-                next_state = None
-
-            # Store the transition in memory
-            memory.push(state, action, next_state, reward)
-
-            # Move to the next state
-            state = next_state
-            if done:
-                reward_ = reward.cpu().detach().numpy()[0]
-                actual_reward.append(reward_)
-                actual_step.append(t)
-                if reward > 0:
-                    issuccess_.append(1)
-                else:
-                    issuccess_.append(0)
-                break
-            elif t >= time_limit:
-                issuccess_.append(0)
-                actual_reward.append(0)
-                actual_step.append(t)
-                break
-
-    # print(issuccess_)
-    # print(actual_reward)
-    accuracy = np.sum(issuccess_) / len(issuccess_)
-    mean_reward = np.mean(actual_reward)
-    mean_step = np.mean(actual_step)
-
-    print("accuracy=", np.sum(issuccess_) / len(issuccess_))
-    print("mean_reward=", np.mean(actual_reward))
-    print("mean_step=", np.mean(actual_step))  # mean step duration
-
-    test_result = {"accuracy": accuracy, "mean_reward": mean_reward, "mean_step": mean_step, "time_limit": time_limit}
-    wandb_dict.update(test_result)
+    save_models(sac_schedule)

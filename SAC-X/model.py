@@ -27,13 +27,6 @@ class ReplayMemory(object):  # a memory buffer to store transitions
     def __len__(self):
         return len(self.memory)
 
-    def delete_fail(self, len_):
-        j = 0
-        while j < len_:
-            self.memory.pop()
-            j = j + 1
-
-
 
 class CriticNetwork(nn.Module):
     def __init__(self, beta, input_dims, n_actions, fc1_dims=128, fc2_dims=64,
@@ -48,21 +41,21 @@ class CriticNetwork(nn.Module):
         self.checkpoint_file = os.path.join(self.checkpoint_dir, name + '_sac')
 
         self.fc1 = nn.Linear(self.input_dims + n_actions, self.fc1_dims)
-        self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
-        self.q = nn.Linear(self.fc2_dims, 1)
+        self.fc2 = nn.ModuleList([nn.Linear(self.fc1_dims, self.fc2_dims) for i in range(3)])
+        self.q = nn.ModuleList([nn.Linear(self.fc2_dims, 1) for i in range(3)])
 
         self.optimizer = optim.Adam(self.parameters(), lr=beta)
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
         self.to(self.device)
 
-    def forward(self, state, action):
+    def forward(self, state, action, task: int):
         action_value = self.fc1(torch.cat([state, action], dim=1))
         action_value = F.relu(action_value)
-        action_value = self.fc2(action_value)
+        action_value = self.fc2[task](action_value)
         action_value = F.relu(action_value)
 
-        q = self.q(action_value)
+        q = self.q[task](action_value)
 
         return q
 
@@ -85,21 +78,21 @@ class ValueNetwork(nn.Module):
         self.checkpoint_file = os.path.join(self.checkpoint_dir, name + '_sac')
 
         self.fc1 = nn.Linear(self.input_dims, self.fc1_dims)
-        self.fc2 = nn.Linear(self.fc1_dims, fc2_dims)
-        self.v = nn.Linear(self.fc2_dims, 1)
+        self.fc2 = nn.ModuleList([nn.Linear(self.fc1_dims, self.fc2_dims) for i in range(3)])
+        self.v = nn.ModuleList([nn.Linear(self.fc2_dims, 1) for i in range(3)])
 
         self.optimizer = optim.Adam(self.parameters(), lr=beta)
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
         self.to(self.device)
 
-    def forward(self, state):
+    def forward(self, state, task):
         state_value = self.fc1(state)
         state_value = F.relu(state_value)
-        state_value = self.fc2(state_value)
+        state_value = self.fc2[task](state_value)
         state_value = F.relu(state_value)
 
-        v = self.v(state_value)
+        v = self.v[task](state_value)
 
         return v
 
@@ -114,6 +107,7 @@ class ActorNetwork(nn.Module):
     def __init__(self, alpha, input_dims, max_action, fc1_dims=128,
                  fc2_dims=64, n_actions=2, name='actor', chkpt_dir='tmp/sac', sigma=2.0):
         super(ActorNetwork, self).__init__()
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.max_sigma = sigma
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
@@ -126,32 +120,32 @@ class ActorNetwork(nn.Module):
         self.reparam_noise = 1e-6
 
         self.fc1 = nn.Linear(self.input_dims, self.fc1_dims)
-        self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
-        self.mu = nn.Linear(self.fc2_dims, self.n_actions)
-        self.sigma = nn.Linear(self.fc2_dims, self.n_actions)
+        self.fc2 = nn.ModuleList([nn.Linear(self.fc1_dims, self.fc2_dims) for i in range(3)])
+        self.mu = nn.ModuleList([nn.Linear(self.fc2_dims, self.n_actions) for i in range(3)])
+        self.sigma = nn.ModuleList([nn.Linear(self.fc2_dims, self.n_actions) for i in range(3)])
 
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
 
         self.to(self.device)
 
-    def forward(self, state):
+    def forward(self, state, task):
         prob = self.fc1(state)
         prob = F.relu(prob)
-        prob = self.fc2(prob)
+        prob = self.fc2[task](prob)
         prob = F.relu(prob)
 
-        mu = self.mu(prob)
-        sigma = self.sigma(prob)  # log_std
+        mu = self.mu[task](prob)
+        sigma = self.sigma[task](prob)  # log_std
 
         sigma = torch.clamp(sigma, min=self.reparam_noise, max=self.max_sigma)  # TODO: decaying sigma
 
         return mu, sigma
 
-    def sample_normal(self, state, reparametrize=True):
+    def sample_normal(self, state, task, reparametrize=True):
         # SpinningUP SAC PC: line 12 -> big () right term
         # we set alpha from PC = 1 -> to modify the variance of the distribution (entropy) # line 12 -> big () right terms coeffiecient
-        mu, sigma = self.forward(state)
+        mu, sigma = self.forward(state, task)
         probabilities = Normal(mu, sigma)
 
         if reparametrize:
