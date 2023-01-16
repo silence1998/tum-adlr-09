@@ -12,7 +12,7 @@ from collections import deque
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, size=2000, num_obstacles=5):
+    def __init__(self, render_mode=None, size=100, num_obstacles=5):
         self.radius = size  # The size of the square grid
         self.window_size = 1024  # The size of the PyGame window
         self.num_obstacles = num_obstacles
@@ -82,7 +82,7 @@ class GridWorldEnv(gym.Env):
 
         # We will sample the target's location randomly until it does not coincide with the agent's location
         self._target_location = self._agent_location
-        while np.array_equal(self._target_location, self._agent_location):
+        while self.euclidean_norm(self._target_location - self._agent_location) < self.radius * 2:
             self._target_location = self.np_random.integers(
                 0, self.window_size, size=2, dtype=int
             )
@@ -90,32 +90,28 @@ class GridWorldEnv(gym.Env):
 
         # We will sample the obstacle's location randomly until it does not coincide
         # with the agent's/target's/other obstacles location
-        self._obstacle_locations = {}
+        self._obstacle_locations = {} # TODO: how to check if this works
         for idx_obstacle in range(self.num_obstacles):
             self._obstacle_locations.update({"{0}".format(idx_obstacle): self._agent_location})
-            """
-            while np.isclose(self._obstacle_locations[str(idx_obstacle)].any(), self._agent_location.any(), rtol=0, atol=self.radius*2) \
-                    or np.isclose(self._obstacle_locations[str(idx_obstacle)].any(), self._target_location.any(), rtol=0, atol=self.radius*2):
-                random_location = np.array(self.np_random.integers(0, self.window_size, size=2, dtype=int))
-                _obstacle_locations_array = np.array(self._obstacle_locations.values())
-                if (idx_obstacle != 0) & (np.isclose(random_location, _obstacle_locations_array.any(), rtol=0, atol=self.radius*2)):
-                    print(_obstacle_locations_array)
-                    print("\n \n \n \n Collision in random object generation!!! \n \n \n \n")
+            while (self.euclidean_norm(self._obstacle_locations[str(idx_obstacle)]
+                                       - self._agent_location) < self.radius * 2) \
+                    or (self.euclidean_norm(self._obstacle_locations[str(idx_obstacle)]
+                                       - self._target_location) < self.radius * 2):  # Colliding with agent or target
+                #random_location = np.array(self.np_random.integers(0, self.window_size, size=(1, 2), dtype=int))
+                _obstacle_locations_array = np.array(list(self._obstacle_locations.values()))
+                random_location = self.np_random.integers(0, self.window_size, size=(2), dtype=int)
+                random_location_rep = np.array(
+                     [random_location for i in range(len(_obstacle_locations_array))])
+
+                #random_location_rep = np.repeat(random_location, len(_obstacle_locations_array), axis=0)
+                print(random_location_rep)
+                print(_obstacle_locations_array)
+                distances = np.array(self.elementwise_euclidean_norm(_obstacle_locations_array, random_location_rep))
+                collision = distances - 2 * self.radius
+                if (collision < 0).any():  # Colliding with other obstacle
                     continue
-                self._obstacle_locations[str(idx_obstacle)] = random_location
-                assert not (np.isclose(random_location, _obstacle_locations_array.any(), rtol=0, atol=self.radius*2))
-            assert len(self._obstacle_locations) == self.num_obstacles
-            """
-            while np.array_equal(self._obstacle_locations[str(idx_obstacle)], self._agent_location) \
-                    or np.array_equal(self._obstacle_locations[str(idx_obstacle)], self._target_location):
-                random_location = np.array(self.np_random.integers(0, self.window_size, size=2, dtype=int))
-                _obstacle_locations_array = np.array(self._obstacle_locations.values())
-                if (idx_obstacle != 0) & (np.array_equal(random_location, _obstacle_locations_array.any())):
-                    print(_obstacle_locations_array)
-                    print("\n \n \n \n Collision in random object generation!!! \n \n \n \n")
-                    continue
-                self._obstacle_locations[str(idx_obstacle)] = random_location
-                assert not np.array_equal(random_location, _obstacle_locations_array.any())
+                self._obstacle_locations[str(idx_obstacle)] = np.array(random_location_rep[0])
+                print(random_location_rep[0])
         assert len(self._obstacle_locations) == self.num_obstacles
 
         observation = self._get_obs()
@@ -290,14 +286,14 @@ class GridWorldEnv(gym.Env):
             canvas,
             (0, 0, 255),  # blue
             self._agent_location,
-            agent_size / 3,
+            agent_size,
         )
         # First we draw the target
         pygame.draw.circle(
             canvas,
             (255, 0, 0),  # red
             self._target_location,
-            target_size / 3,
+            target_size,
         )
         # Now we draw the obstacles
         for idx_obstacle in range(self.num_obstacles):
@@ -305,7 +301,7 @@ class GridWorldEnv(gym.Env):
                 canvas,
                 (0, 0, 0),  # black
                 self._obstacle_locations[str(idx_obstacle)],
-                object_size / 3,
+                object_size,
             )
 
         if self.render_mode == "human":
@@ -401,4 +397,18 @@ class GridWorldEnv(gym.Env):
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
             )
+    @staticmethod
+    def euclidean_norm(vector):
+        """Calculates the Euclidean norm of a given vector."""
+        norm = 0
+        for i in range(len(vector)):
+            norm += vector[i] ** 2
+        return math.sqrt(norm)
 
+    @staticmethod
+    def elementwise_euclidean_norm(vec1, vec2):
+        """Calculates the element-wise Euclidean norm of two given 2D vectors."""
+        elementwise_norm = []
+        for i in range(len(vec1)):
+            elementwise_norm.append(math.sqrt((vec1[i][0] - vec2[i][0]) ** 2 + (vec1[i][1] - vec2[i][1]) ** 2))
+        return elementwise_norm

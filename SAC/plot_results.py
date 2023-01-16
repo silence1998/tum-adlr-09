@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     # initialize environment
     env = GridWorldEnv(render_mode=None,
-                       size=200,#env_parameters['env_size'], #TODO: change back to env_size to radius objects
+                       size=30,#env_parameters['env_size'], #TODO: change back to env_size to radius objects
                        num_obstacles=env_parameters['num_obstacles'])
     env.render_mode = "human"
 
