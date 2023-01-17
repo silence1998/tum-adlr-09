@@ -284,6 +284,7 @@ def init_model():
 hyper_parameters = parameters.hyper_parameters
 feature_parameters = parameters.feature_parameters
 env_parameters = parameters.env_parameters
+test_parameters = parameters.test_parameters
 
 if __name__ == "__main__":
 
@@ -298,6 +299,8 @@ if __name__ == "__main__":
     wandb_dict = {}
     wandb_dict.update(env_parameters)
     wandb_dict.update(hyper_parameters)
+    wandb_dict.update(feature_parameters)
+    wandb_dict.update(test_parameters)
     print("dict: " + str(wandb_dict))
     wandb.config.update(wandb_dict)
 
@@ -415,12 +418,13 @@ if __name__ == "__main__":
         print('Pretrain complete')
 
     if feature_parameters['apply_environment_seed']:
-        seed = feature_parameters['seed_init_value']
+        seed = 0#feature_parameters['seed_init_value']
     action_history = deque(maxlen=feature_parameters['action_history_size'])
 
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
 
         print("Normal training episode: " + str(i_episode))
+
         entropy_factor = hyper_parameters['entropy_factor'] + i_episode * (
                 hyper_parameters['entropy_factor_final'] - hyper_parameters['entropy_factor']) / (
                                  hyper_parameters["num_episodes"] - 1)
@@ -428,6 +432,7 @@ if __name__ == "__main__":
         sigma_ = hyper_parameters['sigma_init'] + i_episode * (
                 hyper_parameters['sigma_final'] - hyper_parameters['sigma_init']) / (
                          hyper_parameters["num_episodes"] - 1)
+
         actorNet.max_sigma = sigma_
 
         # Initialize the environment and state
@@ -514,3 +519,98 @@ if __name__ == "__main__":
     print('Normal training complete')
 
     save_models()
+
+    print('Complete')
+
+
+    #TESTING
+    model_path = "model_pretrain/"
+
+    # Load model
+    actorNet.load_state_dict(torch.load(model_path + "actor.pt", map_location=device))
+    actorNet.max_sigma = hyper_parameters['sigma_final']
+    criticNet_1.load_state_dict(torch.load(model_path + "criticNet_1.pt", map_location=device))
+    criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
+    target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
+
+    init_seed = 0
+    actual_reward = []
+    issuccess_ = []
+    actual_step = []
+    i = 0
+    seed = init_seed
+    time_limit = test_parameters["time_limit"]
+
+    while i < 100:  # run plot for 10 episodes to see what it learned
+        i += 1
+        seed += 1
+        env.reset(seed=seed)
+        obs = env._get_obs()
+
+        obs_values = [obs["agent"], obs["target"]]
+        for idx_obstacle in range(env_parameters['num_obstacles']):
+            obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+        state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
+
+        state = state.view(1, -1)
+
+
+        for t in count():
+            # Select and perform an action
+            action = select_action(state, actorNet)
+            _, reward, done, _, _ = env.step(action)
+
+            action_ = torch.tensor(action, dtype=torch.float, device=device)
+            action_ = action_.view(1, 2)
+            mu, sigma = actorNet(state)
+            # print(actorNet(state))
+            # print(criticNet_1(state, action_))
+            # print(criticNet_2(state, action_))
+            # print(target_valueNet(state))
+
+            reward = torch.tensor([reward], device=device)
+            env._render_frame()
+            # Observe new state
+            obs = env._get_obs()
+            if not done:
+                obs_values = [obs["agent"], obs["target"]]
+                for idx_obstacle in range(env_parameters['num_obstacles']):
+                    obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+                next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
+
+                next_state = next_state.view(1, -1)
+            else:
+                next_state = None
+
+            # Store the transition in memory
+            memory.push(state, action, next_state, reward)
+
+            # Move to the next state
+            state = next_state
+            if done:
+                reward_ = reward.cpu().detach().numpy()[0]
+                actual_reward.append(reward_)
+                actual_step.append(t)
+                if reward > 0:
+                    issuccess_.append(1)
+                else:
+                    issuccess_.append(0)
+                break
+            elif t >= time_limit:
+                issuccess_.append(0)
+                actual_reward.append(0)
+                actual_step.append(t)
+                break
+
+    # print(issuccess_)
+    # print(actual_reward)
+    accuracy = np.sum(issuccess_) / len(issuccess_)
+    mean_reward = np.mean(actual_reward)
+    mean_step = np.mean(actual_step)
+
+    print("accuracy=", np.sum(issuccess_) / len(issuccess_))
+    print("mean_reward=", np.mean(actual_reward))
+    print("mean_step=", np.mean(actual_step))  # mean step duration
+
+    test_result = {"accuracy": accuracy, "mean_reward": mean_reward, "mean_step": mean_step, "time_limit": time_limit}
+    wandb_dict.update(test_result)

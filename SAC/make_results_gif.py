@@ -1,22 +1,30 @@
-import torch
+import os
+import sys
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 import numpy as np
-from itertools import count
+import datetime
+from PIL import Image
 
+from itertools import count
 from environment import GridWorldEnv
 from training import init_model, select_action
-
 from model import *
 import json
 
+
+
+sys.path.insert(0, '..')
+
+
 if __name__ == '__main__':
+
+    images = []
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    m = "1"  # input("Select normal Model (0) OR Model with pretrain (1): ")
-    if m == "0":
-        model_path = "model/"
-    elif m == "1":
-        model_path = "model_pretrain/"
+    data_path = "plots/"
+    model_path = "model_pretrain/"
 
     # Load the model parameters
     with open(model_path + 'env_parameters.txt', 'r') as file:
@@ -30,11 +38,11 @@ if __name__ == '__main__':
 
     # initialize environment
     env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
-    # env.render_mode = "human"
+    env.render_mode = "human"
 
     # initialize NN
     actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
-    seed = feature_parameters['seed_init_value']
+    seed = feature_parameters['seed_init_value'] + 20
     # Load model
     actorNet.load_state_dict(torch.load(model_path + "actor.pt", map_location=device))
     actorNet.max_sigma = hyper_parameters['sigma_final']
@@ -42,16 +50,15 @@ if __name__ == '__main__':
     criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
     target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
 
-    init_seed = 0
-    actual_reward = []
-    issuccess_ = []
-    actual_step = []
+    # env=GridWorldEnv(render_mode="human")
     i = 0
-    seed = init_seed
-    while i < 100:  # run plot for 10 episodes to see what it learned
+    while i < 10:  # run plot for X episodes to see what it learned
         i += 1
-        seed += 1
-        env.reset(seed=seed)
+        if feature_parameters['apply_environment_seed']:
+            env.reset(seed=seed)
+            seed += 1
+        else:
+            env.reset()
         obs = env._get_obs()
 
         obs_values = [obs["agent"], obs["target"]]
@@ -68,13 +75,16 @@ if __name__ == '__main__':
             action_ = torch.tensor(action, dtype=torch.float, device=device)
             action_ = action_.view(1, 2)
             mu, sigma = actorNet(state)
-            # print(actorNet(state))
-            # print(criticNet_1(state, action_))
-            # print(criticNet_2(state, action_))
-            # print(target_valueNet(state))
 
             reward = torch.tensor([reward], device=device)
-            env._render_frame()
+
+            rgb_array = env._render_frame_for_gif()
+            print(rgb_array.shape)
+            print(rgb_array)
+            img = Image.fromarray(rgb_array)
+            print(img)
+            images.append(img)#.convert("P", dither=None))
+
             # Observe new state
             obs = env._get_obs()
             if not done:
@@ -93,25 +103,16 @@ if __name__ == '__main__':
             # Move to the next state
             state = next_state
             if done:
-                reward_ = reward.cpu().detach().numpy()[0]
-                actual_reward.append(reward_)
-                actual_step.append(t)
-                if reward > 0:
-                    issuccess_.append(1)
-                else:
-                    issuccess_.append(0)
                 break
 
-            elif t >= 500:
-                issuccess_.append(0)
-                actual_reward.append(0)
-                actual_step.append(t)
-                break
+    images_rev = images[::-1]
+    images_full = images #+ images_rev
 
-    # print(issuccess_)
-    # print(actual_reward)
-    print("accuracy=", np.sum(issuccess_) / len(issuccess_))
-    print("mean_reward=", np.mean(actual_reward))
+    t = datetime.datetime.now()
+    time_path = ("_%s_%s_%s_%s-%s-%s" % (t.year, t.month, t.day, t.hour, t.minute, t.second))
+    dir_path = data_path + "traj_gif" + time_path
+    os.makedirs(dir_path, exist_ok=False)
 
-    print("mean_step=", np.mean(actual_step))  # mean step duration
-
+    images_full[0].save(dir_path + "/traj_check.gif", format="GIF",
+                        save_all=True, append_images=images_full[1:],
+                        optimize=False, duration=300, loop=0)
