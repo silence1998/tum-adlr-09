@@ -33,7 +33,10 @@ class GridWorldEnv(gym.Env):
         elements = {"agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
                     "target": spaces.Box(0, size - 1, shape=(2,), dtype=int)}
         for idx_obstacle in range(self.num_obstacles):
-            elements.update({"obstacle_{0}".format(idx_obstacle): spaces.Box(0, size - 1, shape=(2,), dtype=int)})
+            elements.update({"obstacle_{0}".format(idx_obstacle): spaces.Box(0, size - 1, shape=(4,), dtype=int)})
+            # TODO adjust self.obstacle velocityties to the functions
+            # TODO set some obstacles vel to 0,0
+
         self.observation_space = spaces.Dict(elements)
 
         """
@@ -132,9 +135,9 @@ class GridWorldEnv(gym.Env):
 
     def step(self, action_step):
         global penalty_distance_collision
-        action_step = np.round(
+        action_step = np.round(  # TODO delete rounding for continuous
             self.reward_parameters[
-                "action_step_scaling"] * action_step)  # scale action to e.g. [-2, 2] -> action reach is 5x5 grid
+                "action_step_scaling"] * action_step)  # a float value from [-1, 1] otherwise problem in entropy
         previous_position = self._agent_location
         self._agent_location = self._agent_location + action_step
         if parameters.reward_parameters['history']:
