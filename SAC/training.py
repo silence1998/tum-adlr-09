@@ -196,16 +196,19 @@ def action_selection(state, actorNet):
     return action
 ### The above code is unused, maybe useful for future work ^^^
 
-def select_action_A_star(state):
-    size = env.size
+def select_action_A_star(state): # TODO does this work correctly in continuous space?
+    size = env.window_size
     grid = np.zeros((size, size))
+    state = np.matrix.round(state, decimals=0).astype(int)
+    #print("state: " + str(state))
+    #print("Rounded Location Object 0: [" + str(int(np.ceil(state[4]))) + "," + str(int(np.ceil(state[5]))) + "]")
     for i in range(env_parameters['num_obstacles']):
-        grid[state[4 + 2 * i], state[5 + 2 * i]] = 1
+        grid[state[4 + 4 * i], state[5 + 4 * i]] = 1
 
     # Start position
-    StartNode = (state[0], state[1])
+    StartNode = (state[0], state[1])  # agent position
     # Goal position
-    EndNode = (state[2], state[3])
+    EndNode = (state[2], state[3])  # target position
     path = A_star.algorithm.algorithm(grid, StartNode, EndNode)
     if path == None:
         print("error: doesn't find a path")
@@ -225,7 +228,7 @@ def obstacle_sort(obs):
     distances = []
     obs_temp = obs.copy()  # copy the dict elements in the env
     for idx_obstacle in range(env_parameters["num_obstacles"]):
-        distances.append(np.sqrt(np.sum(np.power((obs_temp["agent"] - obs_temp["obstacle_{0}".format(idx_obstacle)]), 2))))
+        distances.append(np.sqrt(np.sum(np.power((obs_temp["agent"] - obs_temp["obstacle_{0}".format(idx_obstacle)][0:2]), 2))))
     idx_obstacle_sorted = np.argsort(distances)  # min to max
     num_obstacles = range(env_parameters["num_obstacles"])
     for i, j in zip(num_obstacles, idx_obstacle_sorted):
@@ -294,7 +297,10 @@ if __name__ == "__main__":
     Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
 
-    env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
+    env = GridWorldEnv(render_mode=None,
+                       object_size=env_parameters['object_size'],
+                       num_obstacles=env_parameters['num_obstacles'],
+                       window_size=env_parameters['window_size'])
 
 
     wandb_dict = {}
@@ -334,9 +340,10 @@ if __name__ == "__main__":
             obs = env._get_obs()
             if feature_parameters['sort_obstacles']:
                 obs = obstacle_sort(obs)
-            obs_values = [obs["agent"], obs["target"]]
+
+            obs_values = np.array([obs["agent"], obs["target"]])
             for idx_obstacle in range(env_parameters['num_obstacles']):
-                obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+                obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
             obs_values = np.array(obs_values).reshape(-1)
 
             state = torch.tensor(obs_values, dtype=torch.float, device=device)
@@ -359,9 +366,9 @@ if __name__ == "__main__":
                 if not done:
                     if feature_parameters['sort_obstacles']:
                         obs = obstacle_sort(obs)
-                    obs_values = [obs["agent"], obs["target"]]
+                    obs_values = np.array([obs["agent"], obs["target"]])
                     for idx_obstacle in range(env_parameters['num_obstacles']):
-                        obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+                        obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
                     next_state = torch.tensor(np.array(obs_values).reshape(-1),
                                               dtype=torch.float,
                                               device=device)
@@ -449,9 +456,9 @@ if __name__ == "__main__":
         obs = env._get_obs()
         if feature_parameters['sort_obstacles']:
             obs = obstacle_sort(obs)
-        obs_values = [obs["agent"], obs["target"]]
+        obs_values = np.array([obs["agent"], obs["target"]])
         for idx_obstacle in range(env_parameters['num_obstacles']):
-            obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+            obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
         state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
 
         state = state.view(1, -1)
@@ -469,9 +476,9 @@ if __name__ == "__main__":
             if not done:
                 if feature_parameters['sort_obstacles']:
                     obs = obstacle_sort(obs)
-                obs_values = [obs["agent"], obs["target"]]
+                obs_values = np.array([obs["agent"], obs["target"]])
                 for idx_obstacle in range(env_parameters['num_obstacles']):
-                    obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+                    obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
                 next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
 
                 next_state = next_state.view(1, -1)
@@ -549,9 +556,9 @@ if __name__ == "__main__":
         env.reset(seed=seed)
         obs = env._get_obs()
 
-        obs_values = [obs["agent"], obs["target"]]
+        obs_values = np.array([obs["agent"], obs["target"]])
         for idx_obstacle in range(env_parameters['num_obstacles']):
-            obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+            obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
         state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
 
         state = state.view(1, -1)
@@ -575,9 +582,9 @@ if __name__ == "__main__":
             # Observe new state
             obs = env._get_obs()
             if not done:
-                obs_values = [obs["agent"], obs["target"]]
+                obs_values = np.array([obs["agent"], obs["target"]])
                 for idx_obstacle in range(env_parameters['num_obstacles']):
-                    obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+                    obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
                 next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
 
                 next_state = next_state.view(1, -1)

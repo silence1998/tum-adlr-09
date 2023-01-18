@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     # initialize environment
     env = GridWorldEnv(render_mode=None,
-                       size=30,#env_parameters['env_size'], #TODO: change back to env_size to radius objects
+                       object_size=env_parameters['object_size'], #TODO: change back to env_size to radius objects
                        num_obstacles=env_parameters['num_obstacles'])
     env.render_mode = "human"
 
@@ -55,9 +55,10 @@ if __name__ == '__main__':
             env.reset()
         obs = env._get_obs()
 
-        obs_values = [obs["agent"], obs["target"]]
+        obs_values = np.array([obs["agent"], obs["target"]])
         for idx_obstacle in range(env_parameters['num_obstacles']):
-            obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+            np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
+        print(obs_values)
         state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
 
         state = state.view(1, -1)

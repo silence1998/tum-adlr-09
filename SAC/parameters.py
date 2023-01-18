@@ -1,10 +1,11 @@
 env_parameters = {
     'num_obstacles': 10,
-    'env_size': 2000  # size of the environment in one dimension (environment is square) # TODO: now radius of elemtns
+    'object_size': 10,  # radius of every element in the environment
+    'window_size': 128  # use powers of 2 for better performance
 }
 
 hyper_parameters = {
-    'input_dims': 4 + env_parameters['num_obstacles'] * 2,  # original position of actor, target and obstacle positions
+    'input_dims': 4 + env_parameters['num_obstacles'] * 4,  # original position of actor, target and obstacle positions and obstacle velocities
     'batch_size': 512,
     'gamma': 0.999,  # discount factor
     'target_update': 10,  # update target network every 10 episodes TODO: UNUSED if code for now
