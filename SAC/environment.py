@@ -185,7 +185,9 @@ class GridWorldEnv(gym.Env):
         reward = 0
         ### TARGET SPARSE REWARD ###
         # An episode is done iff the agent has reached the target
-        terminated = np.array_equal(self._agent_location, self._target_location)  # target reached
+        # terminated = np.array_equal(self._agent_location, self._target_location)  # target reached
+        terminated = self.euclidean_norm(self._target_location -
+                                             self._agent_location) < self.radius * 2
         if terminated:
             reward = self.reward_parameters['target_value']  # sparse target reward
 

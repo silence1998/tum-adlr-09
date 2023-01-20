@@ -29,13 +29,17 @@ import wandb
 def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
     if len(memory) < hyper_parameters["batch_size"]:  # if memory is not full enough to start training, return
         return
+    if len(memory_success) < hyper_parameters["batch_size"]/2:
+        transitions = memory.sample(hyper_parameters["batch_size"])
+        batch = Transition(*zip(*transitions))
     ### Sample a batch of transitions from memory
-    transitions = memory.sample(hyper_parameters["batch_size"])  # SpinningUP SAC PC: line 11
+    else:
+        transitions = memory.sample(hyper_parameters["batch_size"]/4*3)  # SpinningUP SAC PC: line 11
+        transitions_success = memory_success.sample(hyper_parameters["batch_size"]/4)
+        batch = Transition(*zip(*transitions, *transitions_success))
     # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
     # detailed explanation). This converts batch-array of Transitions
     # to Transition of batch-arrays
-
-    batch = Transition(*zip(*transitions))
 
     ### SpinningUP SAC PC: line 12
     # Compute a mask of non-final states and concatenate the batch elements -> (1-d)
@@ -195,19 +199,25 @@ def action_selection(state, actorNet):
 
 ### The above code is unused, maybe useful for future work ^^^
 
-def select_action_A_star(state): # TODO does this work correctly in continuous space?
-    size = env.window_size
+def select_action_A_star(state, ratio):  # TODO does this work correctly in continuous space?
+    size = int(ratio) + 1
     grid = np.zeros((size, size))
     state = np.matrix.round(state, decimals=0).astype(int)
-    #print("state: " + str(state))
-    #print("Rounded Location Object 0: [" + str(int(np.ceil(state[4]))) + "," + str(int(np.ceil(state[5]))) + "]")
+    # print("state: " + str(state))
+    # print("Rounded Location Object 0: [" + str(int(np.ceil(state[4]))) + "," + str(int(np.ceil(state[5]))) + "]")
     for i in range(env_parameters['num_obstacles']):
-        grid[state[4 + 4 * i], state[5 + 4 * i]] = 1
+        grid[int(state[4 + 4 * i] / ratio), int(state[5 + 4 * i] / ratio)] = 1
+        grid[int(state[4 + 4 * i] / ratio) + 1, int(state[5 + 4 * i] / ratio)] = 1
+        grid[int(state[4 + 4 * i] / ratio), int(state[5 + 4 * i] / ratio) + 1] = 1
+        grid[int(state[4 + 4 * i] / ratio) + 1, int(state[5 + 4 * i] / ratio) + 1] = 1
+        grid[int(state[4 + 4 * i] / ratio) - 1, int(state[5 + 4 * i] / ratio)] = 1
+        grid[int(state[4 + 4 * i] / ratio), int(state[5 + 4 * i] / ratio) - 1] = 1
+        grid[int(state[4 + 4 * i] / ratio) - 1, int(state[5 + 4 * i] / ratio) - 1] = 1
 
     # Start position
-    StartNode = (state[0], state[1])  # agent position
+    StartNode = (int(state[0] / ratio), int(state[1] / ratio))  # agent position
     # Goal position
-    EndNode = (state[2], state[3])  # target position
+    EndNode = (int(state[2] / ratio), int(state[3] / ratio))  # target position
     path = A_star.algorithm.algorithm(grid, StartNode, EndNode)
     if path == None:
         print("error: doesn't find a path")
@@ -216,7 +226,7 @@ def select_action_A_star(state): # TODO does this work correctly in continuous s
     actions = np.zeros(((len(path) - 1), 2))
     for i in range(len(path) - 1):
         actions[i, :] = path[i + 1] - path[i]
-    return actions
+    return actions[0]
 
 
 def obstacle_sort(obs):
@@ -227,7 +237,8 @@ def obstacle_sort(obs):
     distances = []
     obs_temp = obs.copy()  # copy the dict elements in the env
     for idx_obstacle in range(env_parameters["num_obstacles"]):
-        distances.append(np.sqrt(np.sum(np.power((obs_temp["agent"] - obs_temp["obstacle_{0}".format(idx_obstacle)][0:2]), 2))))
+        distances.append(
+            np.sqrt(np.sum(np.power((obs_temp["agent"] - obs_temp["obstacle_{0}".format(idx_obstacle)][0:2]), 2))))
 
     idx_obstacle_sorted = np.argsort(distances)  # min to max
     num_obstacles = range(env_parameters["num_obstacles"])
@@ -291,18 +302,16 @@ test_parameters = parameters.test_parameters
 
 if __name__ == "__main__":
 
-    wandb.init(project="SAC", entity="tum-adlr-09")
+    # wandb.init(project="SAC", entity="tum-adlr-09")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
-
     env = GridWorldEnv(render_mode=None,
                        object_size=env_parameters['object_size'],
                        num_obstacles=env_parameters['num_obstacles'],
                        window_size=env_parameters['window_size'])
-
 
     wandb_dict = {}
     wandb_dict.update(env_parameters)
@@ -313,6 +322,7 @@ if __name__ == "__main__":
     wandb.config.update(wandb_dict)
 
     actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
+    memory_success = ReplayMemory(feature_parameters['maxsize_ReplayMemory'])  # replay buffer size
     wandb.watch(actorNet)
     wandb.watch(criticNet_1)
     wandb.watch(criticNet_2)
@@ -324,10 +334,10 @@ if __name__ == "__main__":
     if feature_parameters['apply_environment_seed']:
         seed = feature_parameters['seed_init_value']
         print("Testing random seed: " + str(torch.rand(2)))
-
+    #env.render_mode = "human"
     if feature_parameters['pretrain']:
         for i_episode in range(feature_parameters['num_episodes_pretrain']):
-            # print("Pretrain episode: " + str(i_episode))
+            print("Pretrain episode: " + str(i_episode))
 
             # Initialize the environment and state
             if feature_parameters['apply_environment_seed']:
@@ -347,16 +357,17 @@ if __name__ == "__main__":
 
             state = torch.tensor(obs_values, dtype=torch.float, device=device)
             state = state.view(1, -1)
-            actions = select_action_A_star(obs_values)
 
-            if actions is None:
-                print("error: doesn't find a path")
-                continue
             t = 0
-            for action in actions:
+            for t in count():
                 # Select and perform an action
+                action = select_action_A_star(obs_values, ratio=env.window_size / env.radius)
+
+                if action is None:
+                    print("error: doesn't find a path")
+                    break
                 t += 1
-                action = action / env.reward_parameters['action_step_scaling']
+                action = action  # / env.reward_parameters['action_step_scaling']
                 _, reward, done, _, _ = env.step(action)
                 reward = torch.tensor([reward], dtype=torch.float, device=device)
 
@@ -398,10 +409,10 @@ if __name__ == "__main__":
                     plot_durations()
                     if not len(memory) < hyper_parameters["batch_size"]:
                         plot_sigma()
+                    for j in range(t):
+                        memory_success.push(memory.memory[-1-j])
+
                     break
-            # Update the target network, using tau
-            if t != len(actions):
-                print("error: actual step is not equal to precalculated steps")
 
             target_value_params = target_valueNet.named_parameters()
             value_params = valueNet.named_parameters()
@@ -427,7 +438,7 @@ if __name__ == "__main__":
         print('Pretrain complete')
 
     if feature_parameters['apply_environment_seed']:
-        seed = 0#feature_parameters['seed_init_value']
+        seed = 0  # feature_parameters['seed_init_value']
     action_history = deque(maxlen=feature_parameters['action_history_size'])
 
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
@@ -530,96 +541,3 @@ if __name__ == "__main__":
     save_models()
 
     print('Complete')
-
-
-    #TESTING
-    model_path = "model_pretrain/"
-
-    # Load model
-    actorNet.load_state_dict(torch.load(model_path + "actor.pt", map_location=device))
-    actorNet.max_sigma = hyper_parameters['sigma_final']
-    criticNet_1.load_state_dict(torch.load(model_path + "criticNet_1.pt", map_location=device))
-    criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
-    target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
-
-    init_seed = 0
-    actual_reward = []
-    issuccess_ = []
-    actual_step = []
-    i = 0
-    seed = init_seed
-    time_limit = test_parameters["time_limit"]
-
-    while i < 100:  # run plot for 10 episodes to see what it learned
-        i += 1
-        seed += 1
-        env.reset(seed=seed)
-        obs = env._get_obs()
-
-        obs_values = np.array([obs["agent"], obs["target"]])
-        for idx_obstacle in range(env_parameters['num_obstacles']):
-            obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
-        state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
-
-        state = state.view(1, -1)
-
-
-        for t in count():
-            # Select and perform an action
-            action = select_action(state, actorNet)
-            _, reward, done, _, _ = env.step(action)
-
-            action_ = torch.tensor(action, dtype=torch.float, device=device)
-            action_ = action_.view(1, 2)
-            mu, sigma = actorNet(state)
-            # print(actorNet(state))
-            # print(criticNet_1(state, action_))
-            # print(criticNet_2(state, action_))
-            # print(target_valueNet(state))
-
-            reward = torch.tensor([reward], device=device)
-            env._render_frame()
-            # Observe new state
-            obs = env._get_obs()
-            if not done:
-                obs_values = np.array([obs["agent"], obs["target"]])
-                for idx_obstacle in range(env_parameters['num_obstacles']):
-                    obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
-                next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
-
-                next_state = next_state.view(1, -1)
-            else:
-                next_state = None
-
-            # Store the transition in memory
-            memory.push(state, action, next_state, reward)
-
-            # Move to the next state
-            state = next_state
-            if done:
-                reward_ = reward.cpu().detach().numpy()[0]
-                actual_reward.append(reward_)
-                actual_step.append(t)
-                if reward > 0:
-                    issuccess_.append(1)
-                else:
-                    issuccess_.append(0)
-                break
-            elif t >= time_limit:
-                issuccess_.append(0)
-                actual_reward.append(0)
-                actual_step.append(t)
-                break
-
-    # print(issuccess_)
-    # print(actual_reward)
-    accuracy = np.sum(issuccess_) / len(issuccess_)
-    mean_reward = np.mean(actual_reward)
-    mean_step = np.mean(actual_step)
-
-    print("accuracy=", np.sum(issuccess_) / len(issuccess_))
-    print("mean_reward=", np.mean(actual_reward))
-    print("mean_step=", np.mean(actual_step))  # mean step duration
-
-    test_result = {"accuracy": accuracy, "mean_reward": mean_reward, "mean_step": mean_step, "time_limit": time_limit}
-    wandb_dict.update(test_result)

@@ -54,7 +54,6 @@ if __name__ == '__main__':
     i_episode = 0
     while i_episode < 10:  # run plot for 10 episodes to see what it learned
 
-        print("Normal training episode: " + str(i_episode))
         if i_episode == 0 or i_episode == 1:
             entropy_factor = hyper_parameters['entropy_factor']
             sigma_ = hyper_parameters['sigma_init']
@@ -104,6 +103,7 @@ if __name__ == '__main__':
                 next_state = next_state.view(1, -1)
             else:
                 next_state = None
+                break
 
             # Store the transition in memory
             action = np.array([action])

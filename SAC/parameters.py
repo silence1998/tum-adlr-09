@@ -1,13 +1,13 @@
 env_parameters = {
-    'num_obstacles': 10,
-    'object_size': 10,  # radius of every element in the environment
-    'window_size': 128  # use powers of 2 for better performance
+    'num_obstacles': 5,
+    'object_size': 20,  # radius of every element in the environment
+    'window_size': 512  # use powers of 2 for better performance
 }
 
 hyper_parameters = {
 
     'input_dims': 4 + env_parameters['num_obstacles'] * 4,  # original position of actor, target and obstacle positions and obstacle velocities
-    'batch_size': 512,
+    'batch_size': 4096,
     'gamma': 0.999,  # discount factor
     'target_update': 10,  # update target network every 10 episodes TODO: UNUSED if code for now
     'alpha': 0.0003,  # learning rate for actor
@@ -15,15 +15,15 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'entropy_factor_final': 0.5,
-    'num_episodes': 2500,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 250,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
-    'sigma_init': 2.0,
-    'sigma_final': 2.0
+    'sigma_init': 1.0,
+    'sigma_final': 0.5
 }
 
 feature_parameters = {
     'pretrain': True,  # pretrain the model
-    'num_episodes_pretrain': 1000,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes_pretrain': 500,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'maxsize_ReplayMemory': 100000,
     'action_smoothing': False,
 
@@ -52,7 +52,7 @@ reward_parameters = {
     # 'time_weight': 1,
     # the above are not used in the current version which is sparse reward based
 
-    'action_step_scaling': 1,  # 1 step -> "2" grids of movement reach in x and y directions
+    'action_step_scaling': 5,  # 1 step -> "2" grids of movement reach in x and y directions
     ### DENSE REWARDS ###  # TODO: check after midterm
     'obstacle_avoidance': False,
     'obstacle_distance_weight': -0.01,
@@ -73,7 +73,7 @@ reward_parameters = {
     'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
     'checkpoint_value': 1,  # make sure checkpoint_value * checkpoint_number < 1
 
-    'time': True,  # if true, use time penalty
+    'time': False,  # if true, use time penalty
     'time_penalty': -0.01,  # 0.01 == penalty of -1 for "100" action steps
 
     # Rewards below depend on action history
