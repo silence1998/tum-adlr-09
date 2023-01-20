@@ -3,7 +3,7 @@ import numpy as np
 from itertools import count
 
 from environment import GridWorldEnv
-from training import init_model, select_action
+from training import init_model, select_action, obstacle_sort, select_action_smooth
 
 from model import *
 import json
@@ -12,7 +12,7 @@ if __name__ == '__main__':
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    m = "1" #input("Select normal Model (0) OR Model with pretrain (1): ")
+    m = input("Select normal Model (0) OR Model with pretrain (1): ")
     if m == "0":
         model_path = "model/"
     elif m == "1":
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     # initialize environment
     env = GridWorldEnv(render_mode=None,
-                       object_size=env_parameters['object_size'], #TODO: change back to env_size to radius objects
+                       object_size=env_parameters['object_size'],  # TODO: change back to env_size to radius objects
                        num_obstacles=env_parameters['num_obstacles'])
     env.render_mode = "human"
 
@@ -45,44 +45,60 @@ if __name__ == '__main__':
     target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
 
     # env=GridWorldEnv(render_mode="human")
-    i = 0
-    while i < 10:  # run plot for 10 episodes to see what it learned
-        i += 1
+
+    if feature_parameters['apply_environment_seed']:
+        seed = 0  # feature_parameters['seed_init_value']
+    action_history = deque(maxlen=feature_parameters['action_history_size'])
+
+
+    i_episode = 0
+    while i_episode < 10:  # run plot for 10 episodes to see what it learned
+
+        print("Normal training episode: " + str(i_episode))
+        if i_episode == 0 or i_episode == 1:
+            entropy_factor = hyper_parameters['entropy_factor']
+            sigma_ = hyper_parameters['sigma_init']
+        else:
+            entropy_factor = hyper_parameters['entropy_factor'] + i_episode * (
+                    hyper_parameters['entropy_factor_final'] - hyper_parameters['entropy_factor']) / (
+                                     hyper_parameters["num_episodes"] - 1)
+            sigma_ = hyper_parameters['sigma_init'] + i_episode * (
+                    hyper_parameters['sigma_final'] - hyper_parameters['sigma_init']) / (
+                             hyper_parameters["num_episodes"] - 1)
+        actorNet.max_sigma = sigma_
+
+        # Initialize the environment and state
         if feature_parameters['apply_environment_seed']:
             env.reset(seed=seed)
             seed += 1
         else:
             env.reset()
         obs = env._get_obs()
-
+        if feature_parameters['sort_obstacles']:
+            obs = obstacle_sort(obs)
         obs_values = np.array([obs["agent"], obs["target"]])
         for idx_obstacle in range(env_parameters['num_obstacles']):
-            np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
-        print(obs_values)
+            obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
         state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
 
         state = state.view(1, -1)
-        for t in count():
+        for t in count():  # every step of the environment
             # Select and perform an action
             action = select_action(state, actorNet)
+            if feature_parameters['action_smoothing']:
+                action_history.extend([action])
+                action = select_action_smooth(action_history)
             _, reward, done, _, _ = env.step(action)
+            reward = torch.tensor([reward], dtype=torch.float, device=device)
 
-            action_ = torch.tensor(action, dtype=torch.float, device=device)
-            action_ = action_.view(1, 2)
-            mu, sigma = actorNet(state)
-            print(actorNet(state))
-            print(criticNet_1(state, action_))
-            print(criticNet_2(state, action_))
-            print(target_valueNet(state))
-
-            reward = torch.tensor([reward], device=device)
-            env._render_frame()
             # Observe new state
             obs = env._get_obs()
             if not done:
-                obs_values = [obs["agent"], obs["target"]]
+                if feature_parameters['sort_obstacles']:
+                    obs = obstacle_sort(obs)
+                obs_values = np.array([obs["agent"], obs["target"]])
                 for idx_obstacle in range(env_parameters['num_obstacles']):
-                    obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+                    obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
                 next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
 
                 next_state = next_state.view(1, -1)
@@ -90,9 +106,13 @@ if __name__ == '__main__':
                 next_state = None
 
             # Store the transition in memory
+            action = np.array([action])
+            action = torch.tensor(action, dtype=torch.float).to(actorNet.device)
             memory.push(state, action, next_state, reward)
 
             # Move to the next state
             state = next_state
-            if done:
-                break
+
+
+
+
