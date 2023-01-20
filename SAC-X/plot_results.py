@@ -1,18 +1,22 @@
 import torch
 import numpy as np
 from itertools import count
+import pickle
 
 from environment import GridWorldEnv
-from training import init_model, select_action
+from training import init_model, select_action, Scheduler
 
 from model import *
 import json
+
+from util_sacx.q_table import QTable
+from util_sacx.policy import BoltzmannPolicy
 
 if __name__ == '__main__':
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    m = "1"  # input("Select normal Model (0) OR Model with pretrain (1): ")
+    m = "1" #input("Select normal Model (0) OR Model with pretrain (1): ")
     if m == "0":
         model_path = "model/"
     elif m == "1":
@@ -28,9 +32,15 @@ if __name__ == '__main__':
     with open(model_path + 'feature_parameters.txt', 'r') as file:
         feature_parameters = json.load(file)
 
+    tasks = (0, 1, 2)
+    sac_schedule = Scheduler(tasks)
+
+    with open(model_path + "Q_task.pkl", "rb") as tf:
+        sac_schedule.Q_task.store = pickle.load(tf)
+
     # initialize environment
     env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
-    # env.render_mode = "human"
+    env.render_mode = "human"
 
     # initialize NN
     actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
@@ -42,16 +52,17 @@ if __name__ == '__main__':
     criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
     target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
 
-    init_seed = 0
-    actual_reward = []
-    issuccess_ = []
-    actual_step = []
+    # env=GridWorldEnv(render_mode="human")
+    task = 1
     i = 0
-    seed = init_seed
-    while i < 100:  # run plot for 10 episodes to see what it learned
+    while i < 10:  # run plot for 10 episodes to see what it learned
         i += 1
-        seed += 1
-        env.reset(seed=seed)
+        List_Tau = []
+        if feature_parameters['apply_environment_seed']:
+            env.reset(seed=seed)
+            seed += 1
+        else:
+            env.reset()
         obs = env._get_obs()
 
         obs_values = [obs["agent"], obs["target"]]
@@ -61,19 +72,25 @@ if __name__ == '__main__':
 
         state = state.view(1, -1)
         for t in count():
+            # if t % sac_schedule.xi == 0:
+            #     # task = random.choice(tasks) ## sac-u
+            #     task = sac_schedule.schedule_task(List_Tau) ## sac-q
+            #     List_Tau.append(task)
             # Select and perform an action
-            action = select_action(state, actorNet)
+            action = select_action(state, actorNet, task)
             _, reward, done, _, _ = env.step(action)
 
             action_ = torch.tensor(action, dtype=torch.float, device=device)
             action_ = action_.view(1, 2)
-            mu, sigma = actorNet(state)
-            # print(actorNet(state))
-            # print(criticNet_1(state, action_))
-            # print(criticNet_2(state, action_))
-            # print(target_valueNet(state))
+            # mu, sigma = actorNet(state, task)
+            print(task)
+            print(actorNet(state, task))
+            print(criticNet_1(state, action_, task))
+            print(criticNet_2(state, action_, task))
+            print(target_valueNet(state, task))
 
-            reward = torch.tensor([reward], device=device)
+            reward = torch.tensor([reward[task]], device=device)
+            print("reward=", reward)
             env._render_frame()
             # Observe new state
             obs = env._get_obs()
@@ -93,25 +110,4 @@ if __name__ == '__main__':
             # Move to the next state
             state = next_state
             if done:
-                reward_ = reward.cpu().detach().numpy()[0]
-                actual_reward.append(reward_)
-                actual_step.append(t)
-                if reward > 0:
-                    issuccess_.append(1)
-                else:
-                    issuccess_.append(0)
                 break
-
-            elif t >= 500:
-                issuccess_.append(0)
-                actual_reward.append(0)
-                actual_step.append(t)
-                break
-
-    # print(issuccess_)
-    # print(actual_reward)
-    print("accuracy=", np.sum(issuccess_) / len(issuccess_))
-    print("mean_reward=", np.mean(actual_reward))
-
-    print("mean_step=", np.mean(actual_step))  # mean step duration
-

@@ -16,6 +16,7 @@ SAC/A_star/__pycache__/
 /SAC/model_pretrain/
 
 /SAC/tmp/
+
 /SAC/model_pretrain/
 /SAC/parameters_base.py
 /SAC/model_pretrain_base/
@@ -34,3 +35,4 @@ SAC/A_star/__pycache__/
 /SAC-X/model_pretrain/
 /SAC-X/tmp/
 /SAC-X/wandb/
+
