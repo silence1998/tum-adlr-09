@@ -16,6 +16,22 @@ SAC/A_star/__pycache__/
 /SAC/model_pretrain/
 
 /SAC/tmp/
+
+/SAC/model_pretrain/
+/SAC/parameters_base.py
+/SAC/model_pretrain_base/
+/SAC/model_pretrain_test/
+/SAC/model_pretrain_action_smoothing_test/
+/SAC/model_pretrain_seed_test/
+/SAC/model_pretrain_test_time_penalty/
+/SAC/model_pretrain_test_checkpoints/
+/SAC/model_test_pretrain/
+/SAC/model_pretrain_test_obstacle_sort/
+/SAC/model_pretrain_test_env_seed/
+/SAC/model_pretrain_test_action_smooting/
+/SAC/test_rewards_with_all_features/
+/SAC/test_features_with_sparse_rewards/
+/SAC/plots/
 /SAC-X/model_pretrain/
 /SAC-X/tmp/
 /SAC-X/wandb/
