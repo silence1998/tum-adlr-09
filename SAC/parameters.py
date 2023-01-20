@@ -15,15 +15,15 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'entropy_factor_final': 0.5,
-    'num_episodes': 250,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 3000,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
-    'sigma_init': 1.0,
-    'sigma_final': 0.5
+    'sigma_init': 2.0,
+    'sigma_final': 2.0
 }
 
 feature_parameters = {
     'pretrain': True,  # pretrain the model
-    'num_episodes_pretrain': 500,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes_pretrain': 1000,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'maxsize_ReplayMemory': 100000,
     'action_smoothing': False,
 
@@ -37,8 +37,8 @@ feature_parameters = {
     'apply_environment_seed': False,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
 
-    'plot_durations': False,  # plot durations of episodes
-    'plot_sigma': False  # plot sigma of actor
+    'plot_durations': True,  # plot durations of episodes
+    'plot_sigma': True  # plot sigma of actor
 }
 
 test_parameters = {
@@ -52,7 +52,7 @@ reward_parameters = {
     # 'time_weight': 1,
     # the above are not used in the current version which is sparse reward based
 
-    'action_step_scaling': 5,  # 1 step -> "2" grids of movement reach in x and y directions
+    'action_step_scaling': 20,  # 1 step -> "2" grids of movement reach in x and y directions
     ### DENSE REWARDS ###  # TODO: check after midterm
     'obstacle_avoidance': False,
     'obstacle_distance_weight': -0.01,

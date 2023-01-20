@@ -29,13 +29,13 @@ import wandb
 def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
     if len(memory) < hyper_parameters["batch_size"]:  # if memory is not full enough to start training, return
         return
-    if len(memory_success) < hyper_parameters["batch_size"]/2:
+    if len(memory_success) < hyper_parameters["batch_size"]*3/4:
         transitions = memory.sample(hyper_parameters["batch_size"])
         batch = Transition(*zip(*transitions))
     ### Sample a batch of transitions from memory
     else:
-        transitions = memory.sample(hyper_parameters["batch_size"]/4*3)  # SpinningUP SAC PC: line 11
-        transitions_success = memory_success.sample(hyper_parameters["batch_size"]/4)
+        transitions = memory.sample(round(hyper_parameters["batch_size"]/4))  # SpinningUP SAC PC: line 11
+        transitions_success = memory_success.sample(round(hyper_parameters["batch_size"]*3/4))
         batch = Transition(*zip(*transitions, *transitions_success))
     # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
     # detailed explanation). This converts batch-array of Transitions
@@ -219,8 +219,8 @@ def select_action_A_star(state, ratio):  # TODO does this work correctly in cont
     # Goal position
     EndNode = (int(state[2] / ratio), int(state[3] / ratio))  # target position
     path = A_star.algorithm.algorithm(grid, StartNode, EndNode)
-    if path == None:
-        print("error: doesn't find a path")
+    if path == None or StartNode == EndNode:
+        #print("error: doesn't find a path")
         return None
     path = np.array(path)
     actions = np.zeros(((len(path) - 1), 2))
@@ -302,7 +302,7 @@ test_parameters = parameters.test_parameters
 
 if __name__ == "__main__":
 
-    # wandb.init(project="SAC", entity="tum-adlr-09")
+    wandb.init(project="SAC", entity="tum-adlr-09")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -334,10 +334,10 @@ if __name__ == "__main__":
     if feature_parameters['apply_environment_seed']:
         seed = feature_parameters['seed_init_value']
         print("Testing random seed: " + str(torch.rand(2)))
-    #env.render_mode = "human"
+    # env.render_mode = "human"
     if feature_parameters['pretrain']:
         for i_episode in range(feature_parameters['num_episodes_pretrain']):
-            print("Pretrain episode: " + str(i_episode))
+            #print("Pretrain episode: " + str(i_episode))
 
             # Initialize the environment and state
             if feature_parameters['apply_environment_seed']:
@@ -364,7 +364,7 @@ if __name__ == "__main__":
                 action = select_action_A_star(obs_values, ratio=env.window_size / env.radius)
 
                 if action is None:
-                    print("error: doesn't find a path")
+                    #print("error: doesn't find a path")
                     break
                 t += 1
                 action = action  # / env.reward_parameters['action_step_scaling']
@@ -403,15 +403,10 @@ if __name__ == "__main__":
                     if feature_parameters['plot_sigma']:
                         if not len(memory) < hyper_parameters["batch_size"]:
                             plot_sigma()
-                    break
-                if done:
-                    episode_durations.append(t + 1)
-                    plot_durations()
-                    if not len(memory) < hyper_parameters["batch_size"]:
-                        plot_sigma()
-                    for j in range(t):
-                        memory_success.push(memory.memory[-1-j])
-
+                    if reward > 0:
+                        #print("success")
+                        for j in range(t):
+                            memory_success.memory.append(memory.memory[-1-j])
                     break
 
             target_value_params = target_valueNet.named_parameters()
@@ -510,9 +505,10 @@ if __name__ == "__main__":
                 if feature_parameters['plot_sigma']:
                     if not len(memory) < hyper_parameters["batch_size"]:
                         plot_sigma()
-                if len(memory) > feature_parameters['maxsize_ReplayMemory'] / 2 and reward <= 0:
-                    memory.delete_fail(t)
-                    print('delete')
+                if reward > 0:
+                    print("success")
+                    for j in range(t):
+                        memory_success.memory.append(memory.memory[-1-j])
                 break
 
         # Update the target network, using tau
