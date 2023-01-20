@@ -1,11 +1,13 @@
 env_parameters = {
     'num_obstacles': 10,
-    'env_size': 2000  # size of the environment in one dimension (environment is square) # TODO: now radius of elemtns
+    'object_size': 10,  # radius of every element in the environment
+    'window_size': 128  # use powers of 2 for better performance
 }
 
 hyper_parameters = {
-    'input_dims': 4 + env_parameters['num_obstacles'] * 2,  # original position of actor, target and obstacle positions
-    'batch_size': 4096,
+
+    'input_dims': 4 + env_parameters['num_obstacles'] * 4,  # original position of actor, target and obstacle positions and obstacle velocities
+    'batch_size': 512,
     'gamma': 0.999,  # discount factor
     'target_update': 10,  # update target network every 10 episodes TODO: UNUSED if code for now
     'alpha': 0.0003,  # learning rate for actor
@@ -24,6 +26,7 @@ feature_parameters = {
     'num_episodes_pretrain': 1000,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'maxsize_ReplayMemory': 100000,
     'action_smoothing': False,
+
     'action_history_size': 3,  # number of actions to remember for the action history
 
     'select_action_filter': False,  # filter actions to be directed towards target # TODO: last test
