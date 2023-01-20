@@ -16,6 +16,7 @@ class GridWorldEnv(gym.Env):
         self.radius = object_size  # The size of the radius of the elements, defined in the training and plotting scripts
         self.window_size = window_size  # The size of the PyGame window
         self.num_obstacles = num_obstacles
+        self.total_step = 0
 
         ### REWARD PARAMETERS ###
         self.reward_parameters = parameters.reward_parameters
@@ -81,6 +82,8 @@ class GridWorldEnv(gym.Env):
 
         super().reset(seed=seed)
 
+        self.total_step = 0
+
         # Choose the agent's location uniformly at random
         self._agent_location = self.np_random.random(size=(2,), dtype=np.float32) * (self.window_size - 2 * self.radius)
         if parameters.reward_parameters['history']:
@@ -133,9 +136,9 @@ class GridWorldEnv(gym.Env):
 
     def step(self, action_step):
         global penalty_distance_collision
-
         ### ENVIRONMENT UPDATE ###
         action_step = self.reward_parameters["action_step_scaling"] * action_step  # a float value from [-1, 1] otherwise problem in entropy
+
         previous_position = self._agent_location
         if parameters.reward_parameters['history']:
             self._agent_location_history.extend(self._agent_location)
@@ -147,6 +150,16 @@ class GridWorldEnv(gym.Env):
                                                  self._obstacle_velocities["{0}".format(idx_obstacle)]})
 
         self._max_distance = math.sqrt(2) * self.window_size
+
+        ## if too many steps
+
+        if self.total_step > self.reward_parameters['total_step_limit']:
+            terminated = True  # agent is out of bounds but did not collide with obstacle
+            reward = self.reward_parameters['reward_reach_limit']  # collision with wall or obstacles
+            observation = self._get_obs()
+            info = self._get_info()
+            return observation, reward, terminated, False, info
+
 
         ### COLLISION SPARSE REWARD ###
         # Check for obstacle collision
