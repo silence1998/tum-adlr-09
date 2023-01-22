@@ -93,7 +93,7 @@ def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
         actor_loss = entropy_factor * log_probs - critic_value
         actor_loss = torch.mean(actor_loss)
 
-        # wandb.log({"actor_loss": actor_loss})
+        wandb.log({"actor_loss": actor_loss})
 
         # print(str(i_episode) + " - " + str(actor_loss))
         # print(str(i_episode) + "-actor_loss: " + str(actor_loss.detach().cpu().numpy()))
@@ -339,7 +339,7 @@ class Scheduler:
 
 if __name__ == "__main__":
 
-    # wandb.init(project="SAC", entity="tum-adlr-09")
+    wandb.init(project="SAC", entity="tum-adlr-09")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -350,21 +350,21 @@ if __name__ == "__main__":
                        num_obstacles=env_parameters['num_obstacles'],
                        window_size=env_parameters['window_size'])
 
-    # wandb_dict = {}
-    # wandb_dict.update(env_parameters)
-    # wandb_dict.update(hyper_parameters)
-    # wandb_dict.update(feature_parameters)
-    # wandb_dict.update(test_parameters)
-    # print("dict: " + str(wandb_dict))
-    # wandb.config.update(wandb_dict)
+    wandb_dict = {}
+    wandb_dict.update(env_parameters)
+    wandb_dict.update(hyper_parameters)
+    wandb_dict.update(feature_parameters)
+    wandb_dict.update(test_parameters)
+    print("dict: " + str(wandb_dict))
+    wandb.config.update(wandb_dict)
 
     actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
     memory_success = ReplayMemory(feature_parameters['maxsize_ReplayMemory'])  # replay buffer size
-    # wandb.watch(actorNet)
-    # wandb.watch(criticNet_1)
-    # wandb.watch(criticNet_2)
-    # wandb.watch(valueNet)
-    # wandb.watch(target_valueNet)
+    wandb.watch(actorNet)
+    wandb.watch(criticNet_1)
+    wandb.watch(criticNet_2)
+    wandb.watch(valueNet)
+    wandb.watch(target_valueNet)
 
     tasks = (0, 1, 2)
     sac_schedule = Scheduler(tasks)

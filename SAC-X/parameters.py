@@ -1,13 +1,13 @@
 env_parameters = {
-    'num_obstacles': 1,
-    'object_size': 10,  # radius of every element in the environment
+    'num_obstacles': 5,
+    'object_size': 20,  # radius of every element in the environment
     'window_size': 100  # use powers of 2 for better performance
 }
 
 hyper_parameters = {
 
     'input_dims': 4 + env_parameters['num_obstacles'] * 4,  # original position of actor, target and obstacle positions and obstacle velocities
-    'batch_size': 512,
+    'batch_size': 4096,
     'gamma': 0.999,  # discount factor
     'target_update': 10,  # update target network every 10 episodes TODO: UNUSED if code for now
     'alpha': 0.0003,  # learning rate for actor
@@ -15,7 +15,7 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'entropy_factor_final': 0.5,
-    'num_episodes': 1000,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 3000,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
     'sigma_init': 2.0,
     'sigma_final': 2.0
@@ -23,7 +23,7 @@ hyper_parameters = {
 
 feature_parameters = {
     'pretrain': True,  # pretrain the model
-    'num_episodes_pretrain': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes_pretrain': 1000,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'maxsize_ReplayMemory': 100000,
     'action_smoothing': False,
 
