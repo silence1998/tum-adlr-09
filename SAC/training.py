@@ -277,17 +277,17 @@ def save_models():
     print("Done")
 
 
-def init_model():
+def init_model(input_dims=parameters.hyper_parameters["input_dims"]):
     # initialize NN
     n_actions = 2  # velocity in 2 directions
-    actorNet = ActorNetwork(hyper_parameters["alpha"], hyper_parameters["input_dims"], n_actions=n_actions,
+    actorNet = ActorNetwork(hyper_parameters["alpha"], input_dims, n_actions=n_actions,
                             name='actor', max_action=[1, 1], sigma=2.0)  # TODO max_action value and min_action value
-    criticNet_1 = CriticNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], n_actions=n_actions,
+    criticNet_1 = CriticNetwork(hyper_parameters["beta"], input_dims, n_actions=n_actions,
                                 name='critic_1')
-    criticNet_2 = CriticNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], n_actions=n_actions,
+    criticNet_2 = CriticNetwork(hyper_parameters["beta"], input_dims, n_actions=n_actions,
                                 name='critic_2')
-    valueNet = ValueNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], name='value')
-    target_valueNet = ValueNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], name='target_value')
+    valueNet = ValueNetwork(hyper_parameters["beta"], input_dims, name='value')
+    target_valueNet = ValueNetwork(hyper_parameters["beta"], input_dims, name='target_value')
 
     memory = ReplayMemory(feature_parameters['maxsize_ReplayMemory'])  # replay buffer size
 

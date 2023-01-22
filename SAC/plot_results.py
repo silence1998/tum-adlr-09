@@ -36,7 +36,7 @@ if __name__ == '__main__':
     env.render_mode = "human"
 
     # initialize NN
-    actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
+    actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model(hyper_parameters["input_dims"])
     seed = feature_parameters['seed_init_value']
     # Load model
     actorNet.load_state_dict(torch.load(model_path + "actor.pt", map_location=device))
