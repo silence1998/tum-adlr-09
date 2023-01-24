@@ -1,12 +1,16 @@
 import torch
 import numpy as np
 from itertools import count
+import pickle
 
 from environment import GridWorldEnv
-from training import init_model, select_action, obstacle_sort, select_action_smooth
+from training import init_model, select_action, obstacle_sort, select_action_smooth, Scheduler
 
 from model import *
 import json
+
+from util_sacx.q_table import QTable
+from util_sacx.policy import BoltzmannPolicy
 
 if __name__ == '__main__':
 
@@ -28,6 +32,12 @@ if __name__ == '__main__':
     with open(model_path + 'feature_parameters.txt', 'r') as file:
         feature_parameters = json.load(file)
 
+    tasks = (0, 1, 2)
+    sac_schedule = Scheduler(tasks)
+
+    with open(model_path + "Q_task.pkl", "rb") as tf:
+        sac_schedule.Q_task.store = pickle.load(tf)
+
     # initialize environment
     env = GridWorldEnv(render_mode=None,
                        object_size=env_parameters['object_size'],  # TODO: change back to env_size to radius objects
@@ -36,7 +46,7 @@ if __name__ == '__main__':
     env.render_mode = "human"
 
     # initialize NN
-    actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
+    actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model(hyper_parameters["input_dims"])
     seed = feature_parameters['seed_init_value']
     # Load model
     actorNet.load_state_dict(torch.load(model_path + "actor.pt", map_location=device))

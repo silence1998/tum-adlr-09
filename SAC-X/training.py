@@ -10,6 +10,7 @@ import json
 import os
 import matplotlib.pyplot as plt
 from itertools import count
+import pickle
 
 from collections import namedtuple
 from collections import deque
@@ -274,6 +275,9 @@ def save_models():
     with open(model_path + 'feature_parameters.txt', 'w+') as file:
         file.write(json.dumps(feature_parameters))  # use `json.loads` to do the reverse
 
+    with open(model_path + "Q_task.pkl", "wb") as tf:
+        pickle.dump(sac_schedule.Q_task.store, tf)
+
     print("Saving models ...")
     torch.save(actorNet.state_dict(), model_path + "actor.pt")
     torch.save(criticNet_1.state_dict(), model_path + "criticNet_1.pt")
@@ -282,17 +286,17 @@ def save_models():
     print("Done")
 
 
-def init_model():
+def init_model(input_dims=parameters.hyper_parameters["input_dims"]):
     # initialize NN
     n_actions = 2  # velocity in 2 directions
-    actorNet = ActorNetwork(hyper_parameters["alpha"], hyper_parameters["input_dims"], n_actions=n_actions,
+    actorNet = ActorNetwork(hyper_parameters["alpha"], input_dims, n_actions=n_actions,
                             name='actor', max_action=[1, 1], sigma=2.0)  # TODO max_action value and min_action value
-    criticNet_1 = CriticNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], n_actions=n_actions,
+    criticNet_1 = CriticNetwork(hyper_parameters["beta"], input_dims, n_actions=n_actions,
                                 name='critic_1')
-    criticNet_2 = CriticNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], n_actions=n_actions,
+    criticNet_2 = CriticNetwork(hyper_parameters["beta"], input_dims, n_actions=n_actions,
                                 name='critic_2')
-    valueNet = ValueNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], name='value')
-    target_valueNet = ValueNetwork(hyper_parameters["beta"], hyper_parameters["input_dims"], name='target_value')
+    valueNet = ValueNetwork(hyper_parameters["beta"], input_dims, name='value')
+    target_valueNet = ValueNetwork(hyper_parameters["beta"], input_dims, name='target_value')
 
     memory = ReplayMemory(feature_parameters['maxsize_ReplayMemory'])  # replay buffer size
 
