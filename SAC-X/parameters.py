@@ -1,7 +1,7 @@
 env_parameters = {
     'num_obstacles': 5,
     'object_size': 20,  # radius of every element in the environment
-    'window_size': 100  # use powers of 2 for better performance
+    'window_size': 512  # use powers of 2 for better performance
 }
 
 hyper_parameters = {

@@ -44,7 +44,7 @@ if __name__ == '__main__':
     criticNet_1.load_state_dict(torch.load(model_path + "criticNet_1.pt", map_location=device))
     criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
     target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
-
+    actorNet.max_sigma = 0.1
     # env=GridWorldEnv(render_mode="human")
 
     if feature_parameters['apply_environment_seed']:
@@ -54,18 +54,6 @@ if __name__ == '__main__':
 
     i_episode = 0
     while i_episode < 10:  # run plot for 10 episodes to see what it learned
-
-        if i_episode == 0 or i_episode == 1:
-            entropy_factor = hyper_parameters['entropy_factor']
-            sigma_ = hyper_parameters['sigma_init']
-        else:
-            entropy_factor = hyper_parameters['entropy_factor'] + i_episode * (
-                    hyper_parameters['entropy_factor_final'] - hyper_parameters['entropy_factor']) / (
-                                     hyper_parameters["num_episodes"] - 1)
-            sigma_ = hyper_parameters['sigma_init'] + i_episode * (
-                    hyper_parameters['sigma_final'] - hyper_parameters['sigma_init']) / (
-                             hyper_parameters["num_episodes"] - 1)
-        actorNet.max_sigma = sigma_
 
         # Initialize the environment and state
         if feature_parameters['apply_environment_seed']:

@@ -29,13 +29,13 @@ import wandb
 def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
     if len(memory) < hyper_parameters["batch_size"]:  # if memory is not full enough to start training, return
         return
-    if len(memory_success) < hyper_parameters["batch_size"]*3/4:
+    if len(memory_success) < hyper_parameters["batch_size"] * 3 / 4:
         transitions = memory.sample(hyper_parameters["batch_size"])
         batch = Transition(*zip(*transitions))
     ### Sample a batch of transitions from memory
     else:
-        transitions = memory.sample(round(hyper_parameters["batch_size"]/4))  # SpinningUP SAC PC: line 11
-        transitions_success = memory_success.sample(round(hyper_parameters["batch_size"]*3/4))
+        transitions = memory.sample(round(hyper_parameters["batch_size"] / 4))  # SpinningUP SAC PC: line 11
+        transitions_success = memory_success.sample(round(hyper_parameters["batch_size"] * 3 / 4))
         batch = Transition(*zip(*transitions, *transitions_success))
     # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
     # detailed explanation). This converts batch-array of Transitions
@@ -199,28 +199,29 @@ def action_selection(state, actorNet):
 
 ### The above code is unused, maybe useful for future work ^^^
 
-def select_action_A_star(state, ratio):  # TODO does this work correctly in continuous space?
-    size = int(ratio) + 1
+def select_action_A_star(state, window_size, object_size):  # TODO does this work correctly in continuous space?
+    ratio = window_size / (2 * object_size)
+    size = int(ratio) + 2
     grid = np.zeros((size, size))
-    state = np.matrix.round(state, decimals=0).astype(int)
+    # state = np.matrix.round(state, decimals=0).astype(int)
     # print("state: " + str(state))
     # print("Rounded Location Object 0: [" + str(int(np.ceil(state[4]))) + "," + str(int(np.ceil(state[5]))) + "]")
     for i in range(env_parameters['num_obstacles']):
-        grid[int(state[4 + 4 * i] / ratio), int(state[5 + 4 * i] / ratio)] = 1
-        grid[int(state[4 + 4 * i] / ratio) + 1, int(state[5 + 4 * i] / ratio)] = 1
-        grid[int(state[4 + 4 * i] / ratio), int(state[5 + 4 * i] / ratio) + 1] = 1
-        grid[int(state[4 + 4 * i] / ratio) + 1, int(state[5 + 4 * i] / ratio) + 1] = 1
-        grid[int(state[4 + 4 * i] / ratio) - 1, int(state[5 + 4 * i] / ratio)] = 1
-        grid[int(state[4 + 4 * i] / ratio), int(state[5 + 4 * i] / ratio) - 1] = 1
-        grid[int(state[4 + 4 * i] / ratio) - 1, int(state[5 + 4 * i] / ratio) - 1] = 1
+        grid[round(state[4 + 4 * i] / (2 * object_size)), round(state[5 + 4 * i] / (2 * object_size))] = 1
+        grid[round(state[4 + 4 * i] / (2 * object_size)) + 1, round(state[5 + 4 * i] / (2 * object_size))] = 1
+        grid[round(state[4 + 4 * i] / (2 * object_size)), round(state[5 + 4 * i] / (2 * object_size)) + 1] = 1
+        grid[round(state[4 + 4 * i] / (2 * object_size)) + 1, round(state[5 + 4 * i] / (2 * object_size)) + 1] = 1
+        grid[round(state[4 + 4 * i] / (2 * object_size)) - 1, round(state[5 + 4 * i] / (2 * object_size))] = 1
+        grid[round(state[4 + 4 * i] / (2 * object_size)), round(state[5 + 4 * i] / (2 * object_size)) - 1] = 1
+        grid[round(state[4 + 4 * i] / (2 * object_size)) - 1, round(state[5 + 4 * i] / (2 * object_size)) - 1] = 1
 
     # Start position
-    StartNode = (int(state[0] / ratio), int(state[1] / ratio))  # agent position
+    StartNode = (round(state[0] / (2 * object_size)), round(state[1] / (2 * object_size)))  # agent position
     # Goal position
-    EndNode = (int(state[2] / ratio), int(state[3] / ratio))  # target position
+    EndNode = (round(state[2] / (2 * object_size)), round(state[3] / (2 * object_size)))  # target position
     path = A_star.algorithm.algorithm(grid, StartNode, EndNode)
     if path == None or StartNode == EndNode:
-        #print("error: doesn't find a path")
+        # print("error: doesn't find a path")
         return None
     path = np.array(path)
     actions = np.zeros(((len(path) - 1), 2))
@@ -302,7 +303,7 @@ test_parameters = parameters.test_parameters
 
 if __name__ == "__main__":
 
-    wandb.init(project="SAC", entity="tum-adlr-09")
+    # wandb.init(project="SAC", entity="tum-adlr-09")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -313,31 +314,31 @@ if __name__ == "__main__":
                        num_obstacles=env_parameters['num_obstacles'],
                        window_size=env_parameters['window_size'])
 
-    wandb_dict = {}
-    wandb_dict.update(env_parameters)
-    wandb_dict.update(hyper_parameters)
-    wandb_dict.update(feature_parameters)
-    wandb_dict.update(test_parameters)
-    print("dict: " + str(wandb_dict))
-    wandb.config.update(wandb_dict)
+    # wandb_dict = {}
+    # wandb_dict.update(env_parameters)
+    # wandb_dict.update(hyper_parameters)
+    # wandb_dict.update(feature_parameters)
+    # wandb_dict.update(test_parameters)
+    # print("dict: " + str(wandb_dict))
+    # wandb.config.update(wandb_dict)
 
     actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
     memory_success = ReplayMemory(feature_parameters['maxsize_ReplayMemory'])  # replay buffer size
-    wandb.watch(actorNet)
-    wandb.watch(criticNet_1)
-    wandb.watch(criticNet_2)
-    wandb.watch(valueNet)
-    wandb.watch(target_valueNet)
+    # wandb.watch(actorNet)
+    # wandb.watch(criticNet_1)
+    # wandb.watch(criticNet_2)
+    # wandb.watch(valueNet)
+    # wandb.watch(target_valueNet)
 
     episode_durations = []
     average_sigma_per_batch = []
     if feature_parameters['apply_environment_seed']:
         seed = feature_parameters['seed_init_value']
         print("Testing random seed: " + str(torch.rand(2)))
-    # env.render_mode = "human"
+    env.render_mode = "human"
     if feature_parameters['pretrain']:
         for i_episode in range(feature_parameters['num_episodes_pretrain']):
-            #print("Pretrain episode: " + str(i_episode))
+            # print("Pretrain episode: " + str(i_episode))
 
             # Initialize the environment and state
             if feature_parameters['apply_environment_seed']:
@@ -361,10 +362,10 @@ if __name__ == "__main__":
             t = 0
             for t in count():
                 # Select and perform an action
-                action = select_action_A_star(obs_values, ratio=env.window_size / env.radius)
+                action = select_action_A_star(obs_values, env.window_size, env.radius)
 
                 if action is None:
-                    #print("error: doesn't find a path")
+                    # print("error: doesn't find a path")
                     break
                 t += 1
                 action = action  # / env.reward_parameters['action_step_scaling']
@@ -404,9 +405,9 @@ if __name__ == "__main__":
                         if not len(memory) < hyper_parameters["batch_size"]:
                             plot_sigma()
                     if reward > 0:
-                        #print("success")
+                        # print("success")
                         for j in range(t):
-                            memory_success.memory.append(memory.memory[-1-j])
+                            memory_success.memory.append(memory.memory[-1 - j])
                     break
 
             target_value_params = target_valueNet.named_parameters()
@@ -508,7 +509,7 @@ if __name__ == "__main__":
                 if reward > 0:
                     print("success")
                     for j in range(t):
-                        memory_success.memory.append(memory.memory[-1-j])
+                        memory_success.memory.append(memory.memory[-1 - j])
                 break
 
         # Update the target network, using tau

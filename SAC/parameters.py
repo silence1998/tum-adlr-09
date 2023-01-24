@@ -1,5 +1,5 @@
 env_parameters = {
-    'num_obstacles': 5,
+    'num_obstacles': 10,
     'object_size': 20,  # radius of every element in the environment
     'window_size': 512  # use powers of 2 for better performance
 }
