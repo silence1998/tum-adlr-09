@@ -4,6 +4,7 @@ from itertools import count
 
 from environment import GridWorldEnv
 from training import init_model, select_action, obstacle_sort, select_action_smooth
+from parameters import feature_parameters, reward_parameters, test_parameters
 
 from model import *
 import json
@@ -12,7 +13,7 @@ if __name__ == '__main__':
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    m = "1"#input("Select normal Model (0) OR Model with pretrain (1): ")
+    m = "0" #input("Select normal Model (0) OR Model with pretrain (1): ")
     if m == "0":
         model_path = "model/"
     elif m == "1":

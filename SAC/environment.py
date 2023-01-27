@@ -31,6 +31,7 @@ class GridWorldEnv(gym.Env):
             self._agent_location_history = deque(maxlen=parameters.reward_parameters['history_size'])
 
         # Observations are dictionaries with the agent's, obstacles' and the target's location.
+
         elements = {"agent": spaces.Box(self.radius, self.window_size - self.radius, shape=(2,), dtype=np.float32),
                     "target": spaces.Box(self.radius, self.window_size - self.radius, shape=(2,), dtype=np.float32)}
         for idx_obstacle in range(self.num_obstacles):
@@ -58,7 +59,8 @@ class GridWorldEnv(gym.Env):
 
 
     def _get_obs(self):
-        elements = {"agent": self._agent_location, "target": self._target_location}
+        elements = {"agent": self._agent_location,
+                    "target": self._target_location}
         for idx_obstacle in range(self.num_obstacles):
             elements.update({"obstacle_{0}".format(idx_obstacle):
                 np.concatenate((self._obstacle_locations[str(idx_obstacle)],
@@ -161,6 +163,7 @@ class GridWorldEnv(gym.Env):
             return observation, reward, terminated, False, info
 
 
+
         ### COLLISION SPARSE REWARD ###
         # Check for obstacle collision
         terminated = False
@@ -241,7 +244,22 @@ class GridWorldEnv(gym.Env):
                 # Difference to wall
                 diff_distance_to_wall = np.abs(distance_to_wall - previous_distance_to_wall)  # TODO: make use of this
 
-            reward = 0
+            reward = 0  # TODO: remove this??
+
+            ### COLLISION PREDICTION PENALTY###
+            if self.reward_parameters['collision_prediction']:
+                self._obstacle_locations_pred = self._obstacle_locations  # TODO: how to check if this works
+                for idx_obstacle in range(self.num_obstacles):
+                    self._obstacle_locations_pred.update({"{0}".format(idx_obstacle):
+                                                              self._obstacle_locations["{0}".format(idx_obstacle)] +
+                                                              self._obstacle_velocities["{0}".format(idx_obstacle)]})
+
+                    _obstacle_locations_array = np.array(list(self._obstacle_locations_pred.values()))
+                    _agent_location_rep = np.array([self._agent_location for i in range(len(_obstacle_locations_array))])
+                    distances = np.array(self.elementwise_euclidean_norm(_obstacle_locations_array, _agent_location_rep))
+                    collision = distances - 2 * self.radius
+                    if (collision < 0).any():
+                        reward += self.reward_parameters['collision_prediction_penalty']  # collision with wall or obstacles
 
             ### DENSE REWARDS ###
             # Reward for avoiding obstacles
