@@ -33,13 +33,13 @@ import wandb
 def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
     if len(memory) < hyper_parameters["batch_size"]:  # if memory is not full enough to start training, return
         return
-    if len(memory_success) < hyper_parameters["batch_size"]*3/4:
+    if len(memory_success) < hyper_parameters["batch_size"] * 3 / 4:
         transitions = memory.sample(hyper_parameters["batch_size"])
         batch = Transition(*zip(*transitions))
     ### Sample a batch of transitions from memory
     else:
-        transitions = memory.sample(round(hyper_parameters["batch_size"]/4))  # SpinningUP SAC PC: line 11
-        transitions_success = memory_success.sample(round(hyper_parameters["batch_size"]*3/4))
+        transitions = memory.sample(round(hyper_parameters["batch_size"] / 4))  # SpinningUP SAC PC: line 11
+        transitions_success = memory_success.sample(round(hyper_parameters["batch_size"] * 3 / 4))
         batch = Transition(*zip(*transitions, *transitions_success))
     # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
     # detailed explanation). This converts batch-array of Transitions
@@ -106,7 +106,8 @@ def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
 
         criticNet_1.optimizer.zero_grad()
         criticNet_2.optimizer.zero_grad()
-        q_hat = reward_batch[:, task_] + hyper_parameters["gamma"] * value_  # SpinningUP SAC PC: line 12 -> calc y (target)
+        q_hat = reward_batch[:, task_] + hyper_parameters[
+            "gamma"] * value_  # SpinningUP SAC PC: line 12 -> calc y (target)
         q1_old_policy = criticNet_1.forward(state_batch, action_batch, task_).view(-1)
         q2_old_policy = criticNet_2.forward(state_batch, action_batch, task_).view(-1)
         critic_1_loss = 0.5 * F.mse_loss(q1_old_policy, q_hat)  # line 13 in s.u. pseudocode
@@ -309,30 +310,32 @@ feature_parameters = parameters.feature_parameters
 env_parameters = parameters.env_parameters
 test_parameters = parameters.test_parameters
 
+
 class Scheduler:
     def __init__(self, tasks):
         self.xi = feature_parameters['scheduler_period']
         self.Q_task = QTable()
         self.scheduler = self.Q_task.derive_policy(BoltzmannPolicy, lambda x: tasks, temperature=1)
 
-    def train_scheduler(self, main_rewards, Tau):
+    def train_scheduler(self, main_rewards, Tau, list_fuzzy_state):
         xi = self.xi
         for h in range(len(Tau)):
             R = sum([r * hyper_parameters["gamma"] ** k for k, r in enumerate(main_rewards[h * xi:])])
             # We used a Q-Table with 0.1 learning rate to update the values in the table.
             # Change 0.1 to the desired learning rate
             if h < 3:
-                self.Q_task[tuple(Tau[:h]), Tau[h]] += 0.1 * (R - self.Q_task[tuple(Tau[:h]), Tau[h]])
+                self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]] += 0.1 * (
+                        R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]])
             else:
-                self.Q_task[tuple(Tau[h - 3:h]), Tau[h]] += 0.1 * (R - self.Q_task[tuple(Tau[h - 3:h]), Tau[h]])
+                self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]] += 0.1 * (
+                        R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]])
 
-    def schedule_task(self, Tau):
+    def schedule_task(self, Tau, fuzzy_state):
         h = len(Tau)
-
         if h < 3:
-            dist = self.scheduler.distribution(tuple(Tau))
+            dist = self.scheduler.distribution(tuple(fuzzy_state + Tau))
         else:
-            dist = self.scheduler.distribution(tuple(Tau[-3:]))
+            dist = self.scheduler.distribution(tuple(fuzzy_state + Tau[-3:]))
 
         choice = np.random.random()
         cumulative_p = 0
@@ -341,6 +344,34 @@ class Scheduler:
             cumulative_p += p
             if cumulative_p > choice:
                 return a
+
+    def caluculate_fuzzy_distance(self, state):
+        distance_to_target = np.sqrt((state[2] - state[0]) ** 2 + (state[3] - state[1]) ** 2)
+        distances_to_obstacles = np.array([])
+        for i in range(env_parameters['num_obstacles']):
+            distance_to_obstacle = np.sqrt(
+                (state[4 + 4 * i] - state[0]) ** 2 + (state[5 + 4 * i] - state[1]) ** 2)
+            np.append(distances_to_obstacles, distance_to_obstacle)
+        distance_to_wall = np.amin(np.vstack((state[0:2] - env_parameters['object_size'],
+                                              env_parameters['window_size'] - (
+                                                      env_parameters['object_size'] + state[0:2]))))
+        distances_to_obstacles = np.append(distances_to_obstacles, distance_to_wall)
+        min_distance_to_obstacles = np.min(distances_to_obstacles)
+
+        def fuzzy_distance(distance, standard_distance):
+            result = None
+            if distance < standard_distance / 2:  ## close distance
+                result = 0
+            elif distance < standard_distance * 2:  ### middle distance
+                result = 1
+            else:  ### long distance
+                result = 2
+            return result
+
+        fuzzy_distance_to_target = fuzzy_distance(distance_to_target, env_parameters['window_size'] / 8)
+        fuzzy_min_distance_to_obstacles = fuzzy_distance(min_distance_to_obstacles, env_parameters['object_size'])
+        return [fuzzy_distance_to_target, fuzzy_min_distance_to_obstacles]
+
 
 if __name__ == "__main__":
 
@@ -382,7 +413,7 @@ if __name__ == "__main__":
     # env.render_mode = "human"
     if feature_parameters['pretrain']:
         for i_episode in range(feature_parameters['num_episodes_pretrain']):
-            #print("Pretrain episode: " + str(i_episode))
+            # print("Pretrain episode: " + str(i_episode))
 
             # Initialize the environment and state
             if feature_parameters['apply_environment_seed']:
@@ -409,7 +440,7 @@ if __name__ == "__main__":
                 action = select_action_A_star(obs_values, env.window_size, env.radius)
 
                 if action is None:
-                    #print("error: doesn't find a path")
+                    # print("error: doesn't find a path")
                     break
                 t += 1
                 action = action  # / env.reward_parameters['action_step_scaling']
@@ -449,9 +480,9 @@ if __name__ == "__main__":
                         if not len(memory) < hyper_parameters["batch_size"]:
                             plot_sigma()
                     if reward[0, 0] > 0:
-                        #print("success")
+                        # print("success")
                         for j in range(t):
-                            memory_success.memory.append(memory.memory[-1-j])
+                            memory_success.memory.append(memory.memory[-1 - j])
                     break
 
             target_value_params = target_valueNet.named_parameters()
@@ -486,6 +517,7 @@ if __name__ == "__main__":
         print("Normal training episode: " + str(i_episode))
         main_reward = []
         List_Tau = []
+        List_fuzzy_state = []
         entropy_factor = hyper_parameters['entropy_factor'] + i_episode * (
                 hyper_parameters['entropy_factor_final'] - hyper_parameters['entropy_factor']) / (
                                  hyper_parameters["num_episodes"] - 1)
@@ -514,9 +546,11 @@ if __name__ == "__main__":
         for t in count():  # every step of the environment
             # Select and perform an action
             if t % sac_schedule.xi == 0:
+                fuzzy_state = sac_schedule.caluculate_fuzzy_distance(obs_values)
                 # task = random.choice(tasks) ## sac-u
-                task = sac_schedule.schedule_task(List_Tau)  ## sac-q
+                task = sac_schedule.schedule_task(List_Tau, fuzzy_state)  ## sac-q
                 List_Tau.append(task)
+                List_fuzzy_state.append(fuzzy_state)
             action = select_action(state, actorNet, task)
             if feature_parameters['action_smoothing']:
                 action_history.extend([action])  #### TODO: clear queue for every new iteration
@@ -559,9 +593,9 @@ if __name__ == "__main__":
                 if reward[0, 0] > 0:
                     print("success")
                     for j in range(t):
-                        memory_success.memory.append(memory.memory[-1-j])
+                        memory_success.memory.append(memory.memory[-1 - j])
                 break
-        sac_schedule.train_scheduler(main_reward, List_Tau)
+        sac_schedule.train_scheduler(main_reward, List_Tau, List_fuzzy_state)
         # Update the target network, using tau
         target_value_params = target_valueNet.named_parameters()
         value_params = valueNet.named_parameters()

@@ -177,11 +177,11 @@ class GridWorldEnv(gym.Env):
             np.append(distances_to_obstacles, distance_to_obstacle)
 
         # Distance to the closest wall
-        previous_distance_to_wall = np.amin(np.vstack((previous_position + self.radius + 1,
+        previous_distance_to_wall = np.amin(np.vstack((previous_position - self.radius,
                                                        self.window_size - (self.radius + previous_position))))
         # get the distance to the closest wall in the previous step
-        distance_to_wall = np.amin(np.vstack((self._agent_location + self.radius + 1,
-                                              self.window_size - (self.radius + previous_position))))
+        distance_to_wall = np.amin(np.vstack((self._agent_location - self.radius,
+                                              self.window_size - (self.radius + self._agent_location))))
         previous_distances_to_obstacles = np.append(previous_distances_to_obstacles, previous_distance_to_wall)
         distances_to_obstacles = np.append(distances_to_obstacles, distance_to_wall)
         difference_min_distance_to_obstacles = np.min(distances_to_obstacles) - np.min(
