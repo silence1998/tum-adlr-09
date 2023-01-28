@@ -55,7 +55,6 @@ if __name__ == '__main__':
     criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
     target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
 
-    # env=GridWorldEnv(render_mode="human")
 
     if feature_parameters['apply_environment_seed']:
         seed = 0  # feature_parameters['seed_init_value']
@@ -64,7 +63,7 @@ if __name__ == '__main__':
     task = 0
     i_episode = 0
     while i_episode < 10:  # run plot for 10 episodes to see what it learned
-
+        List_Tau = []
         if i_episode == 0 or i_episode == 1:
             entropy_factor = hyper_parameters['entropy_factor']
             sigma_ = hyper_parameters['sigma_init']
@@ -94,6 +93,13 @@ if __name__ == '__main__':
         state = state.view(1, -1)
         for t in count():  # every step of the environment
             # Select and perform an action
+            if t % sac_schedule.xi == 0:
+                fuzzy_state = sac_schedule.caluculate_fuzzy_distance(obs_values)
+                # task = random.choice(tasks) ## sac-u
+                task = sac_schedule.schedule_task(List_Tau, fuzzy_state)  ## sac-q
+                print(task)
+                List_Tau.append(task)
+
             action = select_action(state, actorNet, task)
             if feature_parameters['action_smoothing']:
                 action_history.extend([action])
