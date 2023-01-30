@@ -209,17 +209,37 @@ def select_action_A_star(state, window_size, object_size):  # TODO does this wor
     ratio = window_size / (2 * object_size)
     size = int(ratio) + 2
     grid = np.zeros((size, size))
+
     # state = np.matrix.round(state, decimals=0).astype(int)
     # print("state: " + str(state))
     # print("Rounded Location Object 0: [" + str(int(np.ceil(state[4]))) + "," + str(int(np.ceil(state[5]))) + "]")
+    def add_obstacle(grid, index1, index2, size):
+        if index1 < size and index2 < size and index1 >= 0 and index2 >= 0:
+            grid[index1, index2] = 1
+
     for i in range(env_parameters['num_obstacles']):
-        grid[round(state[4 + 4 * i] / (2 * object_size)), round(state[5 + 4 * i] / (2 * object_size))] = 1
-        grid[round(state[4 + 4 * i] / (2 * object_size)) + 1, round(state[5 + 4 * i] / (2 * object_size))] = 1
-        grid[round(state[4 + 4 * i] / (2 * object_size)), round(state[5 + 4 * i] / (2 * object_size)) + 1] = 1
-        grid[round(state[4 + 4 * i] / (2 * object_size)) + 1, round(state[5 + 4 * i] / (2 * object_size)) + 1] = 1
-        grid[round(state[4 + 4 * i] / (2 * object_size)) - 1, round(state[5 + 4 * i] / (2 * object_size))] = 1
-        grid[round(state[4 + 4 * i] / (2 * object_size)), round(state[5 + 4 * i] / (2 * object_size)) - 1] = 1
-        grid[round(state[4 + 4 * i] / (2 * object_size)) - 1, round(state[5 + 4 * i] / (2 * object_size)) - 1] = 1
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)), round(state[4 + 4 * i] / (2 * object_size)),
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) + 1, round(state[4 + 4 * i] / (2 * object_size)),
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)), round(state[4 + 4 * i] / (2 * object_size)) + 1,
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) + 1,
+                     round(state[4 + 4 * i] / (2 * object_size)) + 1,
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) - 1, round(state[4 + 4 * i] / (2 * object_size)),
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)), round(state[4 + 4 * i] / (2 * object_size)) - 1,
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) - 1,
+                     round(state[4 + 4 * i] / (2 * object_size)) - 1,
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) + 1,
+                     round(state[4 + 4 * i] / (2 * object_size)) - 1,
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) - 1,
+                     round(state[4 + 4 * i] / (2 * object_size)) + 1,
+                     size)
 
     # Start position
     StartNode = (round(state[0] / (2 * object_size)), round(state[1] / (2 * object_size)))  # agent position
@@ -324,18 +344,24 @@ class Scheduler:
             # We used a Q-Table with 0.1 learning rate to update the values in the table.
             # Change 0.1 to the desired learning rate
             if h < 3:
-                self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]] += 0.1 * (
-                        R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]])
+                # self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]] += 0.1 * (
+                #         R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]])
+                self.Q_task[tuple(Tau[:h]), Tau[h]] += 0.1 * (
+                        R - self.Q_task[tuple(Tau[:h]), Tau[h]])
             else:
-                self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]] += 0.1 * (
-                        R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]])
+                # self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]] += 0.1 * (
+                #         R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]])
+                self.Q_task[tuple(Tau[h - 3:h]), Tau[h]] += 0.1 * (
+                        R - self.Q_task[tuple(Tau[h - 3:h]), Tau[h]])
 
     def schedule_task(self, Tau, fuzzy_state):
         h = len(Tau)
         if h < 3:
-            dist = self.scheduler.distribution(tuple(fuzzy_state + Tau))
+            # dist = self.scheduler.distribution(tuple(fuzzy_state + Tau))
+            dist = self.scheduler.distribution(tuple(Tau))
         else:
-            dist = self.scheduler.distribution(tuple(fuzzy_state + Tau[-3:]))
+            # dist = self.scheduler.distribution(tuple(fuzzy_state + Tau[-3:]))
+            dist = self.scheduler.distribution(tuple(Tau[-3:]))
 
         choice = np.random.random()
         cumulative_p = 0

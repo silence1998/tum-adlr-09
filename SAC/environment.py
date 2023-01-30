@@ -124,7 +124,9 @@ class GridWorldEnv(gym.Env):
             self._obstacle_velocities.update({"{0}".format(idx_obstacle): np.array([0., 0.], dtype=np.float32)})
         for idx_obstacle in range(int(np.ceil(self.num_obstacles/2)), self.num_obstacles):
             self._obstacle_velocities.update({"{0}".format(idx_obstacle):
-                                                  self.np_random.random(size=(2,), dtype=np.float32) * 2 - 1})  # between [-1, 1]
+                                                  (
+                                                          self.np_random.random(size=(2,),
+                                                                                dtype=np.float32) * 2 - 1)})  # between [-1, 1]
 
         observation = self._get_obs()
         info = self._get_info()

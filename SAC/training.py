@@ -203,17 +203,37 @@ def select_action_A_star(state, window_size, object_size):  # TODO does this wor
     ratio = window_size / (2 * object_size)
     size = int(ratio) + 2
     grid = np.zeros((size, size))
+
     # state = np.matrix.round(state, decimals=0).astype(int)
     # print("state: " + str(state))
     # print("Rounded Location Object 0: [" + str(int(np.ceil(state[4]))) + "," + str(int(np.ceil(state[5]))) + "]")
+    def add_obstacle(grid, index1, index2, size):
+        if index1 < size and index2 < size and index1 >= 0 and index2 >= 0:
+            grid[index1, index2] = 1
+
     for i in range(env_parameters['num_obstacles']):
-        grid[round(state[4 + 4 * i] / (2 * object_size)), round(state[5 + 4 * i] / (2 * object_size))] = 1
-        grid[round(state[4 + 4 * i] / (2 * object_size)) + 1, round(state[5 + 4 * i] / (2 * object_size))] = 1
-        grid[round(state[4 + 4 * i] / (2 * object_size)), round(state[5 + 4 * i] / (2 * object_size)) + 1] = 1
-        grid[round(state[4 + 4 * i] / (2 * object_size)) + 1, round(state[5 + 4 * i] / (2 * object_size)) + 1] = 1
-        grid[round(state[4 + 4 * i] / (2 * object_size)) - 1, round(state[5 + 4 * i] / (2 * object_size))] = 1
-        grid[round(state[4 + 4 * i] / (2 * object_size)), round(state[5 + 4 * i] / (2 * object_size)) - 1] = 1
-        grid[round(state[4 + 4 * i] / (2 * object_size)) - 1, round(state[5 + 4 * i] / (2 * object_size)) - 1] = 1
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)), round(state[4 + 4 * i] / (2 * object_size)),
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) + 1, round(state[4 + 4 * i] / (2 * object_size)),
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)), round(state[4 + 4 * i] / (2 * object_size)) + 1,
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) + 1,
+                     round(state[4 + 4 * i] / (2 * object_size)) + 1,
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) - 1, round(state[4 + 4 * i] / (2 * object_size)),
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)), round(state[4 + 4 * i] / (2 * object_size)) - 1,
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) - 1,
+                     round(state[4 + 4 * i] / (2 * object_size)) - 1,
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) + 1,
+                     round(state[4 + 4 * i] / (2 * object_size)) - 1,
+                     size)
+        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) - 1,
+                     round(state[4 + 4 * i] / (2 * object_size)) + 1,
+                     size)
 
     # Start position
     StartNode = (round(state[0] / (2 * object_size)), round(state[1] / (2 * object_size)))  # agent position
@@ -303,7 +323,7 @@ test_parameters = parameters.test_parameters
 
 if __name__ == "__main__":
 
-    # wandb.init(project="SAC", entity="tum-adlr-09")
+    wandb.init(project="SAC", entity="tum-adlr-09")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -314,28 +334,28 @@ if __name__ == "__main__":
                        num_obstacles=env_parameters['num_obstacles'],
                        window_size=env_parameters['window_size'])
 
-    # wandb_dict = {}
-    # wandb_dict.update(env_parameters)
-    # wandb_dict.update(hyper_parameters)
-    # wandb_dict.update(feature_parameters)
-    # wandb_dict.update(test_parameters)
-    # print("dict: " + str(wandb_dict))
-    # wandb.config.update(wandb_dict)
+    wandb_dict = {}
+    wandb_dict.update(env_parameters)
+    wandb_dict.update(hyper_parameters)
+    wandb_dict.update(feature_parameters)
+    wandb_dict.update(test_parameters)
+    print("dict: " + str(wandb_dict))
+    wandb.config.update(wandb_dict)
 
     actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model()
     memory_success = ReplayMemory(feature_parameters['maxsize_ReplayMemory'])  # replay buffer size
-    # wandb.watch(actorNet)
-    # wandb.watch(criticNet_1)
-    # wandb.watch(criticNet_2)
-    # wandb.watch(valueNet)
-    # wandb.watch(target_valueNet)
+    wandb.watch(actorNet)
+    wandb.watch(criticNet_1)
+    wandb.watch(criticNet_2)
+    wandb.watch(valueNet)
+    wandb.watch(target_valueNet)
 
     episode_durations = []
     average_sigma_per_batch = []
     if feature_parameters['apply_environment_seed']:
         seed = feature_parameters['seed_init_value']
         print("Testing random seed: " + str(torch.rand(2)))
-    env.render_mode = "human"
+    # env.render_mode = "human"
     if feature_parameters['pretrain']:
         for i_episode in range(feature_parameters['num_episodes_pretrain']):
             # print("Pretrain episode: " + str(i_episode))
