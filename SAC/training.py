@@ -177,9 +177,9 @@ def select_action_filter(state, actorNet):
     erases the actions which are directed away from the goal
     """
     # state = torch.Tensor([state]).to(actorNet.device)
-    # 0,1: agent position, 2,3: target position
-    delta_x = state[0, 2] - state[0, 0]
-    delta_y = state[0, 3] - state[0, 1]
+    # 0,1: agent position, 4,5: target position
+    delta_x = state[0, 4] - state[0, 0]
+    delta_y = state[0, 5] - state[0, 1]
     actions, _ = actorNet.sample_normal(state, reparametrize=False)
     while actions[0, 0] * delta_x < 0 or actions[0, 1] * delta_y < 0:
         actions, _ = actorNet.sample_normal(state, reparametrize=False)
@@ -206,18 +206,18 @@ def select_action_A_star(state, ratio):  # TODO does this work correctly in cont
     # print("state: " + str(state))
     # print("Rounded Location Object 0: [" + str(int(np.ceil(state[4]))) + "," + str(int(np.ceil(state[5]))) + "]")
     for i in range(env_parameters['num_obstacles']):
-        grid[int(state[4 + 4 * i] / ratio), int(state[5 + 4 * i] / ratio)] = 1
-        grid[int(state[4 + 4 * i] / ratio) + 1, int(state[5 + 4 * i] / ratio)] = 1
-        grid[int(state[4 + 4 * i] / ratio), int(state[5 + 4 * i] / ratio) + 1] = 1
-        grid[int(state[4 + 4 * i] / ratio) + 1, int(state[5 + 4 * i] / ratio) + 1] = 1
-        grid[int(state[4 + 4 * i] / ratio) - 1, int(state[5 + 4 * i] / ratio)] = 1
-        grid[int(state[4 + 4 * i] / ratio), int(state[5 + 4 * i] / ratio) - 1] = 1
-        grid[int(state[4 + 4 * i] / ratio) - 1, int(state[5 + 4 * i] / ratio) - 1] = 1
+        grid[int(state[6 + 4 * i] / ratio),     int(state[7 + 4 * i] / ratio)] = 1
+        grid[int(state[6 + 4 * i] / ratio) + 1, int(state[7 + 4 * i] / ratio)] = 1
+        grid[int(state[6 + 4 * i] / ratio),     int(state[7 + 4 * i] / ratio) + 1] = 1
+        grid[int(state[6 + 4 * i] / ratio) + 1, int(state[7 + 4 * i] / ratio) + 1] = 1
+        grid[int(state[6 + 4 * i] / ratio) - 1, int(state[7 + 4 * i] / ratio)] = 1
+        grid[int(state[6 + 4 * i] / ratio),     int(state[7 + 4 * i] / ratio) - 1] = 1
+        grid[int(state[6 + 4 * i] / ratio) - 1, int(state[7 + 4 * i] / ratio) - 1] = 1
 
     # Start position
     StartNode = (int(state[0] / ratio), int(state[1] / ratio))  # agent position
     # Goal position
-    EndNode = (int(state[2] / ratio), int(state[3] / ratio))  # target position
+    EndNode = (int(state[4] / ratio), int(state[5] / ratio))  # target position
     path = A_star.algorithm.algorithm(grid, StartNode, EndNode)
     if path == None or StartNode == EndNode:
         #print("error: doesn't find a path")
@@ -238,7 +238,7 @@ def obstacle_sort(obs):
     obs_temp = obs.copy()  # copy the dict elements in the env
     for idx_obstacle in range(env_parameters["num_obstacles"]):
         distances.append(
-            np.sqrt(np.sum(np.power((obs_temp["agent"] - obs_temp["obstacle_{0}".format(idx_obstacle)][0:2]), 2))))
+            np.sqrt(np.sum(np.power((obs_temp["agent"][0:2] - obs_temp["obstacle_{0}".format(idx_obstacle)][0:2]), 2))))
 
     idx_obstacle_sorted = np.argsort(distances)  # min to max
     num_obstacles = range(env_parameters["num_obstacles"])
@@ -309,7 +309,7 @@ if __name__ == "__main__":
     Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
     env = GridWorldEnv(render_mode=None,
-                       object_size=env_parameters['object_size'],
+                       object_radius=env_parameters['object_radius'],
                        num_obstacles=env_parameters['num_obstacles'],
                        window_size=env_parameters['window_size'])
 
@@ -350,10 +350,9 @@ if __name__ == "__main__":
             if feature_parameters['sort_obstacles']:
                 obs = obstacle_sort(obs)
 
-            obs_values = np.array([obs["agent"], obs["target"]])
+            obs_values = np.append(obs["agent"], obs["target"])
             for idx_obstacle in range(env_parameters['num_obstacles']):
                 obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
-            obs_values = np.array(obs_values).reshape(-1)
 
             state = torch.tensor(obs_values, dtype=torch.float, device=device)
             state = state.view(1, -1)
@@ -376,7 +375,7 @@ if __name__ == "__main__":
                 if not done:
                     if feature_parameters['sort_obstacles']:
                         obs = obstacle_sort(obs)
-                    obs_values = np.array([obs["agent"], obs["target"]])
+                    obs_values = np.append(obs["agent"], obs["target"])
                     for idx_obstacle in range(env_parameters['num_obstacles']):
                         obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
                     next_state = torch.tensor(np.array(obs_values).reshape(-1),
@@ -459,7 +458,7 @@ if __name__ == "__main__":
         obs = env._get_obs()
         if feature_parameters['sort_obstacles']:
             obs = obstacle_sort(obs)
-        obs_values = np.array([obs["agent"], obs["target"]])
+        obs_values = np.append(obs["agent"], obs["target"])
         for idx_obstacle in range(env_parameters['num_obstacles']):
             obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
         state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
@@ -479,7 +478,7 @@ if __name__ == "__main__":
             if not done:
                 if feature_parameters['sort_obstacles']:
                     obs = obstacle_sort(obs)
-                obs_values = np.array([obs["agent"], obs["target"]])
+                obs_values = np.append(obs["agent"], obs["target"])
                 for idx_obstacle in range(env_parameters['num_obstacles']):
                     obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
                 next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)

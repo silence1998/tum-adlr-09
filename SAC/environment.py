@@ -10,16 +10,17 @@ import parameters
 from collections import deque
 
 class GridWorldEnv(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 1}  # fps was 4
 
-    def __init__(self, render_mode=None, object_size=100, num_obstacles=5, window_size=1024):
-        self.radius = object_size  # The size of the radius of the elements, defined in the training and plotting scripts
+    def __init__(self, render_mode=None, object_radius=100, num_obstacles=5, window_size=1024):
+        self.radius = object_radius  # The size of the radius of the elements, defined in the training and plotting scripts
         self.window_size = window_size  # The size of the PyGame window
         self.num_obstacles = num_obstacles
         self.total_step = 0
 
         ### REWARD PARAMETERS ###
         self.reward_parameters = parameters.reward_parameters
+        self.env_parameters = parameters.env_parameters
 
         self._agent_location = None
         self._target_location = None
@@ -32,7 +33,11 @@ class GridWorldEnv(gym.Env):
 
         # Observations are dictionaries with the agent's, obstacles' and the target's location.
 
-        elements = {"agent": spaces.Box(self.radius, self.window_size - self.radius, shape=(2,), dtype=np.float32),
+        elements = {"agent": spaces.Box(low=np.array([self.radius, self.radius, -1, -1]),  # x, y, vx, vy
+                                            high=np.array([self.window_size - self.radius, self.window_size - self.radius, 1, 1]),
+                                            shape=(4,),  # x, y, vx, vy
+                                            dtype=np.float32),
+                    # "agent": spaces.Box(self.radius, self.window_size - self.radius, shape=(2,), dtype=np.float32),
                     "target": spaces.Box(self.radius, self.window_size - self.radius, shape=(2,), dtype=np.float32)}
         for idx_obstacle in range(self.num_obstacles):
             elements.update({"obstacle_{0}".format(idx_obstacle):
@@ -59,7 +64,7 @@ class GridWorldEnv(gym.Env):
 
 
     def _get_obs(self):
-        elements = {"agent": self._agent_location,
+        elements = {"agent": np.concatenate((self._agent_location, self._agent_velocity)),  # TODO check type
                     "target": self._target_location}
         for idx_obstacle in range(self.num_obstacles):
             elements.update({"obstacle_{0}".format(idx_obstacle):
@@ -88,6 +93,8 @@ class GridWorldEnv(gym.Env):
 
         # Choose the agent's location uniformly at random
         self._agent_location = self.np_random.random(size=(2,), dtype=np.float32) * (self.window_size - 2 * self.radius)
+        self._agent_velocity = self.np_random.random(size=(2,), dtype=np.float32) * 2 - 1
+
         if parameters.reward_parameters['history']:
             self._agent_location_history.extend(self._agent_location)
 
@@ -139,7 +146,9 @@ class GridWorldEnv(gym.Env):
     def step(self, action_step):
         global penalty_distance_collision
         ### ENVIRONMENT UPDATE ###
-        action_step = self.reward_parameters["action_step_scaling"] * action_step  # a float value from [-1, 1] otherwise problem in entropy
+        action_step = (self.env_parameters["delta_T"] *
+                      self.env_parameters["action_step_scaling"] *
+                      action_step)  # a float value from [-1, 1] otherwise problem in entropy
 
         previous_position = self._agent_location
         if parameters.reward_parameters['history']:
@@ -335,16 +344,16 @@ class GridWorldEnv(gym.Env):
         pix_square_size = self.radius
         agent_size = pix_square_size
         target_size = pix_square_size
-        object_size = pix_square_size
+        object_radius = pix_square_size
 
-        # Now we draw the agent
+        # First we draw the agent
         pygame.draw.circle(
             canvas,
             (0, 0, 255),  # blue
             self._agent_location,
             agent_size,
         )
-        # First we draw the target
+        # Now we draw the target
         pygame.draw.circle(
             canvas,
             (255, 0, 0),  # red
@@ -357,7 +366,7 @@ class GridWorldEnv(gym.Env):
                 canvas,
                 (0, 0, 0),  # black
                 self._obstacle_locations[str(idx_obstacle)],
-                object_size,
+                object_radius,
             )
 
         if self.render_mode == "human":

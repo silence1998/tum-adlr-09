@@ -1,12 +1,13 @@
 env_parameters = {
     'num_obstacles': 5,
-    'object_size': 20,  # radius of every element in the environment
-    'window_size': 512  # use powers of 2 for better performance
+    'object_radius': 10,  # radius of every element in the environment
+    'window_size': 128,  # use powers of 2 for better performance
+    'action_step_scaling': 0.8,  # obstacles are between 0 and 1, this way we get a slower agent
+    'delta_T': 0.1  # time step for the environment
 }
 
 hyper_parameters = {
-
-    'input_dims': 4 + env_parameters['num_obstacles'] * 4,  # original position of actor, target and obstacle positions and obstacle velocities
+    'input_dims': 6 + env_parameters['num_obstacles'] * 4,  # original position of actor, target and obstacle positions and obstacle velocities
     'batch_size': 4096,
     'gamma': 0.999,  # discount factor
     'target_update': 10,  # update target network every 10 episodes TODO: UNUSED if code for now
@@ -15,7 +16,7 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'entropy_factor_final': 0.5,
-    'num_episodes': 300,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 70,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
     'sigma_init': 2.0,
     'sigma_final': 2.0
@@ -52,7 +53,7 @@ reward_parameters = {
     # 'time_weight': 1,
     # the above are not used in the current version which is sparse reward based
 
-    'action_step_scaling': 20,  # 1 step -> "2" grids of movement reach in x and y directions
+
     ### DENSE REWARDS ###  # TODO: check after midterm
     'obstacle_avoidance': False,
     'obstacle_distance_weight': -0.01,

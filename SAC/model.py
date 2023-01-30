@@ -159,7 +159,7 @@ class ActorNetwork(nn.Module):
         else:
             actions = probabilities.sample()  # use the generated action
 
-        action_sample = torch.tanh(actions) * torch.tensor(self.max_action).to(self.device)  # [-1,1]
+        action_sample = torch.tanh(actions) * torch.tensor(self.max_action).to(self.device)  # [-1,1] normalization
         log_probs = probabilities.log_prob(actions)  # log_prob of the generated action
         log_probs -= torch.log(1 - action_sample.pow(2) + self.reparam_noise)  # lower bound for probabilities  #
         log_probs = log_probs.sum(1, keepdim=True)  # sum over all actions

@@ -46,8 +46,6 @@ if __name__ == '__main__':
     criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
     target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
 
-    # env=GridWorldEnv(render_mode="human")
-
     if feature_parameters['apply_environment_seed']:
         seed = 0  # feature_parameters['seed_init_value']
     action_history = deque(maxlen=feature_parameters['action_history_size'])
@@ -77,7 +75,7 @@ if __name__ == '__main__':
         obs = env._get_obs()
         if feature_parameters['sort_obstacles']:
             obs = obstacle_sort(obs)
-        obs_values = np.array([obs["agent"], obs["target"]])
+        obs_values = np.append(obs["agent"], obs["target"])
         for idx_obstacle in range(env_parameters['num_obstacles']):
             obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
         state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
@@ -97,12 +95,12 @@ if __name__ == '__main__':
             if not done:
                 if feature_parameters['sort_obstacles']:
                     obs = obstacle_sort(obs)
-                obs_values = np.array([obs["agent"], obs["target"]])
+                obs_values = np.append(obs["agent"], obs["target"])
                 for idx_obstacle in range(env_parameters['num_obstacles']):
                     obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
                 next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
-
                 next_state = next_state.view(1, -1)
+
             else:
                 next_state = None
                 break
