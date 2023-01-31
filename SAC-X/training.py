@@ -344,24 +344,24 @@ class Scheduler:
             # We used a Q-Table with 0.1 learning rate to update the values in the table.
             # Change 0.1 to the desired learning rate
             if h < 3:
-                # self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]] += 0.1 * (
-                #         R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]])
-                self.Q_task[tuple(Tau[:h]), Tau[h]] += 0.1 * (
-                        R - self.Q_task[tuple(Tau[:h]), Tau[h]])
+                self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]] += 0.1 * (
+                        R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]])
+                # self.Q_task[tuple(Tau[:h]), Tau[h]] += 0.1 * (
+                #         R - self.Q_task[tuple(Tau[:h]), Tau[h]])
             else:
-                # self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]] += 0.1 * (
-                #         R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]])
-                self.Q_task[tuple(Tau[h - 3:h]), Tau[h]] += 0.1 * (
-                        R - self.Q_task[tuple(Tau[h - 3:h]), Tau[h]])
+                self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]] += 0.1 * (
+                        R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]])
+                # self.Q_task[tuple(Tau[h - 3:h]), Tau[h]] += 0.1 * (
+                #         R - self.Q_task[tuple(Tau[h - 3:h]), Tau[h]])
 
     def schedule_task(self, Tau, fuzzy_state):
         h = len(Tau)
         if h < 3:
-            # dist = self.scheduler.distribution(tuple(fuzzy_state + Tau))
-            dist = self.scheduler.distribution(tuple(Tau))
+            dist = self.scheduler.distribution(tuple(fuzzy_state + Tau))
+            # dist = self.scheduler.distribution(tuple(Tau))
         else:
-            # dist = self.scheduler.distribution(tuple(fuzzy_state + Tau[-3:]))
-            dist = self.scheduler.distribution(tuple(Tau[-3:]))
+            dist = self.scheduler.distribution(tuple(fuzzy_state + Tau[-3:]))
+            # dist = self.scheduler.distribution(tuple(Tau[-3:]))
 
         choice = np.random.random()
         cumulative_p = 0
