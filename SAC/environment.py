@@ -10,7 +10,7 @@ import parameters
 from collections import deque
 
 class GridWorldEnv(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 1}  # fps was 4
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": parameters.env_parameters["render_fps"]}  # fps was 4
 
     def __init__(self, render_mode=None, object_radius=100, num_obstacles=5, window_size=1024):
         self.radius = object_radius  # The size of the radius of the elements, defined in the training and plotting scripts
@@ -147,17 +147,19 @@ class GridWorldEnv(gym.Env):
         global penalty_distance_collision
         ### ENVIRONMENT UPDATE ###
         action_step = (self.env_parameters["delta_T"] *
-                      self.env_parameters["action_step_scaling"] *
+                       self.env_parameters["action_step_scaling"] *
                       action_step)  # a float value from [-1, 1] otherwise problem in entropy
 
         previous_position = self._agent_location
         if parameters.reward_parameters['history']:
             self._agent_location_history.extend(self._agent_location)
         self._agent_location = self._agent_location + action_step
+        self._agent_velocity = self._agent_location - previous_position
 
         for idx_obstacle in range(self.num_obstacles):
             self._obstacle_locations.update({"{0}".format(idx_obstacle):
                                                  self._obstacle_locations["{0}".format(idx_obstacle)] +
+                                                 self.env_parameters["delta_T"] *
                                                  self._obstacle_velocities["{0}".format(idx_obstacle)]})
 
         self._max_distance = math.sqrt(2) * self.window_size

@@ -1,9 +1,10 @@
 env_parameters = {
-    'num_obstacles': 5,
+    'num_obstacles': 10,
     'object_radius': 10,  # radius of every element in the environment
-    'window_size': 128,  # use powers of 2 for better performance
+    'window_size': 256,  # use powers of 2 for better performance
     'action_step_scaling': 0.8,  # obstacles are between 0 and 1, this way we get a slower agent
-    'delta_T': 0.1  # time step for the environment
+    'delta_T': 3,  # time step for the environment
+    'render_fps': 24  # fpd for rendering the environment
 }
 
 hyper_parameters = {
