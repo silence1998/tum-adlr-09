@@ -37,8 +37,9 @@ feature_parameters = {
     'apply_environment_seed': False,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
 
-    'plot_durations': True,  # plot durations of episodes
-    'plot_sigma': True  # plot sigma of actor
+    'plot_durations': False,  # plot durations of episodes
+    'plot_sigma': False,  # plot sigma of actor
+    'scheduler_period': 2
 }
 
 test_parameters = {
@@ -66,7 +67,7 @@ reward_parameters = {
     ### SUB-SPARSE REWARDS ###
 
     'total_step_limit': 1000,
-    'reward_reach_limit': -0.1,
+    'reward_reach_limit': -10,
 
     'checkpoints': False,  # if true, use checkpoints rewards
     'checkpoint_distance_proportion': 0.1,  # distance proportion to environment size in 1 dimension

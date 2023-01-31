@@ -10,6 +10,7 @@ import json
 import os
 import matplotlib.pyplot as plt
 from itertools import count
+import pickle
 
 from collections import namedtuple
 from collections import deque
@@ -19,6 +20,9 @@ import torch.nn.functional as F
 
 from model import ActorNetwork, CriticNetwork, ValueNetwork, ReplayMemory
 from environment import GridWorldEnv
+
+from util_sacx.q_table import QTable
+from util_sacx.policy import BoltzmannPolicy
 
 import A_star.algorithm
 import parameters
@@ -54,64 +58,66 @@ def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
 
     if not len(memory) < hyper_parameters["batch_size"]:
         ### Calculate average sigma per batch
-        mu, sigma = actorNet.forward(state_batch)
+        mu, sigma = actorNet.forward(state_batch, 0)
         global average_sigma_per_batch
         average_sigma_per_batch.append(
             np.mean(sigma.detach().cpu().numpy(), axis=0))  # mean of sigma of the current batch
 
-    value = valueNet(state_batch).view(-1)  # infer size of batch
-    value_ = torch.zeros(hyper_parameters["batch_size"], device=device)
-    value_[non_final_mask] = target_valueNet(non_final_next_states).view(-1)
+    for task_ in [0, 1, 2]:
+        value = valueNet(state_batch, task_).view(-1)  # infer size of batch
+        value_ = torch.zeros(hyper_parameters["batch_size"], device=device)
+        value_[non_final_mask] = target_valueNet(non_final_next_states, task_).view(-1)
 
-    # Compute the target Q value -> Q_phi_target_1/2
-    actions, log_probs = actorNet.sample_normal(state_batch, reparametrize=False)
-    log_probs = log_probs.view(-1)
-    q1_new_policy = criticNet_1.forward(state_batch, actions)
-    q2_new_policy = criticNet_2.forward(state_batch, actions)
-    critic_value = torch.min(q1_new_policy, q2_new_policy)
-    critic_value = critic_value.view(-1)  # rhs SpinningUP SAC PC: line 12 big ()
+        # Compute the target Q value -> Q_phi_target_1/2
+        actions, log_probs = actorNet.sample_normal(state_batch, task_, reparametrize=False)
+        log_probs = log_probs.view(-1)
+        q1_new_policy = criticNet_1.forward(state_batch, actions, task_)
+        q2_new_policy = criticNet_2.forward(state_batch, actions, task_)
+        critic_value = torch.min(q1_new_policy, q2_new_policy)
+        critic_value = critic_value.view(-1)  # rhs SpinningUP SAC PC: line 12 big ()
 
-    valueNet.optimizer.zero_grad()
-    value_target = critic_value - entropy_factor * log_probs
-    value_loss = 0.5 * F.mse_loss(value, value_target)
-    value_loss.backward(retain_graph=True)
-    valueNet.optimizer.step()
+        valueNet.optimizer.zero_grad()
+        value_target = critic_value - entropy_factor * log_probs
+        value_loss = 0.5 * F.mse_loss(value, value_target)
+        value_loss.backward(retain_graph=True)
+        valueNet.optimizer.step()
 
-    # Update the target value network
-    actions, log_probs = actorNet.sample_normal(state_batch,
-                                                reparametrize=True)  # line 14 big () right term a_tilde_theta(s)
-    log_probs = log_probs.view(-1)
-    q1_new_policy = criticNet_1.forward(state_batch, actions)
-    q2_new_policy = criticNet_2.forward(state_batch, actions)
-    critic_value = torch.min(q1_new_policy, q2_new_policy)
-    critic_value = critic_value.view(-1)
+        # Update the target value network
+        actions, log_probs = actorNet.sample_normal(state_batch, task_,
+                                                    reparametrize=True)  # line 14 big () right term a_tilde_theta(s)
+        log_probs = log_probs.view(-1)
+        q1_new_policy = criticNet_1.forward(state_batch, actions, task_)
+        q2_new_policy = criticNet_2.forward(state_batch, actions, task_)
+        critic_value = torch.min(q1_new_policy, q2_new_policy)
+        critic_value = critic_value.view(-1)
 
-    actor_loss = entropy_factor * log_probs - critic_value
-    actor_loss = torch.mean(actor_loss)
+        actor_loss = entropy_factor * log_probs - critic_value
+        actor_loss = torch.mean(actor_loss)
 
-    wandb.log({"actor_loss": actor_loss})
+        wandb.log({"actor_loss": actor_loss})
 
-    # print(str(i_episode) + " - " + str(actor_loss))
-    # print(str(i_episode) + "-actor_loss: " + str(actor_loss.detach().cpu().numpy()))
-    # too slow to switch to cpu everytime
+        # print(str(i_episode) + " - " + str(actor_loss))
+        # print(str(i_episode) + "-actor_loss: " + str(actor_loss.detach().cpu().numpy()))
+        # too slow to switch to cpu everytime
 
-    actorNet.optimizer.zero_grad()
-    actor_loss.backward(retain_graph=True)
-    actorNet.optimizer.step()
+        actorNet.optimizer.zero_grad()
+        actor_loss.backward(retain_graph=True)
+        actorNet.optimizer.step()
 
-    criticNet_1.optimizer.zero_grad()
-    criticNet_2.optimizer.zero_grad()
-    q_hat = reward_batch + hyper_parameters["gamma"] * value_  # SpinningUP SAC PC: line 12 -> calc y (target)
-    q1_old_policy = criticNet_1.forward(state_batch, action_batch).view(-1)
-    q2_old_policy = criticNet_2.forward(state_batch, action_batch).view(-1)
-    critic_1_loss = 0.5 * F.mse_loss(q1_old_policy, q_hat)  # line 13 in s.u. pseudocode
-    critic_2_loss = 0.5 * F.mse_loss(q2_old_policy, q_hat)
+        criticNet_1.optimizer.zero_grad()
+        criticNet_2.optimizer.zero_grad()
+        q_hat = reward_batch[:, task_] + hyper_parameters[
+            "gamma"] * value_  # SpinningUP SAC PC: line 12 -> calc y (target)
+        q1_old_policy = criticNet_1.forward(state_batch, action_batch, task_).view(-1)
+        q2_old_policy = criticNet_2.forward(state_batch, action_batch, task_).view(-1)
+        critic_1_loss = 0.5 * F.mse_loss(q1_old_policy, q_hat)  # line 13 in s.u. pseudocode
+        critic_2_loss = 0.5 * F.mse_loss(q2_old_policy, q_hat)
 
-    # Update Q-functions (critic) by one step of gradient descent # SpinningUP SAC PC: line 13
-    critic_loss = critic_1_loss + critic_2_loss
-    critic_loss.backward()
-    criticNet_1.optimizer.step()  # line 13 in s.u. pseudocode
-    criticNet_2.optimizer.step()
+        # Update Q-functions (critic) by one step of gradient descent # SpinningUP SAC PC: line 13
+        critic_loss = critic_1_loss + critic_2_loss
+        critic_loss.backward()
+        criticNet_1.optimizer.step()  # line 13 in s.u. pseudocode
+        criticNet_2.optimizer.step()
 
 
 def plot_durations():
@@ -159,9 +165,9 @@ def plot_sigma():
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-def select_action(state, actorNet):
+def select_action(state, actorNet, task_):
     # state = torch.Tensor([state]).to(actorNet.device)
-    actions, _ = actorNet.sample_normal(state, reparametrize=False)
+    actions, _ = actorNet.sample_normal(state, task_, reparametrize=False)
 
     return actions.cpu().detach().numpy()[0]
 
@@ -172,7 +178,7 @@ def select_action_smooth(action_history):
 
 
 ### The following code is unused, maybe useful for future work vvv
-def select_action_filter(state, actorNet):
+def select_action_filter(state, actorNet, task_):
     """
     erases the actions which are directed away from the goal
     """
@@ -180,20 +186,20 @@ def select_action_filter(state, actorNet):
     # 0,1: agent position, 2,3: target position
     delta_x = state[0, 2] - state[0, 0]
     delta_y = state[0, 3] - state[0, 1]
-    actions, _ = actorNet.sample_normal(state, reparametrize=False)
+    actions, _ = actorNet.sample_normal(state, task_, reparametrize=False)
     while actions[0, 0] * delta_x < 0 or actions[0, 1] * delta_y < 0:
-        actions, _ = actorNet.sample_normal(state, reparametrize=False)
+        actions, _ = actorNet.sample_normal(state, task_, reparametrize=False)
     return actions.cpu().detach().numpy()[0]
 
 
-def action_selection(state, actorNet):
+def action_selection(state, actorNet, task_):
     if feature_parameters['select_action_filter']:
         if len(episode_durations) < feature_parameters['select_action_filter_after_episode']:
-            action = select_action(state, actorNet)
+            action = select_action(state, actorNet, task_)
         else:
-            action = select_action_filter(state, actorNet)
+            action = select_action_filter(state, actorNet, task_)
     else:
-        action = select_action(state, actorNet)
+        action = select_action(state, actorNet, task_)
     return action
 
 
@@ -290,6 +296,9 @@ def save_models():
     with open(model_path + 'feature_parameters.txt', 'w+') as file:
         file.write(json.dumps(feature_parameters))  # use `json.loads` to do the reverse
 
+    with open(model_path + "Q_task.pkl", "wb") as tf:
+        pickle.dump(sac_schedule.Q_task.store, tf)
+
     print("Saving models ...")
     torch.save(actorNet.state_dict(), model_path + "actor.pt")
     torch.save(criticNet_1.state_dict(), model_path + "criticNet_1.pt")
@@ -321,6 +330,75 @@ feature_parameters = parameters.feature_parameters
 env_parameters = parameters.env_parameters
 test_parameters = parameters.test_parameters
 
+
+class Scheduler:
+    def __init__(self, tasks):
+        self.xi = feature_parameters['scheduler_period']
+        self.Q_task = QTable()
+        self.scheduler = self.Q_task.derive_policy(BoltzmannPolicy, lambda x: tasks, temperature=1)
+
+    def train_scheduler(self, main_rewards, Tau, list_fuzzy_state):
+        xi = self.xi
+        for h in range(len(Tau)):
+            R = sum([r * hyper_parameters["gamma"] ** k for k, r in enumerate(main_rewards[h * xi:])])
+            # We used a Q-Table with 0.1 learning rate to update the values in the table.
+            # Change 0.1 to the desired learning rate
+            if h < 3:
+                self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]] += 0.1 * (
+                        R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]])
+                # self.Q_task[tuple(Tau[:h]), Tau[h]] += 0.1 * (
+                #         R - self.Q_task[tuple(Tau[:h]), Tau[h]])
+            else:
+                self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]] += 0.1 * (
+                        R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]])
+                # self.Q_task[tuple(Tau[h - 3:h]), Tau[h]] += 0.1 * (
+                #         R - self.Q_task[tuple(Tau[h - 3:h]), Tau[h]])
+
+    def schedule_task(self, Tau, fuzzy_state):
+        h = len(Tau)
+        if h < 3:
+            dist = self.scheduler.distribution(tuple(fuzzy_state + Tau))
+            # dist = self.scheduler.distribution(tuple(Tau))
+        else:
+            dist = self.scheduler.distribution(tuple(fuzzy_state + Tau[-3:]))
+            # dist = self.scheduler.distribution(tuple(Tau[-3:]))
+
+        choice = np.random.random()
+        cumulative_p = 0
+
+        for a, p in dist.items():
+            cumulative_p += p
+            if cumulative_p > choice:
+                return a
+
+    def caluculate_fuzzy_distance(self, state):
+        distance_to_target = np.sqrt((state[2] - state[0]) ** 2 + (state[3] - state[1]) ** 2)
+        distances_to_obstacles = np.array([])
+        for i in range(env_parameters['num_obstacles']):
+            distance_to_obstacle = np.sqrt(
+                (state[4 + 4 * i] - state[0]) ** 2 + (state[5 + 4 * i] - state[1]) ** 2)
+            np.append(distances_to_obstacles, distance_to_obstacle)
+        distance_to_wall = np.amin(np.vstack((state[0:2] - env_parameters['object_size'],
+                                              env_parameters['window_size'] - (
+                                                      env_parameters['object_size'] + state[0:2]))))
+        distances_to_obstacles = np.append(distances_to_obstacles, distance_to_wall)
+        min_distance_to_obstacles = np.min(distances_to_obstacles)
+
+        def fuzzy_distance(distance, standard_distance):
+            result = None
+            if distance < standard_distance / 2:  ## close distance
+                result = 0
+            elif distance < standard_distance * 2:  ### middle distance
+                result = 1
+            else:  ### long distance
+                result = 2
+            return result
+
+        fuzzy_distance_to_target = fuzzy_distance(distance_to_target, env_parameters['window_size'] / 8)
+        fuzzy_min_distance_to_obstacles = fuzzy_distance(min_distance_to_obstacles, env_parameters['object_size'])
+        return [fuzzy_distance_to_target, fuzzy_min_distance_to_obstacles]
+
+
 if __name__ == "__main__":
 
     wandb.init(project="SAC", entity="tum-adlr-09")
@@ -349,6 +427,9 @@ if __name__ == "__main__":
     wandb.watch(criticNet_2)
     wandb.watch(valueNet)
     wandb.watch(target_valueNet)
+
+    tasks = (0, 1, 2)
+    sac_schedule = Scheduler(tasks)
 
     episode_durations = []
     average_sigma_per_batch = []
@@ -390,7 +471,7 @@ if __name__ == "__main__":
                 t += 1
                 action = action  # / env.reward_parameters['action_step_scaling']
                 _, reward, done, _, _ = env.step(action)
-                reward = torch.tensor([reward], dtype=torch.float, device=device)
+                reward = torch.tensor([[reward[0], reward[1], reward[2]]], dtype=torch.float, device=device)
 
                 # Observe new state
                 obs = env._get_obs()
@@ -424,7 +505,7 @@ if __name__ == "__main__":
                     if feature_parameters['plot_sigma']:
                         if not len(memory) < hyper_parameters["batch_size"]:
                             plot_sigma()
-                    if reward > 0:
+                    if reward[0, 0] > 0:
                         # print("success")
                         for j in range(t):
                             memory_success.memory.append(memory.memory[-1 - j])
@@ -460,7 +541,9 @@ if __name__ == "__main__":
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
 
         print("Normal training episode: " + str(i_episode))
-
+        main_reward = []
+        List_Tau = []
+        List_fuzzy_state = []
         entropy_factor = hyper_parameters['entropy_factor'] + i_episode * (
                 hyper_parameters['entropy_factor_final'] - hyper_parameters['entropy_factor']) / (
                                  hyper_parameters["num_episodes"] - 1)
@@ -488,12 +571,19 @@ if __name__ == "__main__":
         state = state.view(1, -1)
         for t in count():  # every step of the environment
             # Select and perform an action
-            action = select_action(state, actorNet)
+            if t % sac_schedule.xi == 0:
+                fuzzy_state = sac_schedule.caluculate_fuzzy_distance(obs_values)
+                # task = random.choice(tasks) ## sac-u
+                task = sac_schedule.schedule_task(List_Tau, fuzzy_state)  ## sac-q
+                List_Tau.append(task)
+                List_fuzzy_state.append(fuzzy_state)
+            action = select_action(state, actorNet, task)
             if feature_parameters['action_smoothing']:
-                action_history.extend([action])
+                action_history.extend([action])  #### TODO: clear queue for every new iteration
                 action = select_action_smooth(action_history)
             _, reward, done, _, _ = env.step(action)
-            reward = torch.tensor([reward], dtype=torch.float, device=device)
+            main_reward.append(reward[0])
+            reward = torch.tensor([[reward[0], reward[1], reward[2]]], dtype=torch.float, device=device)
 
             # Observe new state
             obs = env._get_obs()
@@ -526,12 +616,12 @@ if __name__ == "__main__":
                 if feature_parameters['plot_sigma']:
                     if not len(memory) < hyper_parameters["batch_size"]:
                         plot_sigma()
-                if reward > 0:
+                if reward[0, 0] > 0:
                     print("success")
                     for j in range(t):
                         memory_success.memory.append(memory.memory[-1 - j])
                 break
-
+        sac_schedule.train_scheduler(main_reward, List_Tau, List_fuzzy_state)
         # Update the target network, using tau
         target_value_params = target_valueNet.named_parameters()
         value_params = valueNet.named_parameters()

@@ -1,12 +1,16 @@
 import torch
 import numpy as np
 from itertools import count
+import pickle
 
 from environment import GridWorldEnv
-from training import init_model, select_action, obstacle_sort, select_action_smooth
+from training import init_model, select_action, obstacle_sort, select_action_smooth, Scheduler
 
 from model import *
 import json
+
+from util_sacx.q_table import QTable
+from util_sacx.policy import BoltzmannPolicy
 
 if __name__ == '__main__':
 
@@ -28,6 +32,12 @@ if __name__ == '__main__':
     with open(model_path + 'feature_parameters.txt', 'r') as file:
         feature_parameters = json.load(file)
 
+    tasks = (0, 1, 2)
+    sac_schedule = Scheduler(tasks)
+
+    with open(model_path + "Q_task.pkl", "rb") as tf:
+        sac_schedule.Q_task.store = pickle.load(tf)
+
     # initialize environment
     env = GridWorldEnv(render_mode=None,
                        object_size=env_parameters['object_size'],  # TODO: change back to env_size to radius objects
@@ -44,16 +54,27 @@ if __name__ == '__main__':
     criticNet_1.load_state_dict(torch.load(model_path + "criticNet_1.pt", map_location=device))
     criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
     target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
-    actorNet.max_sigma = 0.1
-    # env=GridWorldEnv(render_mode="human")
+
 
     if feature_parameters['apply_environment_seed']:
         seed = 0  # feature_parameters['seed_init_value']
     action_history = deque(maxlen=feature_parameters['action_history_size'])
 
-
+    task = 0
     i_episode = 0
     while i_episode < 10:  # run plot for 10 episodes to see what it learned
+        List_Tau = []
+        if i_episode == 0 or i_episode == 1:
+            entropy_factor = hyper_parameters['entropy_factor']
+            sigma_ = hyper_parameters['sigma_init']
+        else:
+            entropy_factor = hyper_parameters['entropy_factor'] + i_episode * (
+                    hyper_parameters['entropy_factor_final'] - hyper_parameters['entropy_factor']) / (
+                                     hyper_parameters["num_episodes"] - 1)
+            sigma_ = hyper_parameters['sigma_init'] + i_episode * (
+                    hyper_parameters['sigma_final'] - hyper_parameters['sigma_init']) / (
+                             hyper_parameters["num_episodes"] - 1)
+        actorNet.max_sigma = sigma_
 
         # Initialize the environment and state
         if feature_parameters['apply_environment_seed']:
@@ -72,12 +93,19 @@ if __name__ == '__main__':
         state = state.view(1, -1)
         for t in count():  # every step of the environment
             # Select and perform an action
-            action = select_action(state, actorNet)
+            if t % sac_schedule.xi == 0:
+                fuzzy_state = sac_schedule.caluculate_fuzzy_distance(obs_values)
+                # task = random.choice(tasks) ## sac-u
+                task = sac_schedule.schedule_task(List_Tau, fuzzy_state)  ## sac-q
+                print(task)
+                List_Tau.append(task)
+
+            action = select_action(state, actorNet, task)
             if feature_parameters['action_smoothing']:
                 action_history.extend([action])
                 action = select_action_smooth(action_history)
             _, reward, done, _, _ = env.step(action)
-            reward = torch.tensor([reward], dtype=torch.float, device=device)
+            reward = torch.tensor([reward[task]], dtype=torch.float, device=device)
 
             # Observe new state
             obs = env._get_obs()
