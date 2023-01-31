@@ -15,7 +15,7 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'entropy_factor_final': 0.5,
-    'num_episodes': 3000,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 2000,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
     'sigma_init': 2.0,
     'sigma_final': 2.0
