@@ -12,23 +12,24 @@ from collections import deque
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, object_size=100, num_obstacles=5, window_size=1024):
+    def __init__(self, render_mode=None, object_size=100, num_obstacles=5, window_size=1024,
+                 reward_parameters=parameters.reward_parameters):
         self.radius = object_size  # The size of the radius of the elements, defined in the training and plotting scripts
         self.window_size = window_size  # The size of the PyGame window
         self.num_obstacles = num_obstacles
         self.total_step = 0
 
         ### REWARD PARAMETERS ###
-        self.reward_parameters = parameters.reward_parameters
+        self.reward_parameters = reward_parameters
 
         self._agent_location = None
         self._target_location = None
         self._obstacle_locations = None
         self._obstacle_velocities = None
-        if parameters.reward_parameters['checkpoints']:
+        if self.reward_parameters['checkpoints']:
             self.checkpoint_reward_given = [False] * (self.reward_parameters['checkpoint_number'] + 1)
-        if parameters.reward_parameters['history']:
-            self._agent_location_history = deque(maxlen=parameters.reward_parameters['history_size'])
+        if self.reward_parameters['history']:
+            self._agent_location_history = deque(maxlen=self.reward_parameters['history_size'])
 
         # Observations are dictionaries with the agent's, obstacles' and the target's location.
         elements = {"agent": spaces.Box(self.radius, self.window_size - self.radius, shape=(2,), dtype=np.float32),
@@ -120,8 +121,8 @@ class GridWorldEnv(gym.Env):
             self._obstacle_velocities.update({"{0}".format(idx_obstacle): np.array([0., 0.], dtype=np.float32)})
         for idx_obstacle in range(int(np.ceil(self.num_obstacles / 2)), self.num_obstacles):
             self._obstacle_velocities.update({"{0}".format(idx_obstacle):
-                                                  (self.np_random.random(size=(2,),
-                                                                         dtype=np.float32) * 2 - 1)})  # between [-1, 1]
+                                                  self.reward_parameters["obstacle_step_scaling"] * \
+                                                  (self.np_random.random(size=(2,), dtype=np.float32) * 2 - 1)})  # between [-1, 1]
 
         observation = self._get_obs()
         info = self._get_info()
