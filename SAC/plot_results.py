@@ -32,7 +32,8 @@ if __name__ == '__main__':
     env = GridWorldEnv(render_mode=None,
                        object_size=env_parameters['object_size'],  # TODO: change back to env_size to radius objects
                        num_obstacles=env_parameters['num_obstacles'],
-                       window_size=env_parameters['window_size'])
+                       window_size=env_parameters['window_size'],
+                       reward_parameters=reward_parameters)
     env.render_mode = "human"
 
     # initialize NN
@@ -44,7 +45,7 @@ if __name__ == '__main__':
     criticNet_1.load_state_dict(torch.load(model_path + "criticNet_1.pt", map_location=device))
     criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
     target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
-    actorNet.max_sigma = 0.1
+    # actorNet.max_sigma = 0.1
     # env=GridWorldEnv(render_mode="human")
 
     if feature_parameters['apply_environment_seed']:
