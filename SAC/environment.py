@@ -84,7 +84,7 @@ class GridWorldEnv(gym.Env):
 
 
 
-    def reset(self, seed=None, options=None):
+    def reset(self, seed=0, options=None):
         # We need the following line to seed self.np_random
 
         super().reset(seed=seed)
@@ -169,11 +169,11 @@ class GridWorldEnv(gym.Env):
 
         self._max_distance = math.sqrt(2) * self.window_size
 
-        ## if too many steps
+        ### If the agent is taking many steps to reach the goal
 
         if self.total_step > self.reward_parameters['total_step_limit']:
-            terminated = True  # agent is out of bounds but did not collide with obstacle
-            reward = self.reward_parameters['reward_reach_limit']  # collision with wall or obstacles
+            terminated = True
+            reward = self.reward_parameters['step_limit_reached_penalty']
             observation = self._get_obs()
             info = self._get_info()
             return observation, reward, terminated, False, info
@@ -214,8 +214,9 @@ class GridWorldEnv(gym.Env):
         else:
             ### Distances
             # Distance to target
-            if self.reward_parameters['obstacle_avoidance'] \
-                    or self.reward_parameters['target_seeking']:
+            if self.reward_parameters['obstacle_avoidance_dense'] \
+                    or self.reward_parameters['predictive_obstacle_avoidance'] \
+                    or self.reward_parameters['target_seeking_dense']:
                 previous_distance_to_target = math.sqrt((previous_position[0] - self._target_location[0]) ** 2
                                                         + (previous_position[1] - self._target_location[1]) ** 2)
 
@@ -292,7 +293,7 @@ class GridWorldEnv(gym.Env):
                 penalty_distance_collision = np.max(np.array([1.0 - min_collision_distance / self._max_distance, 0.0]))
                 reward += self.reward_parameters['obstacle_distance_weight'] * penalty_distance_collision
 
-            if self.reward_parameters['target_seeking']:
+            if self.reward_parameters['target_seeking_dense']:
                 reward += self.reward_parameters['target_distance_weight'] * distance_to_target / self._max_distance
 
             ### SUB-SPARSE REWARDS ###

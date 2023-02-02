@@ -17,14 +17,14 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'entropy_factor_final': 0.5,
-    'num_episodes': 2000,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 250,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'sigma_init': 2.0,
     'sigma_final': 2.0
 }
 
 feature_parameters = {
-    'pretrain': False,  # pretrain the model
-    'num_episodes_pretrain': 1000,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'pretrain': True,  # pretrain the model
+    'num_episodes_pretrain': 500,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'maxsize_ReplayMemory': 100000,
     'action_smoothing': False,
 
@@ -57,7 +57,7 @@ reward_parameters = {
     ### DENSE REWARDS ###  # TODO: check after midterm
     'obstacle_avoidance_dense': False,
     'obstacle_distance_weight': -0.01,
-    'target_seeking': False,
+    'target_seeking_dense': False,
     'target_distance_weight': 0.01,
 
     ### SPARSE REWARDS ###
@@ -67,7 +67,7 @@ reward_parameters = {
     ### SUB-SPARSE REWARDS ###
 
     'total_step_limit': 1000,
-    'reward_reach_limit': -0.1,
+    'step_limit_reached_penalty': -10,
 
     'collision_prediction': False,
     'collision_prediction_penalty': -25,
@@ -96,8 +96,8 @@ reward_parameters = {
     'waiting_step_number_to_check': 5,  # number of steps to check for waiting (in history)
     # make sure waiting_step_number_to_check < history_size
     'max_waiting_steps': 10,  # make sure < history_size, punishment for waiting too long
-    'waiting_penalty': -0.05,
-    # threshold
+    'waiting_penalty': -0.05,  # accumulates after max_waiting_steps until total_step_limit
+
 
     'consistency': False,  # if true, use consistency rewards
     'consistency_step_number_to_check': 3,  # number of steps to check for consistency (in history)

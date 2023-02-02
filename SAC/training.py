@@ -343,10 +343,10 @@ if __name__ == "__main__":
     if feature_parameters['apply_environment_seed']:
         seed = feature_parameters['seed_init_value']
         print("Testing random seed: " + str(torch.rand(2)))
-    # env.render_mode = "human"
+
     if feature_parameters['pretrain']:
         for i_episode in range(feature_parameters['num_episodes_pretrain']):
-            # print("Pretrain episode: " + str(i_episode))
+            print("Pretrain episode: " + str(i_episode))
 
             # Initialize the environment and state
             if feature_parameters['apply_environment_seed']:
@@ -441,7 +441,7 @@ if __name__ == "__main__":
         print('Pretrain complete')
 
     if feature_parameters['apply_environment_seed']:
-        seed = 0  # feature_parameters['seed_init_value']
+        seed = feature_parameters['seed_init_value']
 
 
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
@@ -514,7 +514,7 @@ if __name__ == "__main__":
                     if not len(memory) < hyper_parameters["batch_size"]:
                         plot_sigma()
                 if reward > 0:
-                    print("success")
+                    print("Target reached")
                     for j in range(t):
                         memory_success.memory.append(memory.memory[-1 - j])
                 break
