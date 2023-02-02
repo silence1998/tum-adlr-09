@@ -55,7 +55,7 @@ reward_parameters = {
 
 
     ### DENSE REWARDS ###  # TODO: check after midterm
-    'obstacle_avoidance': False,
+    'obstacle_avoidance_dense': False,
     'obstacle_distance_weight': -0.01,
     'target_seeking': False,
     'target_distance_weight': 0.01,
@@ -72,8 +72,8 @@ reward_parameters = {
     'collision_prediction': False,
     'collision_prediction_penalty': -25,
 
-    'object_avoidance': True,
-    'object_proximity_penalty': -10,
+    'predictive_obstacle_avoidance': True,
+    'obstacle_proximity_penalty': -10,
 
     'checkpoints': False,  # if true, use checkpoints rewards
     'checkpoint_distance_proportion': 0.1,  # distance proportion to environment size in 1 dimension
