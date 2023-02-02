@@ -293,6 +293,7 @@ class GridWorldEnv(gym.Env):
                 penalty_distance_collision = np.max(np.array([1.0 - min_collision_distance / self._max_distance, 0.0]))
                 reward += self.reward_parameters['obstacle_distance_weight'] * penalty_distance_collision
 
+            # Reward for seeking the target
             if self.reward_parameters['target_seeking_dense']:
                 reward += self.reward_parameters['target_distance_weight'] * distance_to_target / self._max_distance
 

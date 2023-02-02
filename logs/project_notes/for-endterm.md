@@ -61,9 +61,10 @@
     - worked well
   - obstacle sorting
     - worked well 
-  - env gen random seed (VOLKAN)
+  - env gen random seed
     - performed bad as if we pretrain in env#1 and normal train in env#1 it overfits and cant generalize
-    - bad sample balance 
+    - bad sample balance -> fixed by MO's weighting
+    - [X] should be performing correctly with the "small fixes to seeding" commit
 
 - new features
   - weighting the samples 
@@ -85,7 +86,7 @@ MAIN TASK:
 - super-sparse rewards (-50, +10)
 - Time penalty
 
-- [ ] 6 Skills: (Sparsa Rewards:SR)
+- [ ] 6 Skills: (Sparsa Rewards:SR)  -> TODO VOLKAN: define the skills and match the features to them in SAC-X7env file
 
   - Skill 1: seeking obstacle (to follow a moving obstacle)
     - dense rewards distance to obstacle
@@ -93,7 +94,7 @@ MAIN TASK:
 
   - Skill 2: avoiding obstacle 
     - dense rewards distance to obstacle for dynamic obstacles or for all if the latter proves to be hard
-    - sparse rewards checkpoint to obstacle for static -> avoidance SR TODO VOLKAN
+    - sparse rewards checkpoint to obstacle for static
   
   - Skill 3: seek target 
     - sparse rewards checkpoint to target
@@ -101,13 +102,14 @@ MAIN TASK:
   
   - NOPE Skill 4: flee from target (if we have to find a new way)
     - dense rewards distance to target
-    - we didnt test this first as our agent is not capable enough yet -> TODO VOLKAN implementation (2nd Prio)
+    - we didnt test this first as our agent is not capable enough yet 
+    - [X] should be happening implicitly by using the waiting as it has also a penalty for waiting too long
  
   - Skill 5: consistency 
-    - consistency SR -> TODO VOLKAN implementation
+    - [X] consistency SR 
  
   - Skill 6: waiting 
-    - waiting SR -> TODO VOLKAN implementation
+    - [X] waiting SR 
 
 - obstacle: can be dense if its hard to implement 
   - seeking distance threshold: smaller aggressive threshold
@@ -118,6 +120,8 @@ MAIN TASK:
 
 #### Tests
 - [ ] regular sac w/o pretrain STATIC -> TODO MO
+  - once with general purpose N2 + high vCPU 32
+  - once with compute optimised C2 + 60 vCPU
 - [ ] regular sac-x w/o pretrain STATIC 
 
 - [ ] regular sac w/o pretrain DYNAMIC -> TODO MO
