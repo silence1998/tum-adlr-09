@@ -1,4 +1,4 @@
-
+import itertools
 import math
 import numpy as np
 
@@ -330,7 +330,10 @@ class GridWorldEnv(gym.Env):
 
                 # Consistency reward
                 if self.reward_parameters['consistency']:
-                    last_x_steps = self._agent_location_history[-self.reward_parameters['consistency_step_number_to_check']:]
+                    last_x_steps = deque(itertools.islice(self._agent_location_history,
+                                                          len(self._agent_location_history) - self.reward_parameters['consistency_step_number_to_check'],
+                                                          len(self._agent_location_history)))
+                    #[-self.reward_parameters['consistency_step_number_to_check']:]
                     for i in np.flip((range(1, self.reward_parameters['consistency_step_number_to_check'] + 1))):  # csn,...,1
                         last_x_steps.append(last_x_positions[i] - last_x_positions[i - 1])
                     if all(abs(value - last_x_steps[-1]) <= self.reward_parameters['movement_tolerance'] for value in last_x_steps):  # Checks if all the step directions are equal
