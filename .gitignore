@@ -15,7 +15,7 @@ SAC/A_star/__pycache__/
 /pytorch_rl/model/
 /SAC/model_pretrain/
 
-/SAC/tmp/
+#/SAC/tmp/
 
 /SAC/model_pretrain/
 /SAC/parameters_base.py

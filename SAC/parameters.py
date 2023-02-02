@@ -1,5 +1,5 @@
 env_parameters = {
-    'num_obstacles': 3,
+    'num_obstacles': 5,
     'object_radius': 10,  # radius of every element in the environment
     'window_size': 128,  # use powers of 2 for better performance
     'action_step_scaling': 0.8,  # obstacles are between 0 and 1, this way we get a slower agent
@@ -17,14 +17,14 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'entropy_factor_final': 0.5,
-    'num_episodes': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 1000,  # set min 70 for tests as select_action_filter starts after ~70 episodes
     'sigma_init': 2.0,
     'sigma_final': 2.0
 }
 
 feature_parameters = {
     'pretrain': True,  # pretrain the model
-    'num_episodes_pretrain': 309,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes_pretrain': 3000,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'maxsize_ReplayMemory': 100000,
     'action_smoothing': True,
 
