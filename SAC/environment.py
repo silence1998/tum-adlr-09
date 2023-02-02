@@ -150,6 +150,7 @@ class GridWorldEnv(gym.Env):
     def step(self, action_step):
         global penalty_distance_collision
 
+
         ### ENVIRONMENT UPDATE ###
         action_step = (self.env_parameters["delta_T"] *
                        self.env_parameters["action_step_scaling"] *
@@ -159,7 +160,7 @@ class GridWorldEnv(gym.Env):
         if parameters.reward_parameters['history']:
             self._agent_location_history.extend(self._agent_location)
         self._agent_location = self._agent_location + action_step
-        self._agent_velocity = self._agent_location - previous_position
+        self._agent_velocity = self._agent_location - previous_position #/ self.env_parameters["delta_T"] # TODO: correct? so that we keep the velocity in [-1,1 interval]
 
         for idx_obstacle in range(self.num_obstacles):
             self._obstacle_locations.update({"{0}".format(idx_obstacle):
@@ -180,7 +181,7 @@ class GridWorldEnv(gym.Env):
 
 
 
-        ### COLLISION SPARSE REWARD ###
+        ### COLLISION SUPER SPARSE REWARD ###
         # Check for obstacle collision
         terminated = False
         for idx_obstacle in range(self.num_obstacles):
@@ -202,7 +203,7 @@ class GridWorldEnv(gym.Env):
             info = self._get_info()
             return observation, reward, terminated, False, info
         reward = 0
-        ### TARGET SPARSE REWARD ###
+        ### TARGET SUPER SPARSE REWARD ###
         # An episode is done iff the agent has reached the target
         # terminated = np.array_equal(self._agent_location, self._target_location)  # target reached
         terminated = self.euclidean_norm(self._target_location -
@@ -210,7 +211,7 @@ class GridWorldEnv(gym.Env):
         if terminated:
             reward = self.reward_parameters['target_value']  # sparse target reward
 
-        ## OTHER REWARDS ###
+        ## OTHER REWARDS ### -> SKILLS
         else:
             ### Distances
             # Distance to target
@@ -268,12 +269,16 @@ class GridWorldEnv(gym.Env):
                 for idx_obstacle in range(self.num_obstacles):
                     self._obstacle_locations_pred.update({"{0}".format(idx_obstacle):
                                                               self._obstacle_locations["{0}".format(idx_obstacle)] +
+                                                              self.env_parameters["delta_T"] *
                                                               self._obstacle_velocities["{0}".format(idx_obstacle)]})
 
                     _obstacle_locations_array = np.array(list(self._obstacle_locations_pred.values()))
                     _agent_location_rep = np.array([self._agent_location for i in range(len(_obstacle_locations_array))])
                     distances = np.array(self.elementwise_euclidean_norm(_obstacle_locations_array, _agent_location_rep))
                     collision = distances - 2 * self.radius
+                    #avoidance = distances - 3 * self. # TODO avoidance SR
+                    #if avoidance...
+                    #    rewards
                     if (collision < 0).any():
                         reward += self.reward_parameters['collision_prediction_penalty']  # collision with wall or obstacles
 
