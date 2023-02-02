@@ -404,7 +404,7 @@ class GridWorldEnv(gym.Env):
             pygame.display.quit()
             pygame.quit()
 
-    def _render_frame_for_gif(self):  # TODO: This is not working yet, after switching to continious adjust to the above render frame function
+    def _render_frame_for_gif(self):  # TODO: test this after fixing
         if self.window is None and self.render_mode == "human":
             pygame.init()
             pygame.display.init()
@@ -414,52 +414,36 @@ class GridWorldEnv(gym.Env):
 
         canvas = pygame.Surface((self.window_size, self.window_size))
         canvas.fill((255, 255, 255))
-        pix_square_size = (
-                self.window_size / self.size
-        )  # The size of a single grid square in pixels
+        # self.window_size = 1024
+        pix_square_size = self.radius
+        agent_size = pix_square_size
+        target_size = pix_square_size
+        object_radius = pix_square_size
 
-        # First we draw the target
-        pygame.draw.rect(
-            canvas,
-            (255, 0, 0),
-            pygame.Rect(
-                pix_square_size * self._target_location,
-                (pix_square_size, pix_square_size),
-            ),
-        )
-        # Now we draw the agent
+        # First we draw the agent
         pygame.draw.circle(
             canvas,
-            (0, 0, 255),
-            (self._agent_location + 0.5) * pix_square_size,
-            pix_square_size / 3,
+            (0, 0, 255),  # blue
+            self._agent_location,
+            agent_size,
         )
+
+        # Now we draw the target
+        pygame.draw.circle(
+            canvas,
+            (255, 0, 0),  # red
+            self._target_location,
+            target_size,
+        )
+
+
         # Now we draw the obstacles
         for idx_obstacle in range(self.num_obstacles):
-            pygame.draw.rect(
+            pygame.draw.circle(
                 canvas,
-                (0, 0, 0),
-                pygame.Rect(
-                    pix_square_size * self._obstacle_locations[str(idx_obstacle)],
-                    (pix_square_size, pix_square_size),
-                ),
-            )
-
-        # Finally, add some gridlines
-        for x in range(self.size + 1):
-            pygame.draw.line(
-                canvas,
-                0,
-                (0, pix_square_size * x),
-                (self.window_size, pix_square_size * x),
-                width=3,
-            )
-            pygame.draw.line(
-                canvas,
-                0,
-                (pix_square_size * x, 0),
-                (pix_square_size * x, self.window_size),
-                width=3,
+                (0, 0, 0),  # black
+                self._obstacle_locations[str(idx_obstacle)],
+                object_radius,
             )
 
         if self.render_mode == "human":
@@ -467,7 +451,7 @@ class GridWorldEnv(gym.Env):
             self.window.blit(canvas, canvas.get_rect())
             pygame.event.pump()
             pygame.display.update()
-            return np.transpose(
+            return np.transpose(  # needed here as opposed to the rander_frame() as we need to see and save the frames
                 np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
             )
 
