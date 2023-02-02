@@ -69,8 +69,11 @@ reward_parameters = {
     'total_step_limit': 1000,
     'reward_reach_limit': -0.1,
 
-    'collision_prediction': True,
+    'collision_prediction': False,
     'collision_prediction_penalty': -25,
+
+    'object_avoidance': True,
+    'object_proximity_penalty': -10,
 
     'checkpoints': False,  # if true, use checkpoints rewards
     'checkpoint_distance_proportion': 0.1,  # distance proportion to environment size in 1 dimension

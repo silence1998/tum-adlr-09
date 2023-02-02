@@ -264,7 +264,7 @@ class GridWorldEnv(gym.Env):
             reward = 0  # TODO: remove this??
 
             ### COLLISION PREDICTION PENALTY###
-            if self.reward_parameters['collision_prediction']:
+            if self.reward_parameters['collision_prediction'] or self.reward_parameters['object_avoidance']:
                 self._obstacle_locations_pred = self._obstacle_locations  # TODO: how to check if this works
                 for idx_obstacle in range(self.num_obstacles):
                     self._obstacle_locations_pred.update({"{0}".format(idx_obstacle):
@@ -275,12 +275,16 @@ class GridWorldEnv(gym.Env):
                     _obstacle_locations_array = np.array(list(self._obstacle_locations_pred.values()))
                     _agent_location_rep = np.array([self._agent_location for i in range(len(_obstacle_locations_array))])
                     distances = np.array(self.elementwise_euclidean_norm(_obstacle_locations_array, _agent_location_rep))
-                    collision = distances - 2 * self.radius
-                    #avoidance = distances - 3 * self. # TODO avoidance SR
-                    #if avoidance...
-                    #    rewards
-                    if (collision < 0).any():
-                        reward += self.reward_parameters['collision_prediction_penalty']  # collision with wall or obstacles
+                    if self.reward_parameters['object_avoidance']:
+                        avoidance = distances - 3 * self.radius
+                        if (avoidance < self.radius).any():
+                            reward += self.reward_parameters['object_proximity_penalty'] / 2
+                        if (avoidance < 0).any():
+                            reward += self.reward_parameters['object_proximity_penalty']  # collision with wall or obstacles
+                    if self.reward_parameters['collision_prediction']:
+                        collision = distances - 2 * self.radius
+                        if (collision < 0).any():
+                            reward += self.reward_parameters['collision_prediction_penalty']  # collision with wall or obstacles
 
             ### DENSE REWARDS ###
             # Reward for avoiding obstacles
