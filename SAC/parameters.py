@@ -15,7 +15,7 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'entropy_factor_final': 0.5,
-    'num_episodes': 2000,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 3000,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
     'sigma_init': 2.0,
     'sigma_final': 2.0
@@ -32,7 +32,7 @@ feature_parameters = {
     'select_action_filter': False,  # filter actions to be directed towards target # TODO: last test
     'select_action_filter_after_episode': 70,  # start filtering after this episode
 
-    'sort_obstacles': True,  # sort obstacles by distance to target
+    'sort_obstacles': False,  # sort obstacles by distance to target
 
     'apply_environment_seed': False,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
@@ -53,7 +53,7 @@ reward_parameters = {
     # the above are not used in the current version which is sparse reward based
 
     'action_step_scaling': 20,  # 1 step -> "2" grids of movement reach in x and y directions
-    'obstacle_step_scaling': 3,
+    'obstacle_step_scaling': 5,
     ### DENSE REWARDS ###  # TODO: check after midterm
     'obstacle_avoidance': False,
     'obstacle_distance_weight': -0.01,

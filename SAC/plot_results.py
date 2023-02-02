@@ -50,12 +50,12 @@ if __name__ == '__main__':
 
     if feature_parameters['apply_environment_seed']:
         seed = 0  # feature_parameters['seed_init_value']
-    action_history = deque(maxlen=feature_parameters['action_history_size'])
+
 
 
     i_episode = 0
     while i_episode < 10:  # run plot for 10 episodes to see what it learned
-
+        action_history = deque(maxlen=feature_parameters['action_history_size'])
         # Initialize the environment and state
         if feature_parameters['apply_environment_seed']:
             env.reset(seed=seed)

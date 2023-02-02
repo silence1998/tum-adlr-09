@@ -455,12 +455,12 @@ if __name__ == "__main__":
 
     if feature_parameters['apply_environment_seed']:
         seed = 0  # feature_parameters['seed_init_value']
-    action_history = deque(maxlen=feature_parameters['action_history_size'])
+
 
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
 
         print("Normal training episode: " + str(i_episode))
-
+        action_history = deque(maxlen=feature_parameters['action_history_size'])
         entropy_factor = hyper_parameters['entropy_factor'] + i_episode * (
                 hyper_parameters['entropy_factor_final'] - hyper_parameters['entropy_factor']) / (
                                  hyper_parameters["num_episodes"] - 1)
