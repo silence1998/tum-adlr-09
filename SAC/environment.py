@@ -26,9 +26,7 @@ class GridWorldEnv(gym.Env):
         self._target_location = None
         self._obstacle_locations = None
         self._obstacle_velocities = None
-        if parameters.reward_parameters['checkpoints']:
-            self.checkpoint_reward_given = [False] * (self.reward_parameters['checkpoint_number'] + 1)
-        if parameters.reward_parameters['history']:
+        if self.reward_parameters['history']:
             self._agent_location_history = deque(maxlen=parameters.reward_parameters['history_size'])
 
         # Observations are dictionaries with the agent's, obstacles' and the target's location.
@@ -66,7 +64,7 @@ class GridWorldEnv(gym.Env):
 
 
     def _get_obs(self):
-        elements = {"agent": np.concatenate((self._agent_location, self._agent_velocity)),  # TODO check type
+        elements = {"agent": np.concatenate((self._agent_location, self._agent_velocity)),
                     "target": self._target_location}
         for idx_obstacle in range(self.num_obstacles):
             elements.update({"obstacle_{0}".format(idx_obstacle):
@@ -98,7 +96,8 @@ class GridWorldEnv(gym.Env):
         self._agent_velocity = self.np_random.random(size=(2,), dtype=np.float32) * 2 - 1
 
         if parameters.reward_parameters['history']:
-            self._agent_location_history.extend(self._agent_location)
+            self._agent_location_history.clear()
+            self._agent_location_history.extend(self._agent_location)  # redefine the history
 
         # We will sample the target's location randomly until it does not coincide with the agent's location
         self._target_location = self._agent_location
@@ -299,6 +298,7 @@ class GridWorldEnv(gym.Env):
             ### SUB-SPARSE REWARDS ###
             # Distance checkpoint rewards
             if self.reward_parameters['checkpoints']:
+                self.checkpoint_reward_given = [False] * (self.reward_parameters['checkpoint_number'] + 1)
                 distance_to_target = math.sqrt((self._agent_location[0] - self._target_location[0]) ** 2
                                                + (self._agent_location[1] - self._target_location[1]) ** 2)
                 for i in np.flip(range(1, self.reward_parameters['checkpoint_number'] + 1)):
@@ -319,20 +319,20 @@ class GridWorldEnv(gym.Env):
                     if last_x_positions.count(last_x_positions[-1]) == len(last_x_positions):  # Checks if all positions are equal
                         reward += self.reward_parameters['waiting_penalty']
 
-                # Waiting reward # TODO: history??
+                # Waiting reward
                 last_x_positions = list(self._agent_location_history)
                 last_x_positions = last_x_positions[-self.reward_parameters['waiting_step_number_to_check']:]
                 if self.reward_parameters['waiting']:
-                    if last_x_positions.count(last_x_positions[-1]) == len(last_x_positions):  # Checks if all positions are equal
+                    if all(abs(value - last_x_positions[-1]) <= self.reward_parameters['movement_tolerance'] for value in last_x_positions):  # Checks if all positions are equal
                         reward += self.reward_parameters['waiting_value']
 
-                # Consistency reward # TODO: history??
+                # Consistency reward
                 if self.reward_parameters['consistency']:
                     last_x_steps = self._agent_location_history[-self.reward_parameters['consistency_step_number_to_check']:]
                     for i in np.flip((range(1, self.reward_parameters['consistency_step_number_to_check'] + 1))):  # csn,...,1
-                        last_x_steps.append(last_x_positions[-1] - last_x_positions[i - 1])
-                        if last_x_steps.count(last_x_steps[0]) == len(last_x_steps):  # Checks if all directions are equal
-                            reward += self.reward_parameters['consistency_value']
+                        last_x_steps.append(last_x_positions[i] - last_x_positions[i - 1])
+                    if all(abs(value - last_x_steps[-1]) <= self.reward_parameters['movement_tolerance'] for value in last_x_steps):  # Checks if all the step directions are equal
+                        reward += self.reward_parameters['consistency_value']
 
         observation = self._get_obs()
         info = self._get_info()
@@ -404,7 +404,7 @@ class GridWorldEnv(gym.Env):
             pygame.display.quit()
             pygame.quit()
 
-    def _render_frame_for_gif(self):  # TODO: This is not working, after switching to continious adjust to the above render frame function
+    def _render_frame_for_gif(self):  # TODO: This is not working yet, after switching to continious adjust to the above render frame function
         if self.window is None and self.render_mode == "human":
             pygame.init()
             pygame.display.init()

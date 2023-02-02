@@ -84,10 +84,12 @@ reward_parameters = {
     'time_penalty': -0.01,  # 0.01 == penalty of -1 for "100" action steps
 
     # Rewards below depend on action history
-    'history': False,  # if true, use history
+    'history': True,  # if true, use history
     'history_size': 15,  # >= hyper_parameters['action_history_size'] above
     # size of history to check for waiting and consistency
     # can be chosen bigger to have longer checks for below features
+
+    'movement_tolerance': 0.1,  # position change threshold to define that an element is not moving
 
     'waiting': False,  # if true, use waiting rewards
     'waiting_value': 0.01,  # make sure waiting_value < 1
