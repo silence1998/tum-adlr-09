@@ -1,11 +1,11 @@
 env_parameters = {
     'num_obstacles': 5,
-    'object_radius': 20,  # radius of every element in the environment
+    'object_size': 20,  # radius of every element in the environment
     'window_size': 512,  # use powers of 2 for better performance
     'action_step_scaling': 20,  # obstacles are between 0 and 1, this way we get a slower agent
     'obstacle_step_scaling': 5,
     'delta_T': 1,  # scaling velocities w/o changing the -1,1 internal for them in animation
-    'render_fps': 24  # fpd for rendering the environment
+    'render_fps': 24  # fps for rendering the environment
 }
 
 hyper_parameters = {
@@ -25,7 +25,7 @@ hyper_parameters = {
 }
 
 feature_parameters = {
-    'pretrain': True,  # pretrain the model
+    'pretrain': False,  # pretrain the model
     'num_episodes_pretrain': 3000,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'maxsize_ReplayMemory': 100000,
     'action_smoothing': True,
@@ -35,7 +35,7 @@ feature_parameters = {
     'select_action_filter': True,  # filter actions to be directed towards target # TODO: last test
     'select_action_filter_after_episode': 70,  # start filtering after this episode
 
-    'sort_obstacles': False,  # sort obstacles by distance to target
+    'sort_obstacles': True,  # sort obstacles by distance to target
 
     'apply_environment_seed': True,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
@@ -44,45 +44,38 @@ feature_parameters = {
     'plot_sigma': True  # plot sigma of actor
 }
 
-test_parameters = {
-    "time_limit": 1500
-    #"num_tests": 10,
-    #"num_episodes": 100
-}
 reward_parameters = {
-    # 'field_of_view': 5,  # see min_collision_distance
-    # 'collision_weight': 0.3,
-    # 'time_weight': 1,
-    # the above are not used in the current version which is sparse reward based
-
+    """
     ### DENSE REWARDS ###  # TODO: check after midterm
     'obstacle_avoidance_dense': True,
     'obstacle_distance_weight': -0.01,
     'target_seeking_dense': True,
     'target_distance_weight': 0.01,
+    """
+    
+    'total_step_limit': 1000,
+    'step_limit_reached_penalty': -0.01,
 
-    ### SPARSE REWARDS ###
+    'time': True,  # if true, use time penalty
+    'time_penalty': -0.01,  # 0.01 == penalty of -1 for "100" action steps
+
+    ### SUPER SPARSE REWARDS ###
     'target_value': 1,
     'collision_value': -1,
 
     ### SUB-SPARSE REWARDS ###
-
-    'total_step_limit': 1000,
-    'step_limit_reached_penalty': -0.2,
-
     'collision_prediction': True,
-    'collision_prediction_penalty': -0.3,
+    'collision_prediction_penalty': -0.03, # TODO add wall as collisoin as well
 
     'predictive_obstacle_avoidance': True,
-    'obstacle_proximity_penalty': -0.5,
+    'obstacle_proximity_penalty': -0.03,
 
     'checkpoints': True,  # if true, use checkpoints rewards
     'checkpoint_distance_proportion': 0.1,  # distance proportion to environment size in 1 dimension
     'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
     'checkpoint_value': 1,  # make sure checkpoint_value * checkpoint_number < 1
 
-    'time': True,  # if true, use time penalty
-    'time_penalty': -0.01,  # 0.01 == penalty of -1 for "100" action steps
+
 
     # Rewards below depend on action history
     'history': True,  # if true, use history
@@ -97,7 +90,8 @@ reward_parameters = {
     'waiting_step_number_to_check': 5,  # number of steps to check for waiting (in history)
     # make sure waiting_step_number_to_check < history_size
     'max_waiting_steps': 10,  # make sure < history_size, punishment for waiting too long
-    'waiting_penalty': -0.05,  # accumulates after max_waiting_steps until total_step_limit
+    'waiting_penalty': -0.05,  # TODO: dont use negative rewards for auxiliary rewards
+    # threshold
 
 
     'consistency': True,  # if true, use consistency rewards

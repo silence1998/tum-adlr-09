@@ -33,13 +33,13 @@ import wandb
 def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
     if len(memory) < hyper_parameters["batch_size"]:  # if memory is not full enough to start training, return
         return
-    if len(memory_success) < hyper_parameters["batch_size"] * 3 / 4:
+    if len(memory_success) < hyper_parameters["batch_size"] / 2:
         transitions = memory.sample(hyper_parameters["batch_size"])
         batch = Transition(*zip(*transitions))
     ### Sample a batch of transitions from memory
     else:
-        transitions = memory.sample(round(hyper_parameters["batch_size"] / 4))  # SpinningUP SAC PC: line 11
-        transitions_success = memory_success.sample(round(hyper_parameters["batch_size"] * 3 / 4))
+        transitions = memory.sample(round(hyper_parameters["batch_size"] / 2))  # SpinningUP SAC PC: line 11
+        transitions_success = memory_success.sample(round(hyper_parameters["batch_size"] / 2))
         batch = Transition(*zip(*transitions, *transitions_success))
     # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
     # detailed explanation). This converts batch-array of Transitions
@@ -63,7 +63,7 @@ def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
         average_sigma_per_batch.append(
             np.mean(sigma.detach().cpu().numpy(), axis=0))  # mean of sigma of the current batch
 
-    for task_ in [0, 1, 2]:
+    for task_ in [0, 1, 2, 3, 4, 5]:
         value = valueNet(state_batch, task_).view(-1)  # infer size of batch
         value_ = torch.zeros(hyper_parameters["batch_size"], device=device)
         value_[non_final_mask] = target_valueNet(non_final_next_states, task_).view(-1)
@@ -183,9 +183,9 @@ def select_action_filter(state, actorNet, task_):
     erases the actions which are directed away from the goal
     """
     # state = torch.Tensor([state]).to(actorNet.device)
-    # 0,1: agent position, 2,3: target position
-    delta_x = state[0, 2] - state[0, 0]
-    delta_y = state[0, 3] - state[0, 1]
+    # 0,1: agent position, 4,5: target position
+    delta_x = state[0, 4] - state[0, 0]
+    delta_y = state[0, 5] - state[0, 1]
     actions, _ = actorNet.sample_normal(state, task_, reparametrize=False)
     while actions[0, 0] * delta_x < 0 or actions[0, 1] * delta_y < 0:
         actions, _ = actorNet.sample_normal(state, task_, reparametrize=False)
@@ -218,33 +218,21 @@ def select_action_A_star(state, window_size, object_size):  # TODO does this wor
             grid[index1, index2] = 1
 
     for i in range(env_parameters['num_obstacles']):
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)), round(state[4 + 4 * i] / (2 * object_size)),
-                     size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) + 1, round(state[4 + 4 * i] / (2 * object_size)),
-                     size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)), round(state[4 + 4 * i] / (2 * object_size)) + 1,
-                     size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) + 1,
-                     round(state[4 + 4 * i] / (2 * object_size)) + 1,
-                     size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) - 1, round(state[4 + 4 * i] / (2 * object_size)),
-                     size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)), round(state[4 + 4 * i] / (2 * object_size)) - 1,
-                     size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) - 1,
-                     round(state[4 + 4 * i] / (2 * object_size)) - 1,
-                     size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) + 1,
-                     round(state[4 + 4 * i] / (2 * object_size)) - 1,
-                     size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) - 1,
-                     round(state[4 + 4 * i] / (2 * object_size)) + 1,
-                     size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)),     round(state[6 + 4 * i] / (2 * object_size)),size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)) + 1, round(state[6 + 4 * i] / (2 * object_size)),size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)),     round(state[6 + 4 * i] / (2 * object_size)) + 1,size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)) + 1, round(state[6 + 4 * i] / (2 * object_size)) + 1,size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)) - 1, round(state[6 + 4 * i] / (2 * object_size)),size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)),     round(state[6 + 4 * i] / (2 * object_size)) - 1,size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)) - 1, round(state[6 + 4 * i] / (2 * object_size)) - 1,size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)) + 1, round(state[6 + 4 * i] / (2 * object_size)) - 1,size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)) - 1, round(state[6 + 4 * i] / (2 * object_size)) + 1,size)
 
     # Start position
     StartNode = (round(state[0] / (2 * object_size)), round(state[1] / (2 * object_size)))  # agent position
     # Goal position
-    EndNode = (round(state[2] / (2 * object_size)), round(state[3] / (2 * object_size)))  # target position
+    EndNode = (round(state[4] / (2 * object_size)), round(state[5] / (2 * object_size)))  # target position
+
     path = A_star.algorithm.algorithm(grid, StartNode, EndNode)
     if path == None or StartNode == EndNode:
         # print("error: doesn't find a path")
@@ -265,7 +253,7 @@ def obstacle_sort(obs):
     obs_temp = obs.copy()  # copy the dict elements in the env
     for idx_obstacle in range(env_parameters["num_obstacles"]):
         distances.append(
-            np.sqrt(np.sum(np.power((obs_temp["agent"] - obs_temp["obstacle_{0}".format(idx_obstacle)][0:2]), 2))))
+            np.sqrt(np.sum(np.power((obs_temp["agent"][0:2] - obs_temp["obstacle_{0}".format(idx_obstacle)][0:2]), 2))))
 
     idx_obstacle_sorted = np.argsort(distances)  # min to max
     num_obstacles = range(env_parameters["num_obstacles"])
@@ -328,7 +316,6 @@ def init_model(input_dims=parameters.hyper_parameters["input_dims"]):
 hyper_parameters = parameters.hyper_parameters
 feature_parameters = parameters.feature_parameters
 env_parameters = parameters.env_parameters
-test_parameters = parameters.test_parameters
 
 
 class Scheduler:
@@ -416,7 +403,6 @@ if __name__ == "__main__":
     wandb_dict.update(env_parameters)
     wandb_dict.update(hyper_parameters)
     wandb_dict.update(feature_parameters)
-    wandb_dict.update(test_parameters)
     print("dict: " + str(wandb_dict))
     wandb.config.update(wandb_dict)
 
@@ -428,7 +414,7 @@ if __name__ == "__main__":
     wandb.watch(valueNet)
     wandb.watch(target_valueNet)
 
-    tasks = (0, 1, 2)
+    tasks = (0, 1, 2, 3, 4, 5)
     sac_schedule = Scheduler(tasks)
 
     episode_durations = []
@@ -436,7 +422,7 @@ if __name__ == "__main__":
     if feature_parameters['apply_environment_seed']:
         seed = feature_parameters['seed_init_value']
         print("Testing random seed: " + str(torch.rand(2)))
-    # env.render_mode = "human"
+
     if feature_parameters['pretrain']:
         for i_episode in range(feature_parameters['num_episodes_pretrain']):
             # print("Pretrain episode: " + str(i_episode))
@@ -452,10 +438,10 @@ if __name__ == "__main__":
             if feature_parameters['sort_obstacles']:
                 obs = obstacle_sort(obs)
 
-            obs_values = np.array([obs["agent"], obs["target"]])
+            obs_values = np.append(obs["agent"], obs["target"])
             for idx_obstacle in range(env_parameters['num_obstacles']):
                 obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
-            obs_values = np.array(obs_values).reshape(-1)
+            obs_values = np.array(obs_values).reshape(-1) # TODO
 
             state = torch.tensor(obs_values, dtype=torch.float, device=device)
             state = state.view(1, -1)
@@ -471,14 +457,14 @@ if __name__ == "__main__":
                 t += 1
                 action = action  # / env.reward_parameters['action_step_scaling']
                 _, reward, done, _, _ = env.step(action)
-                reward = torch.tensor([[reward[0], reward[1], reward[2]]], dtype=torch.float, device=device)
+                reward = torch.tensor([[reward[0], reward[1], reward[2], reward[3], reward[4], reward[5]]], dtype=torch.float, device=device)
 
                 # Observe new state
                 obs = env._get_obs()
                 if not done:
                     if feature_parameters['sort_obstacles']:
                         obs = obstacle_sort(obs)
-                    obs_values = np.array([obs["agent"], obs["target"]])
+                    obs_values = np.append(obs["agent"], obs["target"])
                     for idx_obstacle in range(env_parameters['num_obstacles']):
                         obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
                     next_state = torch.tensor(np.array(obs_values).reshape(-1),
@@ -535,11 +521,11 @@ if __name__ == "__main__":
         print('Pretrain complete')
 
     if feature_parameters['apply_environment_seed']:
-        seed = 0  # feature_parameters['seed_init_value']
-    action_history = deque(maxlen=feature_parameters['action_history_size'])
+        seed = feature_parameters['seed_init_value']
+
 
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
-
+        action_history = deque(maxlen=feature_parameters['action_history_size'])
         print("Normal training episode: " + str(i_episode))
         main_reward = []
         List_Tau = []
@@ -563,7 +549,7 @@ if __name__ == "__main__":
         obs = env._get_obs()
         if feature_parameters['sort_obstacles']:
             obs = obstacle_sort(obs)
-        obs_values = np.array([obs["agent"], obs["target"]])
+        obs_values = np.append(obs["agent"], obs["target"])
         for idx_obstacle in range(env_parameters['num_obstacles']):
             obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
         state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
@@ -579,18 +565,18 @@ if __name__ == "__main__":
                 List_fuzzy_state.append(fuzzy_state)
             action = select_action(state, actorNet, task)
             if feature_parameters['action_smoothing']:
-                action_history.extend([action])  #### TODO: clear queue for every new iteration
+                action_history.extend([action])
                 action = select_action_smooth(action_history)
             _, reward, done, _, _ = env.step(action)
             main_reward.append(reward[0])
-            reward = torch.tensor([[reward[0], reward[1], reward[2]]], dtype=torch.float, device=device)
+            reward = torch.tensor([[reward[0], reward[1], reward[2], reward[3], reward[4], reward[5]]], dtype=torch.float, device=device)
 
             # Observe new state
             obs = env._get_obs()
             if not done:
                 if feature_parameters['sort_obstacles']:
                     obs = obstacle_sort(obs)
-                obs_values = np.array([obs["agent"], obs["target"]])
+                obs_values = np.append(obs["agent"], obs["target"])
                 for idx_obstacle in range(env_parameters['num_obstacles']):
                     obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
                 next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
@@ -617,7 +603,7 @@ if __name__ == "__main__":
                     if not len(memory) < hyper_parameters["batch_size"]:
                         plot_sigma()
                 if reward[0, 0] > 0:
-                    print("success")
+                    print("Target reached")
                     for j in range(t):
                         memory_success.memory.append(memory.memory[-1 - j])
                 break

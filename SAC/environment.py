@@ -46,12 +46,12 @@ class GridWorldEnv(gym.Env):
 
             elements.update({"obstacle_{0}".format(idx_obstacle):
                                  spaces.Box(low=np.array([self.radius, self.radius, -1, -1]),  # x, y, vx, vy
-                                            high=np.array(
-                                                [self.window_size - self.radius, self.window_size - self.radius, 1, 1]),
+                                            high=np.array([self.window_size - self.radius, self.window_size - self.radius, 1, 1]),
                                             shape=(4,),  # x, y, vx, vy
                                             dtype=np.float32)})
 
         self.observation_space = spaces.Dict(elements)
+
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -66,26 +66,30 @@ class GridWorldEnv(gym.Env):
         self.window = None
         self.clock = None
 
+
+
     def _get_obs(self):
         elements = {"agent": np.concatenate((self._agent_location, self._agent_velocity)),
                     "target": self._target_location}
         for idx_obstacle in range(self.num_obstacles):
             elements.update({"obstacle_{0}".format(idx_obstacle):
-                                 np.concatenate((self._obstacle_locations[str(idx_obstacle)],
-                                                 self._obstacle_velocities[str(idx_obstacle)]))
-                             })
+                np.concatenate((self._obstacle_locations[str(idx_obstacle)],
+                self._obstacle_velocities[str(idx_obstacle)]))
+            })
         return elements
+
 
     def _get_info(self):
         distances = {"distance_to_target":
                          self.euclidean_norm(self._agent_location - self._target_location)}
         for idx_obstacle in range(self.num_obstacles):
             distances.update({"distance_to_obstacle_{0}".format(idx_obstacle):
-                self.euclidean_norm(
-                    self._agent_location - self._obstacle_locations[str(idx_obstacle)])})
+                                  self.euclidean_norm(self._agent_location - self._obstacle_locations[str(idx_obstacle)])})
         return distances
 
-    def reset(self, seed=None, options=None):
+
+
+    def reset(self, seed=0, options=None):
         # We need the following line to seed self.np_random
 
         super().reset(seed=seed)
@@ -103,8 +107,9 @@ class GridWorldEnv(gym.Env):
         # We will sample the target's location randomly until it does not coincide with the agent's location
         self._target_location = self._agent_location
         while self.euclidean_norm(self._target_location - self._agent_location) < self.radius * 2:
-            self._target_location = self.np_random.random(size=(2,), dtype=np.float32) * (
-                    self.window_size - 2 * self.radius)
+            self._target_location = self.np_random.random(size=(2,), dtype=np.float32) * (self.window_size - 2 * self.radius)
+
+
 
         # We will sample the obstacle's location randomly until it does not coincide
         # with the agent's/target's/other obstacles location
@@ -116,8 +121,7 @@ class GridWorldEnv(gym.Env):
                     or (self.euclidean_norm(self._obstacle_locations[str(idx_obstacle)]
                                             - self._target_location) < self.radius * 2):  # Colliding with agent or target
                 _obstacle_locations_array = np.array(list(self._obstacle_locations.values()))
-                random_location = self.np_random.random(size=(2,), dtype=np.float32) * (
-                        self.window_size - 2 * self.radius)
+                random_location = self.np_random.random(size=(2,), dtype=np.float32) * (self.window_size - 2 * self.radius)
                 random_location_rep = np.array(
                     [random_location for i in range(len(_obstacle_locations_array))])
                 # print(random_location_rep)
@@ -365,7 +369,7 @@ class GridWorldEnv(gym.Env):
         pix_square_size = self.radius
         agent_size = pix_square_size
         target_size = pix_square_size
-        object_radius = pix_square_size
+        object_size = pix_square_size
 
         # First we draw the agent
         pygame.draw.circle(
@@ -387,7 +391,7 @@ class GridWorldEnv(gym.Env):
                 canvas,
                 (0, 0, 0),  # black
                 self._obstacle_locations[str(idx_obstacle)],
-                object_radius,
+                object_size,
             )
 
         if self.render_mode == "human":

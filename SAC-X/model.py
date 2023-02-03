@@ -29,7 +29,7 @@ class ReplayMemory(object):  # a memory buffer to store transitions
 
 
 class CriticNetwork(nn.Module):
-    def __init__(self, beta, input_dims, n_actions, fc1_dims=128, fc2_dims=64,
+    def __init__(self, beta, input_dims, n_actions, fc1_dims=256, fc2_dims=256,
                  name='critic', chkpt_dir='tmp/sac'):
         super(CriticNetwork, self).__init__()
         self.input_dims = input_dims
@@ -41,8 +41,8 @@ class CriticNetwork(nn.Module):
         self.checkpoint_file = os.path.join(self.checkpoint_dir, name + '_sac')
 
         self.fc1 = nn.Linear(self.input_dims + n_actions, self.fc1_dims)
-        self.fc2 = nn.ModuleList([nn.Linear(self.fc1_dims, self.fc2_dims) for i in range(3)])
-        self.q = nn.ModuleList([nn.Linear(self.fc2_dims, 1) for i in range(3)])
+        self.fc2 = nn.ModuleList([nn.Linear(self.fc1_dims, self.fc2_dims) for i in range(6)])
+        self.q = nn.ModuleList([nn.Linear(self.fc2_dims, 1) for i in range(6)])
 
         self.optimizer = optim.Adam(self.parameters(), lr=beta)
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -67,7 +67,7 @@ class CriticNetwork(nn.Module):
 
 
 class ValueNetwork(nn.Module):
-    def __init__(self, beta, input_dims, fc1_dims=128, fc2_dims=64,
+    def __init__(self, beta, input_dims, fc1_dims=256, fc2_dims=256,
                  name='value', chkpt_dir='tmp/sac'):
         super(ValueNetwork, self).__init__()
         self.input_dims = input_dims
@@ -78,8 +78,8 @@ class ValueNetwork(nn.Module):
         self.checkpoint_file = os.path.join(self.checkpoint_dir, name + '_sac')
 
         self.fc1 = nn.Linear(self.input_dims, self.fc1_dims)
-        self.fc2 = nn.ModuleList([nn.Linear(self.fc1_dims, self.fc2_dims) for i in range(3)])
-        self.v = nn.ModuleList([nn.Linear(self.fc2_dims, 1) for i in range(3)])
+        self.fc2 = nn.ModuleList([nn.Linear(self.fc1_dims, self.fc2_dims) for i in range(6)])
+        self.v = nn.ModuleList([nn.Linear(self.fc2_dims, 1) for i in range(6)])
 
         self.optimizer = optim.Adam(self.parameters(), lr=beta)
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -104,10 +104,9 @@ class ValueNetwork(nn.Module):
 
 
 class ActorNetwork(nn.Module):
-    def __init__(self, alpha, input_dims, max_action, fc1_dims=128,
-                 fc2_dims=64, n_actions=2, name='actor', chkpt_dir='tmp/sac', sigma=2.0):
+    def __init__(self, alpha, input_dims, max_action, fc1_dims=256,
+                 fc2_dims=256, n_actions=2, name='actor', chkpt_dir='tmp/sac', sigma=2.0):
         super(ActorNetwork, self).__init__()
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.max_sigma = sigma
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
@@ -120,12 +119,12 @@ class ActorNetwork(nn.Module):
         self.reparam_noise = 1e-6
 
         self.fc1 = nn.Linear(self.input_dims, self.fc1_dims)
-        self.fc2 = nn.ModuleList([nn.Linear(self.fc1_dims, self.fc2_dims) for i in range(3)])
-        self.mu = nn.ModuleList([nn.Linear(self.fc2_dims, self.n_actions) for i in range(3)])
-        self.sigma = nn.ModuleList([nn.Linear(self.fc2_dims, self.n_actions) for i in range(3)])
+        self.fc2 = nn.ModuleList([nn.Linear(self.fc1_dims, self.fc2_dims) for i in range(6)])
+        self.mu = nn.ModuleList([nn.Linear(self.fc2_dims, self.n_actions) for i in range(6)])
+        self.sigma = nn.ModuleList([nn.Linear(self.fc2_dims, self.n_actions) for i in range(6)])
 
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
-
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
         self.to(self.device)
 
@@ -153,7 +152,7 @@ class ActorNetwork(nn.Module):
         else:
             actions = probabilities.sample()  # use the generated action
 
-        action_sample = torch.tanh(actions) * torch.tensor(self.max_action).to(self.device)  # [-1,1]
+        action_sample = torch.tanh(actions) * torch.tensor(self.max_action).to(self.device)  # [-1,1] normalization
         log_probs = probabilities.log_prob(actions)  # log_prob of the generated action
         log_probs -= torch.log(1 - action_sample.pow(2) + self.reparam_noise)  # lower bound for probabilities  #
         log_probs = log_probs.sum(1, keepdim=True)  # sum over all actions

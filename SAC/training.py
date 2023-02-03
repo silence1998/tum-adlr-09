@@ -258,13 +258,13 @@ def obstacle_sort(obs):
 
 def save_models():
     if feature_parameters['pretrain']:
-        model_path = "archive/model_pretrain/"
+        model_path = "model_pretrain/"
         if not os.path.isdir(model_path):
             os.makedirs(model_path)
             print("created folder : ", model_path)
 
     else:
-        model_path = "archive/model/"
+        model_path = "model/"
         if not os.path.isdir(model_path):
             os.makedirs(model_path)
             print("created folder : ", model_path)
@@ -307,7 +307,6 @@ def init_model(input_dims=parameters.hyper_parameters["input_dims"]):
 hyper_parameters = parameters.hyper_parameters
 feature_parameters = parameters.feature_parameters
 env_parameters = parameters.env_parameters
-test_parameters = parameters.test_parameters
 
 if __name__ == "__main__":
 
@@ -326,7 +325,6 @@ if __name__ == "__main__":
     wandb_dict.update(env_parameters)
     wandb_dict.update(hyper_parameters)
     wandb_dict.update(feature_parameters)
-    wandb_dict.update(test_parameters)
     print("dict: " + str(wandb_dict))
     wandb.config.update(wandb_dict)
 
@@ -340,13 +338,14 @@ if __name__ == "__main__":
 
     episode_durations = []
     average_sigma_per_batch = []
+
     if feature_parameters['apply_environment_seed']:
         seed = feature_parameters['seed_init_value']
         print("Testing random seed: " + str(torch.rand(2)))
 
     if feature_parameters['pretrain']:
         for i_episode in range(feature_parameters['num_episodes_pretrain']):
-            print("Pretrain episode: " + str(i_episode))
+            # print("Pretrain episode: " + str(i_episode))
 
             # Initialize the environment and state
             if feature_parameters['apply_environment_seed']:
@@ -447,7 +446,6 @@ if __name__ == "__main__":
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
         action_history = deque(maxlen=feature_parameters['action_history_size'])
         print("Normal training episode: " + str(i_episode))
-        action_history = deque(maxlen=feature_parameters['action_history_size'])
         entropy_factor = hyper_parameters['entropy_factor'] + i_episode * (
                 hyper_parameters['entropy_factor_final'] - hyper_parameters['entropy_factor']) / (
                                  hyper_parameters["num_episodes"] - 1)

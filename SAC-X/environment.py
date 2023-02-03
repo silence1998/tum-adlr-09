@@ -12,15 +12,13 @@ from collections import deque
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": parameters.env_parameters["render_fps"]}  # fps was 4
 
-    def __init__(self, render_mode=None, object_size=100, num_obstacles=5, window_size=1024,
-                 reward_parameters=parameters.reward_parameters):
+    def __init__(self, render_mode=None, object_size=100, num_obstacles=5, window_size=1024):
         self.radius = object_size  # The size of the radius of the elements, defined in the training and plotting scripts
         self.window_size = window_size  # The size of the PyGame window
         self.num_obstacles = num_obstacles
         self.total_step = 0
 
         ### REWARD PARAMETERS ###
-
         self.reward_parameters = parameters.reward_parameters
         self.env_parameters = parameters.env_parameters
 
@@ -138,7 +136,7 @@ class GridWorldEnv(gym.Env):
             self._obstacle_velocities.update({"{0}".format(idx_obstacle): np.array([0., 0.], dtype=np.float32)})
         for idx_obstacle in range(int(np.ceil(self.num_obstacles / 2)), self.num_obstacles):
             self._obstacle_velocities.update({"{0}".format(idx_obstacle):
-                                                  self.reward_parameters["obstacle_step_scaling"] * \
+                                                  self.env_parameters["obstacle_step_scaling"] * \
                                                   (self.np_random.random(size=(2,), dtype=np.float32) * 2 - 1)})  # between [-1, 1]
 
         observation = self._get_obs()
@@ -220,7 +218,7 @@ class GridWorldEnv(gym.Env):
         # Time penalty at every step
         if self.total_step > self.reward_parameters['total_step_limit']:
             terminated = True
-            reward = self.reward_parameters['step_limit_reached_penalty']
+            main_reward += self.reward_parameters['step_limit_reached_penalty']
             observation = self._get_obs()
             info = self._get_info()
             return observation, {0: main_reward, 1: reward_1, 2: reward_2, 3: reward_3, 4: reward_4, 5: reward_5}, terminated, False, info
@@ -359,7 +357,7 @@ class GridWorldEnv(gym.Env):
         if self.render_mode == "human":
             self._render_frame()
 
-        return observation, {0: main_reward, 1: reward_1, 2: reward_2}, terminated, False, info
+        return observation, {0: main_reward, 1: reward_1, 2: reward_2, 3: reward_3, 4: reward_4, 5: reward_5}, terminated, False, info
 
     def render(self):
         if self.render_mode == "rgb_array":
@@ -381,14 +379,14 @@ class GridWorldEnv(gym.Env):
         target_size = pix_square_size
         object_size = pix_square_size
 
-        # Now we draw the agent
+        # First we draw the agent
         pygame.draw.circle(
             canvas,
             (0, 0, 255),  # blue
             self._agent_location,
             agent_size,
         )
-        # First we draw the target
+        # Now we draw the target
         pygame.draw.circle(
             canvas,
             (255, 0, 0),  # red
