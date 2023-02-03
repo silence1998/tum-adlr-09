@@ -29,13 +29,13 @@ import wandb
 def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
     if len(memory) < hyper_parameters["batch_size"]:  # if memory is not full enough to start training, return
         return
-    if len(memory_success) < hyper_parameters["batch_size"] * 3 / 4:
+    if len(memory_success) < hyper_parameters["batch_size"] / 2:
         transitions = memory.sample(hyper_parameters["batch_size"])
         batch = Transition(*zip(*transitions))
     ### Sample a batch of transitions from memory
     else:
-        transitions = memory.sample(round(hyper_parameters["batch_size"] / 4))  # SpinningUP SAC PC: line 11
-        transitions_success = memory_success.sample(round(hyper_parameters["batch_size"] * 3 / 4))
+        transitions = memory.sample(round(hyper_parameters["batch_size"] / 2))  # SpinningUP SAC PC: line 11
+        transitions_success = memory_success.sample(round(hyper_parameters["batch_size"] / 2))
         batch = Transition(*zip(*transitions, *transitions_success))
     # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
     # detailed explanation). This converts batch-array of Transitions

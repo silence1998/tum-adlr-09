@@ -119,4 +119,6 @@ if __name__ == '__main__':
     print("accuracy=", np.sum(issuccess_) / len(issuccess_))
     print("mean_reward=", np.mean(actual_reward))
 
+    print("std_reward=", np.std(actual_reward))
+
     print("mean_step=", np.mean(actual_step))  # mean step duration
