@@ -54,6 +54,7 @@ reward_parameters = {
     # the above are not used in the current version which is sparse reward based
 
     'action_step_scaling': 20,  # 1 step -> "2" grids of movement reach in x and y directions
+    'obstacle_step_scaling': 1,
     ### DENSE REWARDS ###  # TODO: check after midterm
     'obstacle_avoidance': False,
     'obstacle_distance_weight': -0.01,

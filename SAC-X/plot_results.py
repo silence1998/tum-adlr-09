@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    m = "1"#input("Select normal Model (0) OR Model with pretrain (1): ")
+    m = "1"  # input("Select normal Model (0) OR Model with pretrain (1): ")
     if m == "0":
         model_path = "model/"
     elif m == "1":
@@ -42,7 +42,8 @@ if __name__ == '__main__':
     env = GridWorldEnv(render_mode=None,
                        object_size=env_parameters['object_size'],  # TODO: change back to env_size to radius objects
                        num_obstacles=env_parameters['num_obstacles'],
-                       window_size=env_parameters['window_size'])
+                       window_size=env_parameters['window_size'],
+                       reward_parameter=reward_parameters)
     env.render_mode = "human"
 
     # initialize NN
@@ -54,7 +55,6 @@ if __name__ == '__main__':
     criticNet_1.load_state_dict(torch.load(model_path + "criticNet_1.pt", map_location=device))
     criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
     target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
-
 
     if feature_parameters['apply_environment_seed']:
         seed = 0  # feature_parameters['seed_init_value']
@@ -129,7 +129,3 @@ if __name__ == '__main__':
 
             # Move to the next state
             state = next_state
-
-
-
-

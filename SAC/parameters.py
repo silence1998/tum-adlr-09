@@ -2,8 +2,9 @@ env_parameters = {
     'num_obstacles': 5,
     'object_radius': 20,  # radius of every element in the environment
     'window_size': 512,  # use powers of 2 for better performance
-    'action_step_scaling': 0.8,  # obstacles are between 0 and 1, this way we get a slower agent
-    'delta_T': 3,  # time step for the environment
+    'action_step_scaling': 20,  # obstacles are between 0 and 1, this way we get a slower agent
+    'obstacle_step_scaling': 5,
+    'delta_T': 1,  # scaling velocities w/o changing the -1,1 internal for them in animation
     'render_fps': 24  # fpd for rendering the environment
 }
 
@@ -17,7 +18,8 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'entropy_factor_final': 0.5,
-    'num_episodes': 1000,  # set min 70 for tests as select_action_filter starts after ~70 episodes
+    'num_episodes': 3000,  # set min 70 for tests as some parts of code starts after ~40 episodes
+
     'sigma_init': 2.0,
     'sigma_final': 2.0
 }
@@ -33,7 +35,7 @@ feature_parameters = {
     'select_action_filter': True,  # filter actions to be directed towards target # TODO: last test
     'select_action_filter_after_episode': 70,  # start filtering after this episode
 
-    'sort_obstacles': True,  # sort obstacles by distance to target
+    'sort_obstacles': False,  # sort obstacles by distance to target
 
     'apply_environment_seed': True,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
@@ -52,7 +54,6 @@ reward_parameters = {
     # 'collision_weight': 0.3,
     # 'time_weight': 1,
     # the above are not used in the current version which is sparse reward based
-
 
     ### DENSE REWARDS ###  # TODO: check after midterm
     'obstacle_avoidance_dense': True,

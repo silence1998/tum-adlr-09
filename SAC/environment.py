@@ -1,3 +1,4 @@
+
 import itertools
 import math
 import numpy as np
@@ -9,10 +10,12 @@ import parameters
 
 from collections import deque
 
+
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": parameters.env_parameters["render_fps"]}  # fps was 4
 
-    def __init__(self, render_mode=None, object_size=100, num_obstacles=5, window_size=1024):
+    def __init__(self, render_mode=None, object_size=100, num_obstacles=5, window_size=1024,
+                 reward_parameters=parameters.reward_parameters):
         self.radius = object_size  # The size of the radius of the elements, defined in the training and plotting scripts
         self.window_size = window_size  # The size of the PyGame window
         self.num_obstacles = num_obstacles
@@ -22,12 +25,15 @@ class GridWorldEnv(gym.Env):
         self.reward_parameters = parameters.reward_parameters
         self.env_parameters = parameters.env_parameters
 
+
         self._agent_location = None
         self._target_location = None
         self._obstacle_locations = None
         self._obstacle_velocities = None
+
         if self.reward_parameters['history']:
             self._agent_location_history = deque(maxlen=parameters.reward_parameters['history_size'])
+
 
         # Observations are dictionaries with the agent's, obstacles' and the target's location.
         elements = {"agent": spaces.Box(low=np.array([self.radius, self.radius, -1, -1]),  # x, y, vx, vy
@@ -40,12 +46,12 @@ class GridWorldEnv(gym.Env):
 
             elements.update({"obstacle_{0}".format(idx_obstacle):
                                  spaces.Box(low=np.array([self.radius, self.radius, -1, -1]),  # x, y, vx, vy
-                                            high=np.array([self.window_size - self.radius, self.window_size - self.radius, 1, 1]),
+                                            high=np.array(
+                                                [self.window_size - self.radius, self.window_size - self.radius, 1, 1]),
                                             shape=(4,),  # x, y, vx, vy
                                             dtype=np.float32)})
 
         self.observation_space = spaces.Dict(elements)
-
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -60,30 +66,26 @@ class GridWorldEnv(gym.Env):
         self.window = None
         self.clock = None
 
-
-
     def _get_obs(self):
         elements = {"agent": np.concatenate((self._agent_location, self._agent_velocity)),
                     "target": self._target_location}
         for idx_obstacle in range(self.num_obstacles):
             elements.update({"obstacle_{0}".format(idx_obstacle):
-                np.concatenate((self._obstacle_locations[str(idx_obstacle)],
-                self._obstacle_velocities[str(idx_obstacle)]))
-            })
+                                 np.concatenate((self._obstacle_locations[str(idx_obstacle)],
+                                                 self._obstacle_velocities[str(idx_obstacle)]))
+                             })
         return elements
-
 
     def _get_info(self):
         distances = {"distance_to_target":
                          self.euclidean_norm(self._agent_location - self._target_location)}
         for idx_obstacle in range(self.num_obstacles):
             distances.update({"distance_to_obstacle_{0}".format(idx_obstacle):
-                                  self.euclidean_norm(self._agent_location - self._obstacle_locations[str(idx_obstacle)])})
+                self.euclidean_norm(
+                    self._agent_location - self._obstacle_locations[str(idx_obstacle)])})
         return distances
 
-
-
-    def reset(self, seed=0, options=None):
+    def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
 
         super().reset(seed=seed)
@@ -101,9 +103,8 @@ class GridWorldEnv(gym.Env):
         # We will sample the target's location randomly until it does not coincide with the agent's location
         self._target_location = self._agent_location
         while self.euclidean_norm(self._target_location - self._agent_location) < self.radius * 2:
-            self._target_location = self.np_random.random(size=(2,), dtype=np.float32) * (self.window_size - 2 * self.radius)
-
-
+            self._target_location = self.np_random.random(size=(2,), dtype=np.float32) * (
+                    self.window_size - 2 * self.radius)
 
         # We will sample the obstacle's location randomly until it does not coincide
         # with the agent's/target's/other obstacles location
@@ -115,7 +116,8 @@ class GridWorldEnv(gym.Env):
                     or (self.euclidean_norm(self._obstacle_locations[str(idx_obstacle)]
                                             - self._target_location) < self.radius * 2):  # Colliding with agent or target
                 _obstacle_locations_array = np.array(list(self._obstacle_locations.values()))
-                random_location = self.np_random.random(size=(2,), dtype=np.float32) * (self.window_size - 2 * self.radius)
+                random_location = self.np_random.random(size=(2,), dtype=np.float32) * (
+                        self.window_size - 2 * self.radius)
                 random_location_rep = np.array(
                     [random_location for i in range(len(_obstacle_locations_array))])
                 # print(random_location_rep)
@@ -133,6 +135,7 @@ class GridWorldEnv(gym.Env):
             self._obstacle_velocities.update({"{0}".format(idx_obstacle): np.array([0., 0.], dtype=np.float32)})
         for idx_obstacle in range(int(np.ceil(self.num_obstacles / 2)), self.num_obstacles):
             self._obstacle_velocities.update({"{0}".format(idx_obstacle):
+                                                  self.reward_parameters["obstacle_step_scaling"] * \
                                                   (self.np_random.random(size=(2,), dtype=np.float32) * 2 - 1)})  # between [-1, 1]
 
         observation = self._get_obs()
@@ -174,9 +177,8 @@ class GridWorldEnv(gym.Env):
             info = self._get_info()
             return observation, reward, terminated, False, info
 
-
-
         ### COLLISION SUPER SPARSE REWARD ###
+
         # Check for obstacle collision
         terminated = False
         for idx_obstacle in range(self.num_obstacles):
@@ -202,7 +204,7 @@ class GridWorldEnv(gym.Env):
         # An episode is done iff the agent has reached the target
         # terminated = np.array_equal(self._agent_location, self._target_location)  # target reached
         terminated = self.euclidean_norm(self._target_location -
-                                             self._agent_location) < self.radius * 2
+                                         self._agent_location) < self.radius * 2
         if terminated:
             reward = self.reward_parameters['target_value']  # sparse target reward
 
@@ -301,7 +303,8 @@ class GridWorldEnv(gym.Env):
                                                + (self._agent_location[1] - self._target_location[1]) ** 2)
                 for i in np.flip(range(1, self.reward_parameters['checkpoint_number'] + 1)):
                     if not self.checkpoint_reward_given[i]:
-                        if (distance_to_target < i * self.reward_parameters['checkpoint_distance_proportion'] * self.window_size):
+                        if (distance_to_target < i * self.reward_parameters[
+                            'checkpoint_distance_proportion'] * self.window_size):
                             self.checkpoint_reward_given[i] = True
                             reward += self.reward_parameters['checkpoint_value']  # checkpoint reward
 
@@ -314,7 +317,8 @@ class GridWorldEnv(gym.Env):
                 last_x_positions = list(self._agent_location_history)
                 last_x_positions = last_x_positions[-self.reward_parameters['max_waiting_steps']:]
                 if self.reward_parameters['waiting']:
-                    if last_x_positions.count(last_x_positions[-1]) == len(last_x_positions):  # Checks if all positions are equal
+                    if last_x_positions.count(last_x_positions[-1]) == len(
+                            last_x_positions):  # Checks if all positions are equal
                         reward += self.reward_parameters['waiting_penalty']
 
                 # Waiting reward
@@ -405,7 +409,7 @@ class GridWorldEnv(gym.Env):
             pygame.display.quit()
             pygame.quit()
 
-    def _render_frame_for_gif(self):  # TODO: test this after fixing
+    def _render_frame_for_gif(self):  # TODO: test this, should be fixed for cont env
         if self.window is None and self.render_mode == "human":
             pygame.init()
             pygame.display.init()
@@ -463,6 +467,7 @@ class GridWorldEnv(gym.Env):
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
             )
+
     @staticmethod
     def euclidean_norm(vector):
         """Calculates the Euclidean norm of a given vector."""

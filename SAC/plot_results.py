@@ -33,7 +33,8 @@ if __name__ == '__main__':
     env = GridWorldEnv(render_mode=None,
                        object_size=env_parameters['object_size'],  # TODO: change back to env_size to radius objects
                        num_obstacles=env_parameters['num_obstacles'],
-                       window_size=env_parameters['window_size'])
+                       window_size=env_parameters['window_size'],
+                       reward_parameters=reward_parameters)
     env.render_mode = "human"
 
     # initialize NN
@@ -48,12 +49,12 @@ if __name__ == '__main__':
 
     if feature_parameters['apply_environment_seed']:
         seed = 0  # feature_parameters['seed_init_value']
-    action_history = deque(maxlen=feature_parameters['action_history_size'])
+
 
 
     i_episode = 0
     while i_episode < 10:  # run plot for 10 episodes to see what it learned
-
+        action_history = deque(maxlen=feature_parameters['action_history_size'])
         # Initialize the environment and state
         if feature_parameters['apply_environment_seed']:
             env.reset(seed=seed)
