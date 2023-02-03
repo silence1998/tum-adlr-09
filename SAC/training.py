@@ -212,20 +212,20 @@ def select_action_A_star(state, window_size, object_size):  # TODO does this wor
             grid[index1, index2] = 1
 
     for i in range(env_parameters['num_obstacles']):
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)), round(state[4 + 4 * i] / (2 * object_size)),size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) + 1, round(state[4 + 4 * i] / (2 * object_size)),size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)), round(state[4 + 4 * i] / (2 * object_size)) + 1,size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) + 1,round(state[4 + 4 * i] / (2 * object_size)) + 1,size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) - 1, round(state[4 + 4 * i] / (2 * object_size)),size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)), round(state[4 + 4 * i] / (2 * object_size)) - 1,size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) - 1,round(state[4 + 4 * i] / (2 * object_size)) - 1,size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) + 1,round(state[4 + 4 * i] / (2 * object_size)) - 1,size)
-        add_obstacle(grid, round(state[4 + 4 * i] / (2 * object_size)) - 1,round(state[4 + 4 * i] / (2 * object_size)) + 1,size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)),     round(state[6 + 4 * i] / (2 * object_size)),size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)) + 1, round(state[6 + 4 * i] / (2 * object_size)),size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)),     round(state[6 + 4 * i] / (2 * object_size)) + 1,size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)) + 1, round(state[6 + 4 * i] / (2 * object_size)) + 1,size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)) - 1, round(state[6 + 4 * i] / (2 * object_size)),size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)),     round(state[6 + 4 * i] / (2 * object_size)) - 1,size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)) - 1, round(state[6 + 4 * i] / (2 * object_size)) - 1,size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)) + 1, round(state[6 + 4 * i] / (2 * object_size)) - 1,size)
+        add_obstacle(grid, round(state[6 + 4 * i] / (2 * object_size)) - 1, round(state[6 + 4 * i] / (2 * object_size)) + 1,size)
 
     # Start position
     StartNode = (round(state[0] / (2 * object_size)), round(state[1] / (2 * object_size)))  # agent position
     # Goal position
-    EndNode = (round(state[2] / (2 * object_size)), round(state[3] / (2 * object_size)))  # target position
+    EndNode = (round(state[4] / (2 * object_size)), round(state[5] / (2 * object_size)))  # target position
 
     path = A_star.algorithm.algorithm(grid, StartNode, EndNode)
     if path == None or StartNode == EndNode:
