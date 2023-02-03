@@ -29,7 +29,7 @@ git clone git@github.com:silence1998/tum-adlr-09.git
 
 - setup the venv following this guide
 - https://cloud.google.com/python/docs/setup#linux
-- to activate the env:
+- to activate the env: (from tum-adlr-09)
 ```
 source env/bin/activate 
 ```
@@ -64,7 +64,7 @@ gcloud auth login
 
 ### Activate the environment created in the setup
 ```
-source env/bin/activate  # run from home folder
+source env/bin/activate  # (from tum-adlr-09)
 ```
 
 ### tmux for running trainings in the background in the server
@@ -74,6 +74,8 @@ source env/bin/activate  # run from home folder
 ### to copy the files in the project bucket from current dir
 ```
 gsutil cp file gs://tum-adlr-09/
+```
+```
 gsutil cp -r model_pretrain gs://tum-adlr-09/
 ```
 
@@ -85,5 +87,7 @@ gsutil mv gs://my_bucket/olddir gs://my_bucket/newdir
 ### to copy files from the project bucket to current dir
 ```
 gsutil -m cp -r "gs://tum-adlr-09/tmp" .
+```
+```
 gsutil -m cp -r "gs://tum-adlr-09/model_pretrain" .
 ```

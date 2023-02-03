@@ -24,7 +24,7 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     data_path = "plots/"
-    model_path = "model_pretrain/"
+    model_path = "archive/model_pretrain/"
 
     # Load the model parameters
     with open(model_path + 'env_parameters.txt', 'r') as file:

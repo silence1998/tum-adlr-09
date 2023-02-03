@@ -77,7 +77,8 @@
     - GYM env is too simple
   - try +50,-10
   - ask felix for advice
-
+  - [ ] check the paper for 
+  
 #### ContSAC-X
 
 - dont use sac-u
@@ -89,12 +90,13 @@ MAIN TASK:
 - [ ] 6 Skills: (Sparsa Rewards:SR)  -> TODO VOLKAN: define the skills and match the features to them in SAC-X7env file
 
   - Skill 1: seeking obstacle (to follow a moving obstacle)
-    - dense rewards distance to obstacle
+    - dense threshold distance to obstacle
     - stay between 2-5 * radius of the obstacle
 
   - Skill 2: avoiding obstacle 
-    - dense rewards distance to obstacle for dynamic obstacles or for all if the latter proves to be hard
-    - sparse rewards checkpoint to obstacle for static
+    - dense threshold distance to obstacle for all 
+    - NO dynamic obstacles or for all if the latter proves to be hard
+    - NO sparse rewards checkpoint to obstacle for static
   
   - Skill 3: seek target 
     - sparse rewards checkpoint to target
@@ -137,7 +139,12 @@ MAIN TASK:
 #### as Appexdix
 
 ### ENDTERM REPORT
+only action smoothing behaves strange probably because pre-training teaches to go the goal but normal training with 10target, -50collision makes it stop around the target a while
+DIfferences from original paper: and mention why it work for their example, and why not in our example
+SAC-X, sac u makes no sense
+change scheduling depending on the distances to object and target 
 
+Performance is not that important but why it doesnt perform is important
 
 ### EXAM
 

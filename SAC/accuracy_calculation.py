@@ -14,9 +14,9 @@ if __name__ == '__main__':
 
     m = "1"  # input("Select normal Model (0) OR Model with pretrain (1): ")
     if m == "0":
-        model_path = "model/"
+        model_path = "archive/model/"
     elif m == "1":
-        model_path = "model_pretrain/"
+        model_path = "archive/model_pretrain/"
 
     # Load the model parameters
     with open(model_path + 'env_parameters.txt', 'r') as file:

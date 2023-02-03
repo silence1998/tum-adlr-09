@@ -1,7 +1,7 @@
 env_parameters = {
     'num_obstacles': 5,
-    'object_radius': 10,  # radius of every element in the environment
-    'window_size': 128,  # use powers of 2 for better performance
+    'object_radius': 20,  # radius of every element in the environment
+    'window_size': 512,  # use powers of 2 for better performance
     'action_step_scaling': 0.8,  # obstacles are between 0 and 1, this way we get a slower agent
     'delta_T': 3,  # time step for the environment
     'render_fps': 24  # fpd for rendering the environment
@@ -61,19 +61,19 @@ reward_parameters = {
     'target_distance_weight': 0.01,
 
     ### SPARSE REWARDS ###
-    'target_value': 10,
-    'collision_value': -50,
+    'target_value': 1,
+    'collision_value': -1,
 
     ### SUB-SPARSE REWARDS ###
 
     'total_step_limit': 1000,
-    'step_limit_reached_penalty': -10,
+    'step_limit_reached_penalty': -0.2,
 
     'collision_prediction': True,
-    'collision_prediction_penalty': -25,
+    'collision_prediction_penalty': -0.3,
 
     'predictive_obstacle_avoidance': True,
-    'obstacle_proximity_penalty': -10,
+    'obstacle_proximity_penalty': -0.5,
 
     'checkpoints': True,  # if true, use checkpoints rewards
     'checkpoint_distance_proportion': 0.1,  # distance proportion to environment size in 1 dimension

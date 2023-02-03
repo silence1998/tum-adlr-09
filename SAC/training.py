@@ -258,13 +258,13 @@ def obstacle_sort(obs):
 
 def save_models():
     if feature_parameters['pretrain']:
-        model_path = "model_pretrain/"
+        model_path = "archive/model_pretrain/"
         if not os.path.isdir(model_path):
             os.makedirs(model_path)
             print("created folder : ", model_path)
 
     else:
-        model_path = "model/"
+        model_path = "archive/model/"
         if not os.path.isdir(model_path):
             os.makedirs(model_path)
             print("created folder : ", model_path)
@@ -318,7 +318,7 @@ if __name__ == "__main__":
     Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
     env = GridWorldEnv(render_mode=None,
-                       object_radius=env_parameters['object_radius'],
+                       object_size=env_parameters['object_size'],
                        num_obstacles=env_parameters['num_obstacles'],
                        window_size=env_parameters['window_size'])
 

@@ -12,8 +12,8 @@ from collections import deque
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": parameters.env_parameters["render_fps"]}  # fps was 4
 
-    def __init__(self, render_mode=None, object_radius=100, num_obstacles=5, window_size=1024):
-        self.radius = object_radius  # The size of the radius of the elements, defined in the training and plotting scripts
+    def __init__(self, render_mode=None, object_size=100, num_obstacles=5, window_size=1024):
+        self.radius = object_size  # The size of the radius of the elements, defined in the training and plotting scripts
         self.window_size = window_size  # The size of the PyGame window
         self.num_obstacles = num_obstacles
         self.total_step = 0
@@ -30,7 +30,6 @@ class GridWorldEnv(gym.Env):
             self._agent_location_history = deque(maxlen=parameters.reward_parameters['history_size'])
 
         # Observations are dictionaries with the agent's, obstacles' and the target's location.
-
         elements = {"agent": spaces.Box(low=np.array([self.radius, self.radius, -1, -1]),  # x, y, vx, vy
                                             high=np.array([self.window_size - self.radius, self.window_size - self.radius, 1, 1]),
                                             shape=(4,),  # x, y, vx, vy
@@ -114,29 +113,27 @@ class GridWorldEnv(gym.Env):
             while (self.euclidean_norm(self._obstacle_locations[str(idx_obstacle)]
                                        - self._agent_location) < self.radius * 2) \
                     or (self.euclidean_norm(self._obstacle_locations[str(idx_obstacle)]
-                                       - self._target_location) < self.radius * 2):  # Colliding with agent or target
+                                            - self._target_location) < self.radius * 2):  # Colliding with agent or target
                 _obstacle_locations_array = np.array(list(self._obstacle_locations.values()))
                 random_location = self.np_random.random(size=(2,), dtype=np.float32) * (self.window_size - 2 * self.radius)
                 random_location_rep = np.array(
-                     [random_location for i in range(len(_obstacle_locations_array))])
-                #print(random_location_rep)
-                #print(_obstacle_locations_array)
+                    [random_location for i in range(len(_obstacle_locations_array))])
+                # print(random_location_rep)
+                # print(_obstacle_locations_array)
                 distances = np.array(self.elementwise_euclidean_norm(_obstacle_locations_array, random_location_rep))
                 collision = distances - 2 * self.radius
                 if (collision < 0).any():  # Colliding with other obstacle
                     continue
                 self._obstacle_locations[str(idx_obstacle)] = np.array(random_location_rep[0])
-                #print(random_location_rep[0])
+                # print(random_location_rep[0])
         assert len(self._obstacle_locations) == self.num_obstacles
 
         self._obstacle_velocities = {}
-        for idx_obstacle in range(0, int(np.ceil(self.num_obstacles/2))):
+        for idx_obstacle in range(0, int(np.ceil(self.num_obstacles / 2))):
             self._obstacle_velocities.update({"{0}".format(idx_obstacle): np.array([0., 0.], dtype=np.float32)})
-        for idx_obstacle in range(int(np.ceil(self.num_obstacles/2)), self.num_obstacles):
+        for idx_obstacle in range(int(np.ceil(self.num_obstacles / 2)), self.num_obstacles):
             self._obstacle_velocities.update({"{0}".format(idx_obstacle):
-                                                  (
-                                                          self.np_random.random(size=(2,),
-                                                                                dtype=np.float32) * 2 - 1)})  # between [-1, 1]
+                                                  (self.np_random.random(size=(2,), dtype=np.float32) * 2 - 1)})  # between [-1, 1]
 
         observation = self._get_obs()
         info = self._get_info()
@@ -148,7 +145,6 @@ class GridWorldEnv(gym.Env):
 
     def step(self, action_step):
         global penalty_distance_collision
-
 
         ### ENVIRONMENT UPDATE ###
         action_step = (self.env_parameters["delta_T"] *
@@ -190,10 +186,10 @@ class GridWorldEnv(gym.Env):
                 break
         # Check if the agent is out of bounds
         if self._agent_location[0] < self.radius or \
-            self._agent_location[1] < self.radius or \
-            self._agent_location[0] > self.window_size - self.radius or \
-            self._agent_location[1] > self.window_size - self.radius or \
-            terminated:
+                self._agent_location[1] < self.radius or \
+                self._agent_location[0] > self.window_size - self.radius or \
+                self._agent_location[1] > self.window_size - self.radius or \
+                terminated:
             terminated = True  # agent is out of bounds but did not collide with obstacle
 
             reward = self.reward_parameters['collision_value']  # collision with wall or obstacles
@@ -210,7 +206,7 @@ class GridWorldEnv(gym.Env):
         if terminated:
             reward = self.reward_parameters['target_value']  # sparse target reward
 
-        ## OTHER REWARDS ### -> SKILLS
+        ### OTHER REWARDS ###
         else:
             ### Distances
             # Distance to target

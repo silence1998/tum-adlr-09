@@ -13,9 +13,9 @@ if __name__ == '__main__':
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    m = "0" #input("Select normal Model (0) OR Model with pretrain (1): ")
+    m = "1" #input("Select normal Model (0) OR Model with pretrain (1): ")
     if m == "0":
-        model_path = "model/"
+        model_path = "archive/model/"
     elif m == "1":
         model_path = "model_pretrain/"
 
@@ -31,7 +31,7 @@ if __name__ == '__main__':
 
     # initialize environment
     env = GridWorldEnv(render_mode=None,
-                       object_radius=env_parameters['object_radius'],  # TODO: change back to env_size to radius objects
+                       object_size=env_parameters['object_size'],  # TODO: change back to env_size to radius objects
                        num_obstacles=env_parameters['num_obstacles'],
                        window_size=env_parameters['window_size'])
     env.render_mode = "human"

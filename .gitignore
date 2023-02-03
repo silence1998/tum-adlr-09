@@ -5,7 +5,7 @@
 
 
 # ignore model files
-/SAC/model/
+/SAC/archive/model/
 /SAC-X/model/
 /SAC/model_with_astar/
 SAC/__pycache__/
@@ -13,22 +13,22 @@ SAC/A_star/__pycache__/
 /SAC/wandb/
 
 /pytorch_rl/model/
-/SAC/model_pretrain/
+/SAC/archive/model_pretrain/
 
 #/SAC/tmp/
 
-/SAC/model_pretrain/
+/SAC/archive/model_pretrain/
 /SAC/parameters_base.py
-/SAC/model_pretrain_base/
+/SAC/archive/model_pretrain_base/
 /SAC/model_pretrain_test/
 /SAC/model_pretrain_action_smoothing_test/
 /SAC/model_pretrain_seed_test/
-/SAC/model_pretrain_test_time_penalty/
-/SAC/model_pretrain_test_checkpoints/
+/SAC/archive/model_pretrain_test_time_penalty/
+/SAC/archive/model_pretrain_test_checkpoints/
 /SAC/model_test_pretrain/
-/SAC/model_pretrain_test_obstacle_sort/
-/SAC/model_pretrain_test_env_seed/
-/SAC/model_pretrain_test_action_smooting/
+/SAC/archive/model_pretrain_test_obstacle_sort/
+/SAC/archive/model_pretrain_test_env_seed/
+/SAC/archive/model_pretrain_test_action_smooting/
 /SAC/test_rewards_with_all_features/
 /SAC/test_features_with_sparse_rewards/
 /SAC/plots/
@@ -36,4 +36,6 @@ SAC/A_star/__pycache__/
 /SAC-X/tmp/
 /SAC-X/wandb/
 
-/SAC/old_model/
+/SAC/archive/old_model/
+/SAC/archive/
+/SAC/model_pretrain/

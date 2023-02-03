@@ -88,7 +88,7 @@ reward_parameters = {
     'waiting_step_number_to_check': 5,  # number of steps to check for waiting (in history)
     # make sure waiting_step_number_to_check < history_size
     'max_waiting_steps': 10,  # make sure < history_size, punishment for waiting too long
-    'waiting_penalty': -0.05,
+    'waiting_penalty': -0.05,  # TODO: dont use negative rewards for auxiliary rewards
     # threshold
 
     'consistency': False,  # if true, use consistency rewards
