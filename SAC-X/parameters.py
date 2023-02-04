@@ -1,5 +1,5 @@
 env_parameters = {
-    'num_obstacles': 5,
+    'num_obstacles': 10,
     'object_size': 20,  # radius of every element in the environment
     'window_size': 512,  # use powers of 2 for better performance
     'action_step_scaling': 20,  # obstacles are between 0 and 1, this way we get a slower agent
@@ -18,7 +18,7 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'entropy_factor_final': 0.5,
-    'num_episodes': 3000,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
     'sigma_init': 2.0,
     'sigma_final': 2.0
@@ -26,18 +26,18 @@ hyper_parameters = {
 
 feature_parameters = {
     'pretrain': True,  # pretrain the model
-    'num_episodes_pretrain': 1000,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes_pretrain': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'maxsize_ReplayMemory': 100000,
-    'action_smoothing': False,
+    'action_smoothing': True,
 
     'action_history_size': 3,  # number of actions to remember for the action history
 
-    'select_action_filter': False,  # filter actions to be directed towards target # TODO: last test
+    'select_action_filter': True,  # filter actions to be directed towards target # TODO: last test
     'select_action_filter_after_episode': 70,  # start filtering after this episode
 
     'sort_obstacles': True,  # sort obstacles by distance to target
 
-    'apply_environment_seed': False,  # apply seed to environment to have comparable results
+    'apply_environment_seed': True,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
 
     'plot_durations': True,  # plot durations of episodes
@@ -47,7 +47,7 @@ feature_parameters = {
 
 reward_parameters = {
 
-    ### DENSE REWARDS ###  # TODO: check after midterm
+    ### DENSE REWARDS ###  # TODO: Keep it False we dont want Dense rewards
     'obstacle_avoidance_dense': False,
     'obstacle_distance_weight': -0.01,
     'target_seeking_dense': False,
@@ -66,7 +66,7 @@ reward_parameters = {
 
     ### SUB-SPARSE REWARDS ###
     'collision_prediction': True,
-    'collision_prediction_penalty': -0.03, # TODO add wall as collisoin as well
+    'collision_prediction_penalty': -0.03,  # TODO add wall as collision as well
 
     'predictive_obstacle_avoidance': True,
     'obstacle_proximity_penalty': -0.03,
@@ -74,12 +74,12 @@ reward_parameters = {
     'checkpoints': True,  # if true, use checkpoints rewards
     'checkpoint_distance_proportion': 0.1,  # distance proportion to environment size in 1 dimension
     'checkpoint_number': 5,  # make sure checkpoint_distance_proportion * "checkpoint_number" <= 1
-    'checkpoint_value': 1,  # make sure checkpoint_value * checkpoint_number < 1
+    'checkpoint_value': 0.1,  # make sure checkpoint_value * checkpoint_number < 1
 
 
 
     # Rewards below depend on action history
-    'history': False,  # if true, use history
+    'history': True,  # if true, use history
     'history_size': 15,  # >= hyper_parameters['action_history_size'] above
     # size of history to check for waiting and consistency
     # can be chosen bigger to have longer checks for below features

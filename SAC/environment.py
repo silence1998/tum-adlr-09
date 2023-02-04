@@ -14,8 +14,7 @@ from collections import deque
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": parameters.env_parameters["render_fps"]}  # fps was 4
 
-    def __init__(self, render_mode=None, object_size=100, num_obstacles=5, window_size=1024,
-                 reward_parameters=parameters.reward_parameters):
+    def __init__(self, render_mode=None, object_size=100, num_obstacles=5, window_size=1024):
         self.radius = object_size  # The size of the radius of the elements, defined in the training and plotting scripts
         self.window_size = window_size  # The size of the PyGame window
         self.num_obstacles = num_obstacles
@@ -139,7 +138,7 @@ class GridWorldEnv(gym.Env):
             self._obstacle_velocities.update({"{0}".format(idx_obstacle): np.array([0., 0.], dtype=np.float32)})
         for idx_obstacle in range(int(np.ceil(self.num_obstacles / 2)), self.num_obstacles):
             self._obstacle_velocities.update({"{0}".format(idx_obstacle):
-                                                  self.reward_parameters["obstacle_step_scaling"] * \
+                                                  self.env_parameters["obstacle_step_scaling"] * \
                                                   (self.np_random.random(size=(2,), dtype=np.float32) * 2 - 1)})  # between [-1, 1]
 
         observation = self._get_obs()
@@ -172,22 +171,13 @@ class GridWorldEnv(gym.Env):
 
         self._max_distance = math.sqrt(2) * self.window_size
 
-        ### If the agent is taking many steps to reach the goal
-
-        if self.total_step > self.reward_parameters['total_step_limit']:
-            terminated = True
-            reward = self.reward_parameters['step_limit_reached_penalty']
-            observation = self._get_obs()
-            info = self._get_info()
-            return observation, reward, terminated, False, info
 
         ### COLLISION SUPER SPARSE REWARD ###
-
         # Check for obstacle collision
         terminated = False
         for idx_obstacle in range(self.num_obstacles):
-            terminated = self.euclidean_norm(self._obstacle_locations[str(idx_obstacle)] -
-                                             self._agent_location) < self.radius * 2
+            terminated = (self.euclidean_norm(self._obstacle_locations[str(idx_obstacle)] -
+                                             self._agent_location) < self.radius * 2)
             if terminated:
                 break
         # Check if the agent is out of bounds
@@ -203,7 +193,7 @@ class GridWorldEnv(gym.Env):
             observation = self._get_obs()
             info = self._get_info()
             return observation, reward, terminated, False, info
-        reward = 0
+
         ### TARGET SUPER SPARSE REWARD ###
         # An episode is done iff the agent has reached the target
         # terminated = np.array_equal(self._agent_location, self._target_location)  # target reached
@@ -211,6 +201,17 @@ class GridWorldEnv(gym.Env):
                                          self._agent_location) < self.radius * 2
         if terminated:
             reward = self.reward_parameters['target_value']  # sparse target reward
+
+
+        ### TIME ###
+        # Time termination
+        if self.total_step > self.reward_parameters['total_step_limit']:
+            terminated = True
+            reward += self.reward_parameters['step_limit_reached_penalty']
+            observation = self._get_obs()
+            info = self._get_info()
+            return observation, reward, terminated, False, info
+
 
         ### OTHER REWARDS ###
         else:
@@ -288,6 +289,7 @@ class GridWorldEnv(gym.Env):
                         if (collision < 0).any():
                             reward += self.reward_parameters['collision_prediction_penalty']  # collision with wall or obstacles
 
+            """
             ### DENSE REWARDS ###
             # Reward for avoiding obstacles
             if self.reward_parameters['obstacle_avoidance_dense']:
@@ -298,6 +300,7 @@ class GridWorldEnv(gym.Env):
             # Reward for seeking the target
             if self.reward_parameters['target_seeking_dense']:
                 reward += self.reward_parameters['target_distance_weight'] * distance_to_target / self._max_distance
+            """
 
             ### SUB-SPARSE REWARDS ###
             # Distance checkpoint rewards
@@ -413,7 +416,7 @@ class GridWorldEnv(gym.Env):
             pygame.display.quit()
             pygame.quit()
 
-    def _render_frame_for_gif(self):  # TODO: test this, should be fixed for cont env
+    def _render_frame_for_gif(self):  # TODO: test this
         if self.window is None and self.render_mode == "human":
             pygame.init()
             pygame.display.init()

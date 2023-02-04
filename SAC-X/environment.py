@@ -1,3 +1,5 @@
+
+import itertools
 import math
 import numpy as np
 
@@ -177,7 +179,6 @@ class GridWorldEnv(gym.Env):
         reward_5 = 0  # waiting
         main_reward = 0
 
-
         ### COLLISION SUPER SPARSE REWARD ###
         # Check for obstacle collision
         terminated = False
@@ -208,20 +209,20 @@ class GridWorldEnv(gym.Env):
         if terminated:
             main_reward = self.reward_parameters['target_value']  # sparse target main_reward
 
-
-
-        ### If the agent is taking many steps to reach the goal
+        ### TIME ###
         # Time termination
-        if self.reward_parameters['time']:
-            main_reward += self.reward_parameters['time_penalty']
-
-        # Time penalty at every step
         if self.total_step > self.reward_parameters['total_step_limit']:
             terminated = True
             main_reward += self.reward_parameters['step_limit_reached_penalty']
             observation = self._get_obs()
             info = self._get_info()
-            return observation, {0: main_reward, 1: reward_1, 2: reward_2, 3: reward_3, 4: reward_4, 5: reward_5}, terminated, False, info
+            return observation, {0: main_reward, 1: reward_1, 2: reward_2, 3: reward_3, 4: reward_4,
+                                 5: reward_5}, terminated, False, info
+
+        # Time penalty at every step
+        if self.reward_parameters['time']:
+            main_reward += self.reward_parameters['time_penalty']
+
 
 
         ### OTHER REWARDS ### -> SKILLS
@@ -274,6 +275,8 @@ class GridWorldEnv(gym.Env):
             # Difference to wall
             diff_distance_to_wall = np.abs(distance_to_wall - previous_distance_to_wall)  # TODO: make use of this
 
+
+
         ### COLLISION PREDICTION PENALTY###
         if self.reward_parameters['collision_prediction'] or self.reward_parameters['predictive_obstacle_avoidance']:
             self._obstacle_locations_pred = self._obstacle_locations  # TODO: how to check if this works
@@ -297,19 +300,18 @@ class GridWorldEnv(gym.Env):
                     collision = distances - 2 * self.radius
                     if (collision < 0).any():
                         reward_2 += self.reward_parameters['collision_prediction_penalty']  # collision with wall or obstacles
+
         """
         ### DENSE REWARDS ###
         # Reward for avoiding obstacles
-        
-        if self.reward_parameters['obstacle_avoidance']:
+        if self.reward_parameters['obstacle_avoidance_dense']:
             min_collision_distance = np.min(np.append(distances_to_obstacles, [distance_to_wall]))
             penalty_distance_collision = np.max(np.array([1.0 - min_collision_distance / self._max_distance, 0.0]))
             main_reward += self.reward_parameters['obstacle_distance_weight'] * penalty_distance_collision
-      
-        if self.reward_parameters['target_seeking']:
-            main_reward += self.reward_parameters[
-                               'target_distance_weight'] * distance_to_target / self._max_distance
+        if self.reward_parameters['target_seeking_dense']:
+            main_reward += self.reward_parameters['target_distance_weight'] * distance_to_target / self._max_distance
         """
+
         ### SUB-SPARSE REWARDS ###
         # Distance checkpoint rewards
         if self.reward_parameters['checkpoints']:
@@ -327,29 +329,27 @@ class GridWorldEnv(gym.Env):
             last_x_positions = list(self._agent_location_history)
             last_x_positions = last_x_positions[-self.reward_parameters['max_waiting_steps']:]
             if self.reward_parameters['waiting']:
-                if last_x_positions.count(last_x_positions[-1]) == len(
-                        last_x_positions):  # Checks if all positions are equal
+                if all(abs(value - last_x_positions[-1]) <= self.reward_parameters['movement_tolerance'] for value in last_x_positions):
                     reward_5 += self.reward_parameters['waiting_penalty']
 
             # Waiting reward
             last_x_positions = list(self._agent_location_history)
             last_x_positions = last_x_positions[-self.reward_parameters['waiting_step_number_to_check']:]
             if self.reward_parameters['waiting']:
-                if last_x_positions.count(last_x_positions[-1]) == len(
-                        last_x_positions):  # Checks if all positions are equal
+                if all(abs(value - last_x_positions[-1]) <= self.reward_parameters['movement_tolerance'] for value in last_x_positions):  # Checks if all positions are equal
                     reward_5 += self.reward_parameters['waiting_value']
 
-            # Consistency main_reward # TODO: history??
+            # Consistency reward
             if self.reward_parameters['consistency']:
-                last_x_steps = self._agent_location_history[
-                               -self.reward_parameters['consistency_step_number_to_check']:]
-                for i in np.flip(
-                        (range(1, self.reward_parameters['consistency_step_number_to_check'] + 1))):  # csn,...,1
-                    last_x_steps.append(last_x_positions[-1] - last_x_positions[i - 1])
-                    if last_x_steps.count(last_x_steps[0]) == len(
-                            last_x_steps):  # Checks if all directions are equal
-                        reward_4 += self.reward_parameters['consistency_value']
-
+                last_x_positions = deque(itertools.islice(self._agent_location_history,
+                                                      len(self._agent_location_history) - self.reward_parameters['consistency_step_number_to_check'],
+                                                      len(self._agent_location_history)))
+                #[-self.reward_parameters['consistency_step_number_to_check']:]
+                last_x_steps = []
+                for i in np.flip((range(1, self.reward_parameters['consistency_step_number_to_check']))):  # csn,...,1
+                    last_x_steps.append(last_x_positions[i] - last_x_positions[i - 1])
+                if all(abs(value - last_x_steps[-1]) <= self.reward_parameters['movement_tolerance'] for value in last_x_steps):  # Checks if all the step directions are equal
+                    reward_4 += self.reward_parameters['consistency_value']
 
         observation = self._get_obs()
         info = self._get_info()
@@ -421,8 +421,7 @@ class GridWorldEnv(gym.Env):
             pygame.display.quit()
             pygame.quit()
 
-    def _render_frame_for_gif(
-            self):  # TODO: This is not working, after switching to continious adjust to the above render frame function
+    def _render_frame_for_gif(self):  # TODO: test this
         if self.window is None and self.render_mode == "human":
             pygame.init()
             pygame.display.init()
@@ -432,52 +431,36 @@ class GridWorldEnv(gym.Env):
 
         canvas = pygame.Surface((self.window_size, self.window_size))
         canvas.fill((255, 255, 255))
-        pix_square_size = (
-                self.window_size / self.size
-        )  # The size of a single grid square in pixels
+        # self.window_size = 1024
+        pix_square_size = self.radius
+        agent_size = pix_square_size
+        target_size = pix_square_size
+        object_radius = pix_square_size
 
-        # First we draw the target
-        pygame.draw.rect(
-            canvas,
-            (255, 0, 0),
-            pygame.Rect(
-                pix_square_size * self._target_location,
-                (pix_square_size, pix_square_size),
-            ),
-        )
-        # Now we draw the agent
+        # First we draw the agent
         pygame.draw.circle(
             canvas,
-            (0, 0, 255),
-            (self._agent_location + 0.5) * pix_square_size,
-            pix_square_size / 3,
+            (0, 0, 255),  # blue
+            self._agent_location,
+            agent_size,
         )
+
+        # Now we draw the target
+        pygame.draw.circle(
+            canvas,
+            (255, 0, 0),  # red
+            self._target_location,
+            target_size,
+        )
+
+
         # Now we draw the obstacles
         for idx_obstacle in range(self.num_obstacles):
-            pygame.draw.rect(
+            pygame.draw.circle(
                 canvas,
-                (0, 0, 0),
-                pygame.Rect(
-                    pix_square_size * self._obstacle_locations[str(idx_obstacle)],
-                    (pix_square_size, pix_square_size),
-                ),
-            )
-
-        # Finally, add some gridlines
-        for x in range(self.size + 1):
-            pygame.draw.line(
-                canvas,
-                0,
-                (0, pix_square_size * x),
-                (self.window_size, pix_square_size * x),
-                width=3,
-            )
-            pygame.draw.line(
-                canvas,
-                0,
-                (pix_square_size * x, 0),
-                (pix_square_size * x, self.window_size),
-                width=3,
+                (0, 0, 0),  # black
+                self._obstacle_locations[str(idx_obstacle)],
+                object_radius,
             )
 
         if self.render_mode == "human":

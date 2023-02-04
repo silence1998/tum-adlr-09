@@ -79,54 +79,15 @@
   - ask felix for advice
   - [ ] check the paper for 
   
-#### ContSAC-X
 
-- dont use sac-u
-
-MAIN TASK:
-- super-sparse rewards (-50, +10)
-- Time penalty
-
-- [ ] 6 Skills: (Sparsa Rewards:SR)  -> TODO VOLKAN: define the skills and match the features to them in SAC-X7env file
-
-  - Skill 1: seeking obstacle (to follow a moving obstacle)
-    - dense threshold distance to obstacle
-    - stay between 2-5 * radius of the obstacle
-
-  - Skill 2: avoiding obstacle 
-    - dense threshold distance to obstacle for all 
-    - NO dynamic obstacles or for all if the latter proves to be hard
-    - NO sparse rewards checkpoint to obstacle for static
-  
-  - Skill 3: seek target 
-    - sparse rewards checkpoint to target
-    - NOT distance to target -> SAC-X performs badly
-  
-  - NOPE Skill 4: flee from target (if we have to find a new way)
-    - dense rewards distance to target
-    - we didnt test this first as our agent is not capable enough yet 
-    - [X] should be happening implicitly by using the waiting as it has also a penalty for waiting too long
- 
-  - Skill 5: consistency 
-    - [X] consistency SR 
- 
-  - Skill 6: waiting 
-    - [X] waiting SR 
-
-- obstacle: can be dense if its hard to implement 
-  - seeking distance threshold: smaller aggressive threshold
-  - avoiding distance threshold: bigger conservative threshold
-- target 
-  - seeking (SR CHECKPOINTS)
-  - avoiding
 
 #### Tests
-- [ ] regular sac w/o pretrain STATIC -> TODO MO
+- [X] regular sac w/o pretrain STATIC -> TODO MO
   - once with general purpose N2 + high vCPU 32
   - once with compute optimised C2 + 60 vCPU
 - [ ] regular sac-x w/o pretrain STATIC 
 
-- [ ] regular sac w/o pretrain DYNAMIC -> TODO MO
+- [X] regular sac w/o pretrain DYNAMIC -> TODO MO
 - [ ] regular sac-x w/o pretrain DYNAMIC
 
 - [ ] then sac with pretrain DYNAMIC

@@ -25,7 +25,7 @@ hyper_parameters = {
 }
 
 feature_parameters = {
-    'pretrain': False,  # pretrain the model
+    'pretrain': True,  # pretrain the model
     'num_episodes_pretrain': 3000,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'maxsize_ReplayMemory': 100000,
     'action_smoothing': True,
@@ -45,13 +45,13 @@ feature_parameters = {
 }
 
 reward_parameters = {
-    """
+
     ### DENSE REWARDS ###  # TODO: check after midterm
     'obstacle_avoidance_dense': True,
     'obstacle_distance_weight': -0.01,
     'target_seeking_dense': True,
     'target_distance_weight': 0.01,
-    """
+
     
     'total_step_limit': 1000,
     'step_limit_reached_penalty': -0.01,

@@ -42,8 +42,7 @@ if __name__ == '__main__':
     env = GridWorldEnv(render_mode=None,
                        object_size=env_parameters['object_size'],  # TODO: change back to env_size to radius objects
                        num_obstacles=env_parameters['num_obstacles'],
-                       window_size=env_parameters['window_size'],
-                       reward_parameter=reward_parameters)
+                       window_size=env_parameters['window_size'])
     env.render_mode = "human"
 
     # initialize NN
@@ -85,7 +84,7 @@ if __name__ == '__main__':
         obs = env._get_obs()
         if feature_parameters['sort_obstacles']:
             obs = obstacle_sort(obs)
-        obs_values = np.array([obs["agent"], obs["target"]])
+        obs_values = np.append(obs["agent"], obs["target"])
         for idx_obstacle in range(env_parameters['num_obstacles']):
             obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
         state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
@@ -112,7 +111,7 @@ if __name__ == '__main__':
             if not done:
                 if feature_parameters['sort_obstacles']:
                     obs = obstacle_sort(obs)
-                obs_values = np.array([obs["agent"], obs["target"]])
+                obs_values = np.append(obs["agent"], obs["target"])
                 for idx_obstacle in range(env_parameters['num_obstacles']):
                     obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
                 next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)

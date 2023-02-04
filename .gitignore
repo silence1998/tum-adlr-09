@@ -15,10 +15,10 @@ SAC/A_star/__pycache__/
 /pytorch_rl/model/
 /SAC/archive/model_pretrain/
 
-#/SAC/tmp/
+/SAC/tmp/
 
 /SAC/archive/model_pretrain/
-/SAC/parameters_base.py
+/SAC/archive/parameters_base.py
 /SAC/archive/model_pretrain_base/
 /SAC/model_pretrain_test/
 /SAC/model_pretrain_action_smoothing_test/
@@ -39,3 +39,6 @@ SAC/A_star/__pycache__/
 /SAC/archive/old_model/
 /SAC/archive/
 /SAC/model_pretrain/
+/SAC/midterm_tests/
+/SAC/parameters_base_endterm.py
+/SAC/tmp/
