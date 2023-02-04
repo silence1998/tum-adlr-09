@@ -15,7 +15,6 @@ SAC/A_star/__pycache__/
 /pytorch_rl/model/
 /SAC/archive/model_pretrain/
 
-/SAC/tmp/
 
 /SAC/archive/model_pretrain/
 /SAC/archive/parameters_base.py
@@ -33,7 +32,6 @@ SAC/A_star/__pycache__/
 /SAC/test_features_with_sparse_rewards/
 /SAC/plots/
 /SAC-X/model_pretrain/
-/SAC-X/tmp/
 /SAC-X/wandb/
 
 /SAC/archive/old_model/

@@ -7,7 +7,7 @@
 
 - get the gCloud VM instance command from and ssh in to the VM
 ```
-gcloud compute ssh --zone "europe-west1-b" "i2-n2-std-2vcpu-8gbmemory-ubuntu2004-size64gb-spot-0-03usd-h"  --project "tum-adlr-09"
+gcloud compute ssh --zone "europe-west1-b" "instance-highcpu-1"  --project "tum-adlr-09"
 gcloud compute ssh --zone "europe-west1-b" "instance-2" --project "tum-adlr-09"
 ```
 
@@ -28,7 +28,7 @@ git clone git@github.com:silence1998/tum-adlr-09.git
 ```
 
 - setup the venv following this guide
-- https://cloud.google.com/python/docs/setup#linux
+- https://cloud.google.com/python/doccd s/setup#linux
 - to activate the env: (from tum-adlr-09)
 ```
 source env/bin/activate 
@@ -46,6 +46,8 @@ pip install torch==1.12.1+cpu torchvision==0.13.1+cpu torchaudio==0.12.1 --extra
 pip install gym
 pip install wandb
 pip install pygame
+pip install google-cloud-storage
+
 ```
 
 
@@ -58,16 +60,21 @@ exit
 
 ### SSH & Login
 ```
-gcloud compute ssh --zone "europe-west1-b" "i2-n2-std-2vcpu-8gbmemory-ubuntu2004-size64gb-spot-0-03usd-h"  --project "tum-adlr-09"
+gcloud compute ssh --zone "europe-west1-b" "instance-highcpu"  --project "tum-adlr-09"
 gcloud auth login 
 ```
 
 ### Activate the environment created in the setup
 ```
-source env/bin/activate  # (from tum-adlr-09)
+cd tum-adlr-09
+source env/bin/activate  
 ```
 
 ### tmux for running trainings in the background in the server
+```
+python3 SAC-X/training.py
+```
+
 - tmux useful shortcuts
   - https://tmuxcheatsheet.com/
 
