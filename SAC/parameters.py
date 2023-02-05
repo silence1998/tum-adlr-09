@@ -61,8 +61,8 @@ reward_parameters = {
     'target_distance_weight': 0.01,
 
     ### SPARSE REWARDS ###
-    'target_value': 10,
-    'collision_value': -50,
+    'target_value': 1,
+    'collision_value': -1,
 
     ### SUB-SPARSE REWARDS ###
 
