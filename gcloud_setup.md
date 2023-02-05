@@ -28,7 +28,7 @@ git clone git@github.com:silence1998/tum-adlr-09.git
 ```
 
 - setup the venv following this guide
-- https://cloud.google.com/python/doccd s/setup#linux
+- https://cloud.google.com/python/docs/setup#linux
 - to activate the env: (from tum-adlr-09)
 ```
 source env/bin/activate 
@@ -60,7 +60,7 @@ exit
 
 ### SSH & Login
 ```
-gcloud compute ssh --zone "europe-west1-b" "instance-highcpu"  --project "tum-adlr-09"
+gcloud compute ssh --zone "europe-west1-b" "instance-n2-8vcpu-32gb-mem" --project "tum-adlr-09"
 gcloud auth login 
 ```
 
