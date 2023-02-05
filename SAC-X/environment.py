@@ -326,6 +326,7 @@ class GridWorldEnv(gym.Env):
 
         if parameters.reward_parameters['history']:
             # Waiting penalty
+            # start giving penalties if the last "max_waiting_steps(=10)" were same
             last_x_positions = list(self._agent_location_history)
             last_x_positions = last_x_positions[-self.reward_parameters['max_waiting_steps']:]
             if self.reward_parameters['waiting']:
@@ -333,6 +334,7 @@ class GridWorldEnv(gym.Env):
                     reward_5 += self.reward_parameters['waiting_penalty']
 
             # Waiting reward
+            # start giving reward if the last "waiting_step_number_to_check(=5)" were same
             last_x_positions = list(self._agent_location_history)
             last_x_positions = last_x_positions[-self.reward_parameters['waiting_step_number_to_check']:]
             if self.reward_parameters['waiting']:
@@ -344,7 +346,6 @@ class GridWorldEnv(gym.Env):
                 last_x_positions = deque(itertools.islice(self._agent_location_history,
                                                       len(self._agent_location_history) - self.reward_parameters['consistency_step_number_to_check'],
                                                       len(self._agent_location_history)))
-                #[-self.reward_parameters['consistency_step_number_to_check']:]
                 last_x_steps = []
                 for i in np.flip((range(1, self.reward_parameters['consistency_step_number_to_check']))):  # csn,...,1
                     last_x_steps.append(last_x_positions[i] - last_x_positions[i - 1])

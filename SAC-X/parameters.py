@@ -1,5 +1,5 @@
 env_parameters = {
-    'num_obstacles': 10,
+    'num_obstacles': 5,
     'object_size': 20,  # radius of every element in the environment
     'window_size': 512,  # use powers of 2 for better performance
     'action_step_scaling': 20,  # obstacles are between 0 and 1, this way we get a slower agent
@@ -18,7 +18,7 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'entropy_factor_final': 0.5,
-    'num_episodes': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 3000,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
     'sigma_init': 2.0,
     'sigma_final': 2.0
@@ -26,7 +26,7 @@ hyper_parameters = {
 
 feature_parameters = {
     'pretrain': True,  # pretrain the model
-    'num_episodes_pretrain': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes_pretrain': 1000,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'maxsize_ReplayMemory': 100000,
     'action_smoothing': True,
 
@@ -62,7 +62,7 @@ reward_parameters = {
 
     ### SUPER SPARSE REWARDS ###
     'target_value': 1,
-    'collision_value': -1,
+    'collision_value': -5,
 
     ### SUB-SPARSE REWARDS ###
     'collision_prediction': True,
@@ -91,7 +91,7 @@ reward_parameters = {
     'waiting_step_number_to_check': 5,  # number of steps to check for waiting (in history)
     # make sure waiting_step_number_to_check < history_size
     'max_waiting_steps': 10,  # make sure < history_size, punishment for waiting too long
-    'waiting_penalty': -0.05,  # TODO: dont use negative rewards for auxiliary rewards
+    'waiting_penalty': -0.02,  # TODO: dont use negative rewards for auxiliary rewards
     # threshold
 
 
