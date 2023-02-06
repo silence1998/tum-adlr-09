@@ -325,6 +325,7 @@ class Scheduler:
         self.scheduler = self.Q_task.derive_policy(BoltzmannPolicy, lambda x: tasks, temperature=1)
 
     def train_scheduler(self, main_rewards, Tau, list_fuzzy_state):
+        # last 3 subtasks
         xi = self.xi
         for h in range(len(Tau)):
             R = sum([r * hyper_parameters["gamma"] ** k for k, r in enumerate(main_rewards[h * xi:])])
