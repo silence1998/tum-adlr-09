@@ -63,7 +63,7 @@ def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
         average_sigma_per_batch.append(
             np.mean(sigma.detach().cpu().numpy(), axis=0))  # mean of sigma of the current batch
 
-    for task_ in [0, 1, 2, 4, 5]:
+    for task_ in [0, 1, 2, 3, 4]:
         value = valueNet(state_batch, task_).view(-1)  # infer size of batch
         value_ = torch.zeros(hyper_parameters["batch_size"], device=device)
         value_[non_final_mask] = target_valueNet(non_final_next_states, task_).view(-1)
@@ -414,7 +414,7 @@ if __name__ == "__main__":
     wandb.watch(valueNet)
     wandb.watch(target_valueNet)
 
-    tasks = (0, 1, 2, 4, 5)
+    tasks = (0, 1, 2, 3, 4)
     sac_schedule = Scheduler(tasks)
 
     episode_durations = []
@@ -457,7 +457,7 @@ if __name__ == "__main__":
                 t += 1
                 action = action  # / env.reward_parameters['action_step_scaling']
                 _, reward, done, _, _ = env.step(action)
-                reward = torch.tensor([[reward[0], reward[1], reward[2], reward[4], reward[5]]], dtype=torch.float, device=device)
+                reward = torch.tensor([[reward[0], reward[1], reward[2], reward[3], reward[4]]], dtype=torch.float, device=device)
 
                 # Observe new state
                 obs = env._get_obs()
@@ -569,7 +569,7 @@ if __name__ == "__main__":
                 action = select_action_smooth(action_history)
             _, reward, done, _, _ = env.step(action)
             main_reward.append(reward[0])
-            reward = torch.tensor([[reward[0], reward[1], reward[2], reward[4], reward[5]]], dtype=torch.float, device=device)
+            reward = torch.tensor([[reward[0], reward[1], reward[2], reward[3], reward[4]]], dtype=torch.float, device=device)
 
             # Observe new state
             obs = env._get_obs()

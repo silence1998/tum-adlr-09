@@ -143,6 +143,7 @@ Step 5: run training with the needed parameters
 ```
 cd SAC-X
 nano parameters.py
+
 python3 training.py
 ```
 Step 6: upload the resulting model to gcloud storage bucket

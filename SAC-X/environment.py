@@ -175,8 +175,8 @@ class GridWorldEnv(gym.Env):
         reward_1 = 0  # seek target
         reward_2 = 0  # avoiding obstacle
         #reward_3 = 0  # follow obstacle
-        reward_4 = 0  # consistency
-        reward_5 = 0  # waiting
+        reward_3 = 0  # consistency
+        reward_4 = 0  # waiting
         main_reward = 0
 
         ### COLLISION SUPER SPARSE REWARD ###
@@ -199,7 +199,7 @@ class GridWorldEnv(gym.Env):
 
             observation = self._get_obs()
             info = self._get_info()
-            return observation, {0: main_reward, 1: reward_1, 2: reward_2, 4: reward_4, 5: reward_5}, terminated, False, info
+            return observation, {0: main_reward, 1: reward_1, 2: reward_2, 3: reward_3, 4: reward_4}, terminated, False, info
 
         ### TARGET SPARSE REWARD ###
         # An episode is done iff the agent has reached the target
@@ -216,8 +216,7 @@ class GridWorldEnv(gym.Env):
             main_reward += self.reward_parameters['step_limit_reached_penalty']
             observation = self._get_obs()
             info = self._get_info()
-            return observation, {0: main_reward, 1: reward_1, 2: reward_2, 4: reward_4,
-                                 5: reward_5}, terminated, False, info
+            return observation, {0: main_reward, 1: reward_1, 2: reward_2, 3: reward_3, 4: reward_4}, terminated, False, info
 
         # Time penalty at every step
         if self.reward_parameters['time']:
@@ -331,7 +330,7 @@ class GridWorldEnv(gym.Env):
             last_x_positions = last_x_positions[-self.reward_parameters['max_waiting_steps']:]
             if self.reward_parameters['waiting']:
                 if all(abs(value - last_x_positions[-1]) <= self.reward_parameters['movement_tolerance'] for value in last_x_positions):
-                    reward_5 += self.reward_parameters['waiting_penalty']
+                    reward_4 += self.reward_parameters['waiting_penalty']
 
             # Waiting reward
             # start giving reward if the last "waiting_step_number_to_check(=5)" were same
@@ -339,7 +338,7 @@ class GridWorldEnv(gym.Env):
             last_x_positions = last_x_positions[-self.reward_parameters['waiting_step_number_to_check']:]
             if self.reward_parameters['waiting']:
                 if all(abs(value - last_x_positions[-1]) <= self.reward_parameters['movement_tolerance'] for value in last_x_positions):  # Checks if all positions are equal
-                    reward_5 += self.reward_parameters['waiting_value']
+                    reward_4 += self.reward_parameters['waiting_value']
 
             # Consistency reward
             if self.reward_parameters['consistency']:
@@ -350,7 +349,7 @@ class GridWorldEnv(gym.Env):
                 for i in np.flip((range(1, self.reward_parameters['consistency_step_number_to_check']))):  # csn,...,1
                     last_x_steps.append(last_x_positions[i] - last_x_positions[i - 1])
                 if all(abs(value - last_x_steps[-1]) <= self.reward_parameters['movement_tolerance'] for value in last_x_steps):  # Checks if all the step directions are equal
-                    reward_4 += self.reward_parameters['consistency_value']
+                    reward_3 += self.reward_parameters['consistency_value']
 
         observation = self._get_obs()
         info = self._get_info()
@@ -358,7 +357,7 @@ class GridWorldEnv(gym.Env):
         if self.render_mode == "human":
             self._render_frame()
 
-        return observation, {0: main_reward, 1: reward_1, 2: reward_2, 4: reward_4, 5: reward_5}, terminated, False, info
+        return observation, {0: main_reward, 1: reward_1, 2: reward_2, 3: reward_3, 4: reward_4}, terminated, False, info
 
     def render(self):
         if self.render_mode == "rgb_array":
