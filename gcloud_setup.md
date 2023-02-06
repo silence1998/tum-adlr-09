@@ -91,10 +91,68 @@ gsutil cp -r model_pretrain gs://tum-adlr-09/
 gsutil mv gs://my_bucket/olddir gs://my_bucket/newdir
 ```
 
-### to copy files from the project bucket to current dir
+### to copy files in the current dir from the project bucket
 ```
 gsutil -m cp -r "gs://tum-adlr-09/tmp" .
 ```
 ```
 gsutil -m cp -r "gs://tum-adlr-09/model_pretrain" .
+```
+
+
+
+Script wise for tests
+
+Step 1: Select instance
+```
+gcloud compute ssh --zone "europe-west1-b" "instance-n2-8vcpu-32gb-mem-9" --project "tum-adlr-09"
+```
+Step 2: get ssh to cloone project
+```
+ssh-keygen -t ed25519 -C "XXX@gmail.com"
+ls .ssh/
+nano .ssh/id_ed25519.pub
+```
+Step 3: give gcloud access
+```
+gcloud auth login
+```
+Step 4: download and checkout everything needed
+```
+sudo apt install git-all
+git clone git@github.com:silence1998/tum-adlr-09.git
+cd tum-adlr-09/
+git checkout continous
+sudo apt update
+sudo apt install python3 python3-dev python3-venv
+sudo apt-get install wget
+wget https://bootstrap.pypa.io/get-pip.py
+sudo python3 get-pip.py
+python3 -m venv env
+source env/bin/activate 
+pip install numpy
+pip install matplotlib
+pip install torch
+pip install torch==1.12.1+cpu torchvision==0.13.1+cpu torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cpu
+pip install gym
+pip install wandb
+pip install pygame
+pip install google-cloud-storage
+```
+Step 5: run training with the needed parameters
+```
+cd SAC-X
+nano parameters.py
+python3 training.py
+```
+Step 6: upload the resulting model to gcloud storage bucket
+```
+gcloud auth login
+
+gsutil cp -r model_pretrain gs://tum-adlr-09/model_pretrain/
+gsutil mv gs://tum-adlr-09/model_pretrain/model_pretrain/ gs://tum-adlr-09/model_pretrain/Sa-t<new_name>
+```
+Step 7: download to your pc to run metrics and visuals
+```
+gsutil -m cp -r "gs://tum-adlr-09/model_pretrain/Sa-t<new_name>" .
 ```
