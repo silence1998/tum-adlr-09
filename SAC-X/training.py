@@ -563,7 +563,7 @@ if __name__ == "__main__":
                 task = sac_schedule.schedule_task(List_Tau, fuzzy_state)  ## sac-q
                 List_Tau.append(task)
                 List_fuzzy_state.append(fuzzy_state)
-            action = select_action(state, actorNet, task)
+            action = action_selection(state, actorNet, task)
             if feature_parameters['action_smoothing']:
                 action_history.extend([action])
                 action = select_action_smooth(action_history)

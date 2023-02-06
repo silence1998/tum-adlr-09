@@ -18,7 +18,7 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'entropy_factor_final': 0.5,
-    'num_episodes': 3000,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 7000,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
     'sigma_init': 2.0,
     'sigma_final': 2.0
@@ -26,7 +26,7 @@ hyper_parameters = {
 
 feature_parameters = {
     'pretrain': True,  # pretrain the model
-    'num_episodes_pretrain': 1000,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes_pretrain': 3000,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'maxsize_ReplayMemory': 100000,
     'action_smoothing': True,
 
@@ -69,7 +69,7 @@ reward_parameters = {
     'collision_prediction_penalty': -0.03,  # TODO add wall as collision as well
 
     'predictive_obstacle_avoidance': True,
-    'obstacle_proximity_penalty': -0.03,
+    'obstacle_proximity_penalty': -0.01,
 
     'checkpoints': True,  # if true, use checkpoints rewards
     'checkpoint_distance_proportion': 0.1,  # distance proportion to environment size in 1 dimension
