@@ -63,7 +63,7 @@ def optimize_model(entropy_factor):  # SpinningUP SAC PC: lines 12-14
         average_sigma_per_batch.append(
             np.mean(sigma.detach().cpu().numpy(), axis=0))  # mean of sigma of the current batch
 
-    for task_ in [0, 1, 2, 3, 4, 5]:
+    for task_ in [0, 1, 2, 4, 5]:
         value = valueNet(state_batch, task_).view(-1)  # infer size of batch
         value_ = torch.zeros(hyper_parameters["batch_size"], device=device)
         value_[non_final_mask] = target_valueNet(non_final_next_states, task_).view(-1)
@@ -330,24 +330,24 @@ class Scheduler:
             R = sum([r * hyper_parameters["gamma"] ** k for k, r in enumerate(main_rewards[h * xi:])])
             # We used a Q-Table with 0.1 learning rate to update the values in the table.
             # Change 0.1 to the desired learning rate
-            if h < 3:
+            if h < 5:
                 self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]] += 0.1 * (
                         R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]])
                 # self.Q_task[tuple(Tau[:h]), Tau[h]] += 0.1 * (
                 #         R - self.Q_task[tuple(Tau[:h]), Tau[h]])
             else:
-                self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]] += 0.1 * (
-                        R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]])
+                self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 5:h]), Tau[h]] += 0.1 * (
+                        R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 5:h]), Tau[h]])
                 # self.Q_task[tuple(Tau[h - 3:h]), Tau[h]] += 0.1 * (
                 #         R - self.Q_task[tuple(Tau[h - 3:h]), Tau[h]])
 
     def schedule_task(self, Tau, fuzzy_state):
         h = len(Tau)
-        if h < 3:
+        if h < 5:
             dist = self.scheduler.distribution(tuple(fuzzy_state + Tau))
             # dist = self.scheduler.distribution(tuple(Tau))
         else:
-            dist = self.scheduler.distribution(tuple(fuzzy_state + Tau[-3:]))
+            dist = self.scheduler.distribution(tuple(fuzzy_state + Tau[-5:]))
             # dist = self.scheduler.distribution(tuple(Tau[-3:]))
 
         choice = np.random.random()
@@ -359,7 +359,7 @@ class Scheduler:
                 return a
 
     def caluculate_fuzzy_distance(self, state):
-        distance_to_target = np.sqrt((state[2] - state[0]) ** 2 + (state[3] - state[1]) ** 2)
+        distance_to_target = np.sqrt((state[4] - state[0]) ** 2 + (state[5] - state[1]) ** 2)
         distances_to_obstacles = np.array([])
         for i in range(env_parameters['num_obstacles']):
             distance_to_obstacle = np.sqrt(
@@ -414,7 +414,7 @@ if __name__ == "__main__":
     wandb.watch(valueNet)
     wandb.watch(target_valueNet)
 
-    tasks = (0, 1, 2, 3, 4, 5)
+    tasks = (0, 1, 2, 4, 5)
     sac_schedule = Scheduler(tasks)
 
     episode_durations = []
@@ -457,7 +457,7 @@ if __name__ == "__main__":
                 t += 1
                 action = action  # / env.reward_parameters['action_step_scaling']
                 _, reward, done, _, _ = env.step(action)
-                reward = torch.tensor([[reward[0], reward[1], reward[2], reward[3], reward[4], reward[5]]], dtype=torch.float, device=device)
+                reward = torch.tensor([[reward[0], reward[1], reward[2], reward[4], reward[5]]], dtype=torch.float, device=device)
 
                 # Observe new state
                 obs = env._get_obs()
@@ -569,7 +569,7 @@ if __name__ == "__main__":
                 action = select_action_smooth(action_history)
             _, reward, done, _, _ = env.step(action)
             main_reward.append(reward[0])
-            reward = torch.tensor([[reward[0], reward[1], reward[2], reward[3], reward[4], reward[5]]], dtype=torch.float, device=device)
+            reward = torch.tensor([[reward[0], reward[1], reward[2], reward[4], reward[5]]], dtype=torch.float, device=device)
 
             # Observe new state
             obs = env._get_obs()

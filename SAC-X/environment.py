@@ -174,7 +174,7 @@ class GridWorldEnv(gym.Env):
         ### SKILLS ###
         reward_1 = 0  # seek target
         reward_2 = 0  # avoiding obstacle
-        reward_3 = 0  # follow obstacle
+        #reward_3 = 0  # follow obstacle
         reward_4 = 0  # consistency
         reward_5 = 0  # waiting
         main_reward = 0
@@ -199,7 +199,7 @@ class GridWorldEnv(gym.Env):
 
             observation = self._get_obs()
             info = self._get_info()
-            return observation, {0: main_reward, 1: reward_1, 2: reward_2, 3: reward_3, 4: reward_4, 5: reward_5}, terminated, False, info
+            return observation, {0: main_reward, 1: reward_1, 2: reward_2, 4: reward_4, 5: reward_5}, terminated, False, info
 
         ### TARGET SPARSE REWARD ###
         # An episode is done iff the agent has reached the target
@@ -216,7 +216,7 @@ class GridWorldEnv(gym.Env):
             main_reward += self.reward_parameters['step_limit_reached_penalty']
             observation = self._get_obs()
             info = self._get_info()
-            return observation, {0: main_reward, 1: reward_1, 2: reward_2, 3: reward_3, 4: reward_4,
+            return observation, {0: main_reward, 1: reward_1, 2: reward_2, 4: reward_4,
                                  5: reward_5}, terminated, False, info
 
         # Time penalty at every step
@@ -358,7 +358,7 @@ class GridWorldEnv(gym.Env):
         if self.render_mode == "human":
             self._render_frame()
 
-        return observation, {0: main_reward, 1: reward_1, 2: reward_2, 3: reward_3, 4: reward_4, 5: reward_5}, terminated, False, info
+        return observation, {0: main_reward, 1: reward_1, 2: reward_2, 4: reward_4, 5: reward_5}, terminated, False, info
 
     def render(self):
         if self.render_mode == "rgb_array":

@@ -56,8 +56,6 @@ if __name__ == '__main__':
 
 
 
-3
-3
     # initialize environment
     env = GridWorldEnv(render_mode=None, object_size=env_parameters['object_size'], num_obstacles=env_parameters['num_obstacles'])
     # env.render_mode = "human"
