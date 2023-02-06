@@ -43,7 +43,7 @@ if __name__ == '__main__':
                        object_size=env_parameters['object_size'],  # TODO: change back to env_size to radius objects
                        num_obstacles=env_parameters['num_obstacles'],
                        window_size=env_parameters['window_size'],
-                       reward_parameter=reward_parameters)
+                       reward_parameters=reward_parameters)
     env.render_mode = "human"
 
     # initialize NN
@@ -64,17 +64,6 @@ if __name__ == '__main__':
     i_episode = 0
     while i_episode < 10:  # run plot for 10 episodes to see what it learned
         List_Tau = []
-        if i_episode == 0 or i_episode == 1:
-            entropy_factor = hyper_parameters['entropy_factor']
-            sigma_ = hyper_parameters['sigma_init']
-        else:
-            entropy_factor = hyper_parameters['entropy_factor'] + i_episode * (
-                    hyper_parameters['entropy_factor_final'] - hyper_parameters['entropy_factor']) / (
-                                     hyper_parameters["num_episodes"] - 1)
-            sigma_ = hyper_parameters['sigma_init'] + i_episode * (
-                    hyper_parameters['sigma_final'] - hyper_parameters['sigma_init']) / (
-                             hyper_parameters["num_episodes"] - 1)
-        actorNet.max_sigma = sigma_
 
         # Initialize the environment and state
         if feature_parameters['apply_environment_seed']:
