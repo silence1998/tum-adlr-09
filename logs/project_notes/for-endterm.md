@@ -185,6 +185,8 @@ control max steps by time not nubmer of steps
 - [ ] ADD IT in to the report that we differ from SAC-X Scheduler!!
 - [ ] 5 variations for learning rate and batch size and check performance 
   - or random search
+- delete the subtask from being able to get chosen if its turned of for endterm report and do the tests again
+
 
 
 #### as Appexdix
