@@ -57,7 +57,7 @@ if __name__ == '__main__':
     with open(model_path + 'feature_parameters.txt', 'r') as file:
         feature_parameters = json.load(file)
 
-    tasks = (0, 1, 2)
+    tasks = (0, 1, 2, 3, 4, 5)
     sac_schedule = Scheduler(tasks)
 
     with open(model_path + "Q_task.pkl", "rb") as tf:

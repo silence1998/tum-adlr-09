@@ -54,6 +54,10 @@ if __name__ == '__main__':
     with open(model_path + 'feature_parameters.txt', 'r') as file:
         feature_parameters = json.load(file)
 
+
+
+3
+3
     # initialize environment
     env = GridWorldEnv(render_mode=None, object_size=env_parameters['object_size'], num_obstacles=env_parameters['num_obstacles'])
     # env.render_mode = "human"
