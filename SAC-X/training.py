@@ -425,7 +425,7 @@ if __name__ == "__main__":
 
     if feature_parameters['pretrain']:
         for i_episode in range(feature_parameters['num_episodes_pretrain']):
-            # print("Pretrain episode: " + str(i_episode))
+            print("Pretrain episode: " + str(i_episode))
 
             # Initialize the environment and state
             if feature_parameters['apply_environment_seed']:

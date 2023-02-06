@@ -114,7 +114,7 @@ class ActorNetwork(nn.Module):
         self.n_actions = n_actions
         self.name = name
         self.checkpoint_dir = chkpt_dir
-        self.checkpoint_file = os.path.join(self.checkpoint_dir, name + '_sac')
+        self.checkpoint_file = os.path.join(self.checkpoint_dir, name + '_sac.zip')
         self.max_action = max_action
         self.reparam_noise = 1e-6
 

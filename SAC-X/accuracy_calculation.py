@@ -6,18 +6,44 @@ from environment import GridWorldEnv
 from training import init_model, select_action
 
 from model import *
+from training import *
 import json
 
 if __name__ == '__main__':
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    m = "1"  # input("Select normal Model (0) OR Model with pretrain (1): ")
-    if m == "0":
+    m = input("Select normal Model (m) OR \n \
+    Model with pretrain (mp) OR \n \
+    Tests with number (#): ")
+    #m = "1"
+    if m == "m":
         model_path = "model/"
-    elif m == "1":
+    elif m == "mp":
         model_path = "model_pretrain/"
-    # model_path = "model_pretrain/model_5/"
+    elif m == "0":
+        model_path = "test_models/Sa-t0/"
+    elif m == "1":
+        model_path = "test_models/Sa-t1/"
+    elif m == "10":
+        model_path = "test_models/Sa-t10/"
+    elif m == "11":
+        model_path = "test_models/Sa-t11/"
+    elif m == "12":
+        model_path = "test_models/Sa-t12/"
+    elif m == "3":
+        model_path = "test_models/Sa-t3/"
+    elif m == "4":
+        model_path = "test_models/Sa-t4/"
+    elif m == "5":
+        model_path = "test_models/Sa-t5/"
+    elif m == "6":
+        model_path = "test_models/Sa-t6/"
+    elif m == "7":
+        model_path = "test_models/Sa-t7/"
+    elif m == "9":
+        model_path = "test_models/Sa-t9/"
+
     # Load the model parameters
     with open(model_path + 'env_parameters.txt', 'r') as file:
         env_parameters = json.load(file)
@@ -28,8 +54,12 @@ if __name__ == '__main__':
     with open(model_path + 'feature_parameters.txt', 'r') as file:
         feature_parameters = json.load(file)
 
+
+
+3
+3
     # initialize environment
-    env = GridWorldEnv(render_mode=None, size=env_parameters['env_size'], num_obstacles=env_parameters['num_obstacles'])
+    env = GridWorldEnv(render_mode=None, object_size=env_parameters['object_size'], num_obstacles=env_parameters['num_obstacles'])
     # env.render_mode = "human"
 
     # initialize NN
@@ -42,27 +72,28 @@ if __name__ == '__main__':
     criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
     target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
 
-    init_seed = 0
+    init_seed = 0  # unseen envs
+    #seed = feature_parameters['seed_init_value']  # for seen envs
     actual_reward = []
     issuccess_ = []
     actual_step = []
     i = 0
     seed = init_seed
-    while i < 100:  # run plot for 10 episodes to see what it learned
+    while i < 100:  # run plot for 100 episodes to see what it learned
         i += 1
         seed += 1
         env.reset(seed=seed)
         obs = env._get_obs()
 
-        obs_values = [obs["agent"], obs["target"]]
+        obs_values = np.append(obs["agent"], obs["target"])
         for idx_obstacle in range(env_parameters['num_obstacles']):
-            obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+            np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
         state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
 
         state = state.view(1, -1)
         for t in count():
             # Select and perform an action
-            action = select_action(state, actorNet)
+            action = select_action(state, actorNet, task)
             _, reward, done, _, _ = env.step(action)
 
             action_ = torch.tensor(action, dtype=torch.float, device=device)
@@ -78,9 +109,9 @@ if __name__ == '__main__':
             # Observe new state
             obs = env._get_obs()
             if not done:
-                obs_values = [obs["agent"], obs["target"]]
+                obs_values = np.append(obs["agent"], obs["target"])
                 for idx_obstacle in range(env_parameters['num_obstacles']):
-                    obs_values.append(obs["obstacle_{0}".format(idx_obstacle)])
+                    np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
                 next_state = torch.tensor(np.array(obs_values), dtype=torch.float, device=device)
 
                 next_state = next_state.view(1, -1)
@@ -111,4 +142,6 @@ if __name__ == '__main__':
     # print(actual_reward)
     print("accuracy=", np.sum(issuccess_) / len(issuccess_))
     print("mean_reward=", np.mean(actual_reward))
+    print(actual_reward)
     print("mean_step=", np.mean(actual_step))
+    print(actual_step)

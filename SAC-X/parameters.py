@@ -1,5 +1,5 @@
 env_parameters = {
-    'num_obstacles': 10,
+    'num_obstacles': 5,
     'object_size': 20,  # radius of every element in the environment
     'window_size': 512,  # use powers of 2 for better performance
     'action_step_scaling': 20,  # obstacles are between 0 and 1, this way we get a slower agent
@@ -62,7 +62,7 @@ reward_parameters = {
 
     ### SUPER SPARSE REWARDS ###
     'target_value': 1,
-    'collision_value': -1,
+    'collision_value': -5,
 
     ### SUB-SPARSE REWARDS ###
     'collision_prediction': True,
@@ -91,7 +91,7 @@ reward_parameters = {
     'waiting_step_number_to_check': 5,  # number of steps to check for waiting (in history)
     # make sure waiting_step_number_to_check < history_size
     'max_waiting_steps': 10,  # make sure < history_size, punishment for waiting too long
-    'waiting_penalty': -0.05,  # TODO: dont use negative rewards for auxiliary rewards
+    'waiting_penalty': -0.02,  # TODO: dont use negative rewards for auxiliary rewards
     # threshold
 
 
