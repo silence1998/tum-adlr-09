@@ -16,11 +16,36 @@ if __name__ == '__main__':
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    m = "1"  # input("Select normal Model (0) OR Model with pretrain (1): ")
-    if m == "0":
+    m = input("Select normal Model (m) OR \n \
+    Model with pretrain (mp) OR \n \
+    Tests with number (#): ")
+    #m = "1"
+    if m == "m":
         model_path = "model/"
-    elif m == "1":
+    elif m == "mp":
         model_path = "model_pretrain/"
+    elif m == "0":
+        model_path = "test_models/Sa-t0/"
+    elif m == "1":
+        model_path = "test_models/Sa-t1/"
+    elif m == "10":
+        model_path = "test_models/Sa-t10/"
+    elif m == "11":
+        model_path = "test_models/Sa-t11/"
+    elif m == "12":
+        model_path = "test_models/Sa-t12/"
+    elif m == "3":
+        model_path = "test_models/Sa-t3/"
+    elif m == "4":
+        model_path = "test_models/Sa-t4/"
+    elif m == "5":
+        model_path = "test_models/Sa-t5/"
+    elif m == "6":
+        model_path = "test_models/Sa-t6/"
+    elif m == "7":
+        model_path = "test_models/Sa-t7/"
+    elif m == "9":
+        model_path = "test_models/Sa-t9/"
 
     # Load the model parameters
     with open(model_path + 'env_parameters.txt', 'r') as file:
