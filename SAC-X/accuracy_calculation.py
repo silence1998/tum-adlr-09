@@ -86,7 +86,7 @@ if __name__ == '__main__':
     actual_step = []
     i = 0
     task = 0
-    seed = init_seed  # TODO: unseen test set, comment out for envs from training set
+    #seed = init_seed  # TODO: unseen test set, comment out for envs from training set
     while i < 200:  # run plot for 10 episodes to see what it learned
         List_Tau = []
         i += 1
