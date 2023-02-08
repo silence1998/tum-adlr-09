@@ -26,7 +26,7 @@ hyper_parameters = {
 
 feature_parameters = {
     'pretrain': True,  # pretrain the model
-    'num_episodes_pretrain': 3000,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes_pretrain': 1000,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'maxsize_ReplayMemory': 100000,
     'action_smoothing': True,
 
@@ -61,7 +61,7 @@ reward_parameters = {
 
     ### SUPER SPARSE REWARDS ###
     'target_value': 1,
-    'collision_value': -1,
+    'collision_value': -5,
 
     ### SUB-SPARSE REWARDS ###
     'collision_prediction': True,

@@ -25,6 +25,7 @@ SAC/A_star/__pycache__/
 /SAC/archive/model_pretrain_test_time_penalty/
 /SAC/archive/model_pretrain_test_checkpoints/
 /SAC/model_test_pretrain/
+/SAC/model/
 /SAC/archive/model_pretrain_test_obstacle_sort/
 /SAC/archive/model_pretrain_test_env_seed/
 /SAC/archive/model_pretrain_test_action_smooting/
