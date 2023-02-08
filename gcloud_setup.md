@@ -141,6 +141,8 @@ pip install google-cloud-storage
 ```
 Step 5: run training with the needed parameters
 ```
+git branch no-rew-3
+git pull
 cd SAC-X
 nano parameters.py
 
