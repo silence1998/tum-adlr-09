@@ -32,7 +32,7 @@ feature_parameters = {
     'select_action_filter': False,  # filter actions to be directed towards target # TODO: last test
     'select_action_filter_after_episode': 70,  # start filtering after this episode
 
-    'sort_obstacles': False,  # sort obstacles by distance to target
+    'sort_obstacles': True,  # sort obstacles by distance to target
 
     'apply_environment_seed': False,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
@@ -61,8 +61,8 @@ reward_parameters = {
     'target_distance_weight': 0.01,
 
     ### SPARSE REWARDS ###
-    'target_value': 1,
-    'collision_value': -1,
+    'target_value': 10,
+    'collision_value': -50,
 
     ### SUB-SPARSE REWARDS ###
 
