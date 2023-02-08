@@ -18,7 +18,7 @@ hyper_parameters = {
     'tau': 0.005,  # target network soft update parameter (parameters = tau*parameters + (1-tau)*new_parameters)
     'entropy_factor': 0.5,  # entropy factor
     'entropy_factor_final': 0.5,
-    'num_episodes': 3000,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes': 100,  # set min 70 for tests as some parts of code starts after ~40 episodes
 
     'sigma_init': 2.0,
     'sigma_final': 2.0
@@ -26,9 +26,9 @@ hyper_parameters = {
 
 feature_parameters = {
     'pretrain': True,  # pretrain the model
-    'num_episodes_pretrain': 3000,  # set min 70 for tests as some parts of code starts after ~40 episodes
+    'num_episodes_pretrain': 80,  # set min 70 for tests as some parts of code starts after ~40 episodes
     'maxsize_ReplayMemory': 100000,
-    'action_smoothing': True,
+    'action_smoothing': False,
 
     'action_history_size': 3,  # number of actions to remember for the action history
 

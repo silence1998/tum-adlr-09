@@ -174,6 +174,8 @@ def select_action(state, actorNet, task_):
 
 def select_action_smooth(action_history):
     action_history_ = np.array(action_history)
+    print(np.mean(action_history_, axis=0))
+
     return np.mean(action_history_, axis=0)
 
 
@@ -330,24 +332,24 @@ class Scheduler:
             R = sum([r * hyper_parameters["gamma"] ** k for k, r in enumerate(main_rewards[h * xi:])])
             # We used a Q-Table with 0.1 learning rate to update the values in the table.
             # Change 0.1 to the desired learning rate
-            if h < 5:
+            if h < 3:
                 self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]] += 0.1 * (
                         R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[:h]), Tau[h]])
                 # self.Q_task[tuple(Tau[:h]), Tau[h]] += 0.1 * (
                 #         R - self.Q_task[tuple(Tau[:h]), Tau[h]])
             else:
-                self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 5:h]), Tau[h]] += 0.1 * (
-                        R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 5:h]), Tau[h]])
+                self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]] += 0.1 * (
+                        R - self.Q_task[tuple(list_fuzzy_state[h] + Tau[h - 3:h]), Tau[h]])
                 # self.Q_task[tuple(Tau[h - 3:h]), Tau[h]] += 0.1 * (
                 #         R - self.Q_task[tuple(Tau[h - 3:h]), Tau[h]])
 
     def schedule_task(self, Tau, fuzzy_state):
         h = len(Tau)
-        if h < 5:
+        if h < 3:
             dist = self.scheduler.distribution(tuple(fuzzy_state + Tau))
             # dist = self.scheduler.distribution(tuple(Tau))
         else:
-            dist = self.scheduler.distribution(tuple(fuzzy_state + Tau[-5:]))
+            dist = self.scheduler.distribution(tuple(fuzzy_state + Tau[-3:]))
             # dist = self.scheduler.distribution(tuple(Tau[-3:]))
 
         choice = np.random.random()
@@ -441,7 +443,7 @@ if __name__ == "__main__":
             obs_values = np.append(obs["agent"], obs["target"])
             for idx_obstacle in range(env_parameters['num_obstacles']):
                 obs_values = np.append(obs_values, obs["obstacle_{0}".format(idx_obstacle)])
-            obs_values = np.array(obs_values).reshape(-1) # TODO
+            obs_values = np.array(obs_values).reshape(-1)
 
             state = torch.tensor(obs_values, dtype=torch.float, device=device)
             state = state.view(1, -1)
@@ -563,7 +565,7 @@ if __name__ == "__main__":
                 task = sac_schedule.schedule_task(List_Tau, fuzzy_state)  ## sac-q
                 List_Tau.append(task)
                 List_fuzzy_state.append(fuzzy_state)
-            action = action_selection(state, actorNet, task)
+            action = select_action(state, actorNet, task) #action_selection(state, actorNet, task)
             if feature_parameters['action_smoothing']:
                 action_history.extend([action])
                 action = select_action_smooth(action_history)

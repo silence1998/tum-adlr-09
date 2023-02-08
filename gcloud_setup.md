@@ -122,7 +122,7 @@ Step 4: download and checkout everything needed
 sudo apt install git-all
 git clone git@github.com:silence1998/tum-adlr-09.git
 cd tum-adlr-09/
-git checkout continous
+git checkout no-rew-3
 sudo apt update
 sudo apt install python3 python3-dev python3-venv
 sudo apt-get install wget
@@ -141,7 +141,7 @@ pip install google-cloud-storage
 ```
 Step 5: run training with the needed parameters
 ```
-git branch no-rew-3
+git checkout no-rew-3
 git pull
 cd SAC-X
 nano parameters.py
