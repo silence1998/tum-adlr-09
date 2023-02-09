@@ -525,7 +525,7 @@ if __name__ == "__main__":
     if feature_parameters['apply_environment_seed']:
         seed = feature_parameters['seed_init_value']
 
-
+    reward_list_last_20 = deque(maxlen=50)
     for i_episode in range(hyper_parameters["num_episodes"]):  # SpinningUP SAC PC: line 10
         action_history = deque(maxlen=feature_parameters['action_history_size'])
         print("Normal training episode: " + str(i_episode))
@@ -599,6 +599,8 @@ if __name__ == "__main__":
             optimize_model(entropy_factor)
             if done:
                 episode_durations.append(t + 1)
+                reward_list_last_20.extend([reward.cpu().detach().numpy()[0]])
+                wandb.log({"mean_reward_last_20_episode": np.mean(reward_list_last_20)})
                 if feature_parameters['plot_durations']:
                     plot_durations()
                 if feature_parameters['plot_sigma']:

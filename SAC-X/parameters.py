@@ -57,7 +57,7 @@ reward_parameters = {
     'total_step_limit': 1000,
     'step_limit_reached_penalty': -0.01,
 
-    'time': True,  # if true, use time penalty
+    'time': False,  # if true, use time penalty
     'time_penalty': -0.01,  # 0.01 == penalty of -1 for "100" action steps
 
     ### SUPER SPARSE REWARDS ###
