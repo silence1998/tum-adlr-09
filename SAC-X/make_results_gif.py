@@ -1,5 +1,9 @@
-import torch
+import sys
 import numpy as np
+
+import datetime
+from PIL import Image
+
 from itertools import count
 import pickle
 
@@ -9,9 +13,19 @@ from training import init_model, select_action, obstacle_sort, select_action_smo
 from model import *
 import json
 
+from util_sacx.q_table import QTable
+from util_sacx.policy import BoltzmannPolicy
+
+sys.path.insert(0, '..')
+
+
 if __name__ == '__main__':
 
+    images = []
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    data_path = "plots/"
 
     m = input("Select normal Model (m) OR \n \
     Model with pretrain (mp) OR \n \
@@ -43,9 +57,6 @@ if __name__ == '__main__':
         model_path = "test_models/Sa-t7/"
     elif m == "9":
         model_path = "test_models/Sa-t9/"
-    elif m == "3000":
-        model_path = "test_models/3000normaltrain_allfeatures/"
-
 
     # Load the model parameters
     with open(model_path + 'env_parameters.txt', 'r') as file:
@@ -56,45 +67,59 @@ if __name__ == '__main__':
         reward_parameters = json.load(file)
     with open(model_path + 'feature_parameters.txt', 'r') as file:
         feature_parameters = json.load(file)
-    tasks = (0, 1, 2)
+
+    tasks = (0, 1, 2, 3, 4)
     sac_schedule = Scheduler(tasks)
 
     with open(model_path + "Q_task.pkl", "rb") as tf:
         sac_schedule.Q_task.store = pickle.load(tf)
+
     # initialize environment
     env = GridWorldEnv(render_mode=None,
                        object_size=env_parameters['object_size'],  # TODO: change back to env_size to radius objects
                        num_obstacles=env_parameters['num_obstacles'],
                        window_size=env_parameters['window_size'])
+    env.render_mode = "human"
 
     # initialize NN
     actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model(hyper_parameters["input_dims"])
+    #seed = feature_parameters['seed_init_value']
     # Load model
     actorNet.load_state_dict(torch.load(model_path + "actor.pt", map_location=device))
     # actorNet.max_sigma = hyper_parameters['sigma_final']
     criticNet_1.load_state_dict(torch.load(model_path + "criticNet_1.pt", map_location=device))
     criticNet_2.load_state_dict(torch.load(model_path + "criticNet_2.pt", map_location=device))
     target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
-    # actorNet.max_sigma = 0.1
-    # env=GridWorldEnv(render_mode="human")
 
+    seed = 0
+    if feature_parameters['apply_environment_seed']:
+        seed = feature_parameters['seed_init_value']
+    action_history = deque(maxlen=feature_parameters['action_history_size'])
 
-    seed = feature_parameters['seed_init_value']  # training set
-    init_seed = 0
-    actual_reward = []
-    issuccess_ = []
-    actual_step = []
-    i = 0
     task = 0
-    #seed = init_seed  # TODO: unseen test set, comment out for envs from training set
-    while i < 200:  # run plot for 10 episodes to see what it learned
+    i_episode = 0
+    while i_episode < 1:  # run plot for 10 episodes to see what it learned
         List_Tau = []
-        i += 1
-        print("Test run: ", str(i))
-        action_history = deque(maxlen=feature_parameters['action_history_size'])
+        if i_episode == 0 or i_episode == 1:
+            entropy_factor = hyper_parameters['entropy_factor']
+            sigma_ = hyper_parameters['sigma_init']
+        else:
+            entropy_factor = hyper_parameters['entropy_factor'] + i_episode * (
+                    hyper_parameters['entropy_factor_final'] - hyper_parameters['entropy_factor']) / (
+                                     hyper_parameters["num_episodes"] - 1)
+            sigma_ = hyper_parameters['sigma_init'] + i_episode * (
+                    hyper_parameters['sigma_final'] - hyper_parameters['sigma_init']) / (
+                             hyper_parameters["num_episodes"] - 1)
+        i_episode += i_episode
+        print(i_episode)
+        actorNet.max_sigma = sigma_
+
         # Initialize the environment and state
-        env.reset(seed=seed)
-        seed += 1
+        if feature_parameters['apply_environment_seed']:
+            env.reset(seed=seed)
+            seed += 1
+        else:
+            env.reset()
         obs = env._get_obs()
         if feature_parameters['sort_obstacles']:
             obs = obstacle_sort(obs)
@@ -110,7 +135,7 @@ if __name__ == '__main__':
                 fuzzy_state = sac_schedule.caluculate_fuzzy_distance(obs_values)
                 # task = random.choice(tasks) ## sac-u
                 task = sac_schedule.schedule_task(List_Tau, fuzzy_state)  ## sac-q
-                # print(task)
+                print(task)
                 List_Tau.append(task)
 
             action = select_action(state, actorNet, task)
@@ -119,6 +144,16 @@ if __name__ == '__main__':
                 action = select_action_smooth(action_history)
             _, reward, done, _, _ = env.step(action)
             reward = torch.tensor([reward[task]], dtype=torch.float, device=device)
+
+            #action_ = torch.tensor(action, dtype=torch.float, device=device)
+            #action_ = action_.view(1, 2)
+            #mu, sigma = actorNet(state)
+            rgb_array = env._render_frame_for_gif()
+            print(rgb_array.shape)
+            print(rgb_array)
+            img = Image.fromarray(rgb_array)
+            print(img)
+            images.append(img)#.convert("P", dither=None))
 
             # Observe new state
             obs = env._get_obs()
@@ -133,6 +168,7 @@ if __name__ == '__main__':
                 next_state = next_state.view(1, -1)
             else:
                 next_state = None
+                break
 
             # Store the transition in memory
             action = np.array([action])
@@ -142,28 +178,16 @@ if __name__ == '__main__':
             # Move to the next state
             state = next_state
             if done:
-                reward_ = reward.cpu().detach().numpy()[0]
-                actual_reward.append(reward_)
-                actual_step.append(t)
-                if reward > 0:
-                    issuccess_.append(1)
-                else:
-                    issuccess_.append(0)
                 break
 
-            elif t >= 500:
-                issuccess_.append(0)
-                actual_reward.append(0)
-                actual_step.append(t)
-                break
+    images_rev = images[::-1]
+    images_full = images #+ images_rev
 
-    # print(issuccess_)
-    # print(actual_reward)
-    #print("accuracy=", np.sum(issuccess_) / len(issuccess_))
-    #print("mean_reward=", np.mean(actual_reward))
+    t = datetime.datetime.now()
+    time_path = ("_%s_%s_%s_%s-%s-%s" % (t.year, t.month, t.day, t.hour, t.minute, t.second))
+    dir_path = data_path + "traj_gif" + time_path
+    os.makedirs(dir_path, exist_ok=False)
 
-    #print("std_reward=", np.std(actual_reward))
-
-    #print("mean_step=", np.mean(actual_step))  # mean step duration
-
-    #print("std_step=", np.std(actual_step))
+    images_full[0].save(dir_path + "/traj_check.gif", format="GIF",
+                        save_all=True, append_images=images_full[1:],
+                        optimize=False, duration=300, loop=0)

@@ -46,6 +46,8 @@ if __name__ == '__main__':
         model_path = "test_models/Sa-t7/"
     elif m == "9":
         model_path = "test_models/Sa-t9/"
+    elif m == "3000":
+        model_path = "test_models/3000normaltrain_allfeatures/"
 
     # Load the model parameters
     with open(model_path + 'env_parameters.txt', 'r') as file:
@@ -57,7 +59,7 @@ if __name__ == '__main__':
     with open(model_path + 'feature_parameters.txt', 'r') as file:
         feature_parameters = json.load(file)
 
-    tasks = (0, 1, 2, 4, 5)
+    tasks = (0, 1, 2, 3, 4)
     sac_schedule = Scheduler(tasks)
 
     with open(model_path + "Q_task.pkl", "rb") as tf:

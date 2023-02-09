@@ -2,8 +2,8 @@ env_parameters = {
     'num_obstacles': 5,
     'object_size': 20,  # radius of every element in the environment
     'window_size': 512,  # use powers of 2 for better performance
-    'action_step_scaling': 20,  # obstacles are between 0 and 1, this way we get a slower agent
-    'obstacle_step_scaling': 5,
+    'action_step_scaling': 4,  # obstacles are between 0 and 1, this way we get a slower agent
+    'obstacle_step_scaling': 4,
     'delta_T': 1,  # scaling velocities w/o changing the -1,1 internal for them in animation
     'render_fps': 24  # fps for rendering the environment
 }
@@ -32,12 +32,12 @@ feature_parameters = {
 
     'action_history_size': 3,  # number of actions to remember for the action history
 
-    'select_action_filter': False,  # filter actions to be directed towards target # TODO: last test
+    'select_action_filter': True,  # filter actions to be directed towards target # TODO: last test
     'select_action_filter_after_episode': 70,  # start filtering after this episode
 
-    'sort_obstacles': False,  # sort obstacles by distance to target
+    'sort_obstacles': True,  # sort obstacles by distance to target
 
-    'apply_environment_seed': False,  # apply seed to environment to have comparable results
+    'apply_environment_seed': True,  # apply seed to environment to have comparable results
     'seed_init_value': 3407,
 
     'plot_durations': False,  # plot durations of episodes

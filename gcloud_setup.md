@@ -141,6 +141,10 @@ pip install google-cloud-storage
 ```
 Step 5: run training with the needed parameters
 ```
+rm -rf tum-adlr-09/
+git clone git@github.com:silence1998/tum-adlr-09.git
+cd tum-adlr-09/
+...
 git checkout no-rew-3
 git pull
 cd SAC-X
