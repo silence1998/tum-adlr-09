@@ -69,7 +69,9 @@ if __name__ == '__main__':
     env = GridWorldEnv(render_mode=None,
                        object_size=env_parameters['object_size'],  # TODO: change back to env_size to radius objects
                        num_obstacles=env_parameters['num_obstacles'],
-                       window_size=env_parameters['window_size'])
+                       window_size=env_parameters['window_size'],
+                       reward_parameters=reward_parameters,
+                       env_parameters=env_parameters)
     env.render_mode = "human"
 
     # initialize NN
@@ -83,7 +85,7 @@ if __name__ == '__main__':
     target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
 
     if feature_parameters['apply_environment_seed']:
-        seed = 0  # feature_parameters['seed_init_value']
+        seed = 0  # feature_parameters['seed_init_value']fixed
     action_history = deque(maxlen=feature_parameters['action_history_size'])
 
     task = 0

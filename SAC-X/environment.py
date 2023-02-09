@@ -14,15 +14,17 @@ from collections import deque
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": parameters.env_parameters["render_fps"]}  # fps was 4
 
-    def __init__(self, render_mode=None, object_size=100, num_obstacles=5, window_size=1024):
+    def __init__(self, render_mode=None, object_size=100, num_obstacles=5, window_size=1024,
+                 reward_parameters=parameters.reward_parameters,
+                 env_parameters=parameters.env_parameters):
         self.radius = object_size  # The size of the radius of the elements, defined in the training and plotting scripts
         self.window_size = window_size  # The size of the PyGame window
         self.num_obstacles = num_obstacles
         self.total_step = 0
 
         ### REWARD PARAMETERS ###
-        self.reward_parameters = parameters.reward_parameters
-        self.env_parameters = parameters.env_parameters
+        self.reward_parameters = reward_parameters
+        self.env_parameters = env_parameters
 
 
         self._agent_location = None
@@ -32,7 +34,6 @@ class GridWorldEnv(gym.Env):
 
         if self.reward_parameters['history']:
             self._agent_location_history = deque(maxlen=parameters.reward_parameters['history_size'])
-
 
         # Observations are dictionaries with the agent's, obstacles' and the target's location.
         elements = {"agent": spaces.Box(low=np.array([self.radius, self.radius, -1, -1]),  # x, y, vx, vy
@@ -174,9 +175,9 @@ class GridWorldEnv(gym.Env):
         ### SKILLS ###
         reward_1 = 0  # seek target
         reward_2 = 0  # avoiding obstacle
-        #reward_3 = 0  # follow obstacle
         reward_3 = 0  # consistency
         reward_4 = 0  # waiting
+        #reward_5 = 0  # follow obstacle
         main_reward = 0
 
         ### COLLISION SUPER SPARSE REWARD ###

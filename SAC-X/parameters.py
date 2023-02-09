@@ -2,10 +2,10 @@ env_parameters = {
     'num_obstacles': 5,
     'object_size': 20,  # radius of every element in the environment
     'window_size': 512,  # use powers of 2 for better performance
-    'action_step_scaling': 4,  # obstacles are between 0 and 1, this way we get a slower agent
-    'obstacle_step_scaling': 4,
+    'action_step_scaling': 20,  # obstacles are between 0 and 1, this way we get a slower agent
+    'obstacle_step_scaling': 5,
     'delta_T': 1,  # scaling velocities w/o changing the -1,1 internal for them in animation
-    'render_fps': 24  # fps for rendering the environment
+    'render_fps': 60  # fps for rendering the environment
 }
 
 hyper_parameters = {
@@ -57,7 +57,7 @@ reward_parameters = {
     'total_step_limit': 1000,
     'step_limit_reached_penalty': -0.01,
 
-    'time': False,  # if true, use time penalty
+    'time': True,  # if true, use time penalty
     'time_penalty': -0.01,  # 0.01 == penalty of -1 for "100" action steps
 
     ### SUPER SPARSE REWARDS ###

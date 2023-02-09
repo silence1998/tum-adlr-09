@@ -174,9 +174,9 @@ def select_action(state, actorNet, task_):
 
 def select_action_smooth(action_history):
     action_history_ = np.array(action_history)
-    print(np.mean(action_history_, axis=0))
+    smoothed = np.mean(action_history_, axis=0)
 
-    return np.mean(action_history_, axis=0)
+    return smoothed
 
 
 ### The following code is unused, maybe useful for future work vvv
@@ -565,7 +565,7 @@ if __name__ == "__main__":
                 task = sac_schedule.schedule_task(List_Tau, fuzzy_state)  ## sac-q
                 List_Tau.append(task)
                 List_fuzzy_state.append(fuzzy_state)
-            action = select_action(state, actorNet, task) #action_selection(state, actorNet, task)
+            action = select_action(state, actorNet, task)  # action_selection(state, actorNet, task)
             if feature_parameters['action_smoothing']:
                 action_history.extend([action])
                 action = select_action_smooth(action_history)

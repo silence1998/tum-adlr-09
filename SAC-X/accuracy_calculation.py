@@ -65,7 +65,9 @@ if __name__ == '__main__':
     env = GridWorldEnv(render_mode=None,
                        object_size=env_parameters['object_size'],  # TODO: change back to env_size to radius objects
                        num_obstacles=env_parameters['num_obstacles'],
-                       window_size=env_parameters['window_size'])
+                       window_size=env_parameters['window_size'],
+                       reward_parameters=reward_parameters,
+                       env_parameters=env_parameters)
 
     # initialize NN
     actorNet, criticNet_1, criticNet_2, valueNet, target_valueNet, memory = init_model(hyper_parameters["input_dims"])
@@ -79,15 +81,15 @@ if __name__ == '__main__':
     # env=GridWorldEnv(render_mode="human")
 
 
-    seed = feature_parameters['seed_init_value']  # training set
+    #seed = feature_parameters['seed_init_value']  # training set
     init_seed = 0
     actual_reward = []
     issuccess_ = []
     actual_step = []
     i = 0
     task = 0
-    #seed = init_seed  # TODO: unseen test set, comment out for envs from training set
-    while i < 200:  # run plot for 10 episodes to see what it learned
+    seed = init_seed  # TODO: unseen test set, comment out for envs from training set
+    while i < 50:  # run plot for 10 episodes to see what it learned
         List_Tau = []
         i += 1
         print("Test run: ", str(i))
@@ -159,11 +161,8 @@ if __name__ == '__main__':
 
     # print(issuccess_)
     # print(actual_reward)
-    #print("accuracy=", np.sum(issuccess_) / len(issuccess_))
-    #print("mean_reward=", np.mean(actual_reward))
-
-    #print("std_reward=", np.std(actual_reward))
-
-    #print("mean_step=", np.mean(actual_step))  # mean step duration
-
-    #print("std_step=", np.std(actual_step))
+    print("accuracy=", np.sum(issuccess_) / len(issuccess_))
+    print("mean_reward=", np.mean(actual_reward))
+    print("std_reward=", np.std(actual_reward))
+    print("mean_step=", np.mean(actual_step))  # mean step duration
+    print("std_step=", np.std(actual_step))

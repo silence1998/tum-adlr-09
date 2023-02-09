@@ -57,6 +57,8 @@ if __name__ == '__main__':
         model_path = "test_models/Sa-t7/"
     elif m == "9":
         model_path = "test_models/Sa-t9/"
+    elif m == "3000":
+        model_path = "test_models/3000normaltrain_allfeatures/"
 
     # Load the model parameters
     with open(model_path + 'env_parameters.txt', 'r') as file:
@@ -78,7 +80,9 @@ if __name__ == '__main__':
     env = GridWorldEnv(render_mode=None,
                        object_size=env_parameters['object_size'],  # TODO: change back to env_size to radius objects
                        num_obstacles=env_parameters['num_obstacles'],
-                       window_size=env_parameters['window_size'])
+                       window_size=env_parameters['window_size'],
+                       reward_parameters = reward_parameters,
+                       env_parameters = env_parameters)
     env.render_mode = "human"
 
     # initialize NN
@@ -92,13 +96,13 @@ if __name__ == '__main__':
     target_valueNet.load_state_dict(torch.load(model_path + "target_valueNet.pt", map_location=device))
 
     seed = 0
-    if feature_parameters['apply_environment_seed']:
-        seed = feature_parameters['seed_init_value']
+    #if feature_parameters['apply_environment_seed']:
+    #    seed = feature_parameters['seed_init_value']
     action_history = deque(maxlen=feature_parameters['action_history_size'])
 
     task = 0
     i_episode = 0
-    while i_episode < 1:  # run plot for 10 episodes to see what it learned
+    while i_episode < 10:  # run plot for 10 episodes to see what it learned
         List_Tau = []
         if i_episode == 0 or i_episode == 1:
             entropy_factor = hyper_parameters['entropy_factor']
@@ -110,7 +114,7 @@ if __name__ == '__main__':
             sigma_ = hyper_parameters['sigma_init'] + i_episode * (
                     hyper_parameters['sigma_final'] - hyper_parameters['sigma_init']) / (
                              hyper_parameters["num_episodes"] - 1)
-        i_episode += i_episode
+        i_episode += 1
         print(i_episode)
         actorNet.max_sigma = sigma_
 
@@ -135,7 +139,7 @@ if __name__ == '__main__':
                 fuzzy_state = sac_schedule.caluculate_fuzzy_distance(obs_values)
                 # task = random.choice(tasks) ## sac-u
                 task = sac_schedule.schedule_task(List_Tau, fuzzy_state)  ## sac-q
-                print(task)
+                #print(task)
                 List_Tau.append(task)
 
             action = select_action(state, actorNet, task)
@@ -149,10 +153,10 @@ if __name__ == '__main__':
             #action_ = action_.view(1, 2)
             #mu, sigma = actorNet(state)
             rgb_array = env._render_frame_for_gif()
-            print(rgb_array.shape)
-            print(rgb_array)
+            #print(rgb_array.shape)
+            #print(rgb_array)
             img = Image.fromarray(rgb_array)
-            print(img)
+            #print(img)
             images.append(img)#.convert("P", dither=None))
 
             # Observe new state
@@ -190,4 +194,4 @@ if __name__ == '__main__':
 
     images_full[0].save(dir_path + "/traj_check.gif", format="GIF",
                         save_all=True, append_images=images_full[1:],
-                        optimize=False, duration=300, loop=0)
+                        optimize=False, duration=50, loop=0)
