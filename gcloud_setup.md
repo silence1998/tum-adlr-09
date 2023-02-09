@@ -138,6 +138,7 @@ pip install gym
 pip install wandb
 pip install pygame
 pip install google-cloud-storage
+sudo apt-get install tmux
 ```
 Step 5: run training with the needed parameters
 ```
@@ -157,9 +158,36 @@ Step 6: upload the resulting model to gcloud storage bucket
 gcloud auth login
 
 gsutil cp -r model_pretrain gs://tum-adlr-09/model_pretrain/
-gsutil mv gs://tum-adlr-09/model_pretrain/model_pretrain/ gs://tum-adlr-09/model_pretrain/Sa-t<new_name>
+gsutil mv gs://tum-adlr-09/model_pretrain/model_pretrain/ gs://tum-adlr-09/model_pretrain/T-t<new>
 ```
 Step 7: download to your pc to run metrics and visuals
 ```
-gsutil -m cp -r "gs://tum-adlr-09/model_pretrain/Sa-t<new_name>" .
+cd SAC-X/test_models
+cd ../31_Projects/adlr/tum-adlr-09/SAC-X/test_models
+gsutil -m cp -r "gs://tum-adlr-09/model_pretrain/T-t<new>" .
 ```
+
+```
+gcloud compute ssh --zone "europe-west1-b" "instance-n2-8vcpu-32gb-mem-#" --project "tum-adlr-09"
+cd tum-adlr-09/
+source env/bin/activate
+
+git checkout no-rew-3
+git stash
+git pull
+
+cd SAC-X
+nano parameters.py
+
+sudo apt-get install tmux
+tmux new -s s<X>
+
+
+cd .. 
+source env/bin/activate 
+python3 SAC-X/training.py
+
+
+
+```
+Ctrl+b d

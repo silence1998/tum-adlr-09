@@ -27,10 +27,10 @@ if __name__ == '__main__':
 
     data_path = "plots/"
 
-    m = input("Select normal Model (m) OR \n \
-    Model with pretrain (mp) OR \n \
-    Tests with number (#): ")
-    #m = "1"
+    #m = input("Select normal Model (m) OR \n \
+    #Model with pretrain (mp) OR \n \
+    #Tests with number (#): ")
+    m = "1"
     if m == "m":
         model_path = "model/"
     elif m == "mp":
@@ -59,6 +59,30 @@ if __name__ == '__main__':
         model_path = "test_models/Sa-t9/"
     elif m == "3000":
         model_path = "test_models/3000normaltrain_allfeatures/"
+    elif m == "thc":
+        model_path = "test_models/T-thc/"
+    elif m == "thc1":
+        model_path = "test_models/T-thc1/"
+    elif m == "t0":
+        model_path = "test_models/T-t0/"
+    elif m == "t10":
+        model_path = "test_models/T-t10/"
+    elif m == "t11":
+        model_path = "test_models/T-t11/"
+    elif m == "t12":
+        model_path = "test_models/T-t12/"
+    elif m == "t3":
+        model_path = "test_models/T-t3/"
+    elif m == "t4":
+        model_path = "test_models/T-t4/"
+    elif m == "t5":
+        model_path = "test_models/T-t5/"
+    elif m == "t6":
+        model_path = "test_models/T-t6/"
+    elif m == "t7":
+        model_path = "test_models/T-t7/"
+    elif m == "t9":
+        model_path = "test_models/T-t9/"
 
     # Load the model parameters
     with open(model_path + 'env_parameters.txt', 'r') as file:
@@ -100,9 +124,12 @@ if __name__ == '__main__':
     #    seed = feature_parameters['seed_init_value']
     action_history = deque(maxlen=feature_parameters['action_history_size'])
 
+    seed = feature_parameters['seed_init_value'] + 1508
+
+
     task = 0
     i_episode = 0
-    while i_episode < 10:  # run plot for 10 episodes to see what it learned
+    while i_episode < 3:  # run plot for 10 episodes to see what it learned
         List_Tau = []
         if i_episode == 0 or i_episode == 1:
             entropy_factor = hyper_parameters['entropy_factor']
@@ -121,7 +148,7 @@ if __name__ == '__main__':
         # Initialize the environment and state
         if feature_parameters['apply_environment_seed']:
             env.reset(seed=seed)
-            seed += 1
+            #seed += 1
         else:
             env.reset()
         obs = env._get_obs()

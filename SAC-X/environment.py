@@ -279,7 +279,7 @@ class GridWorldEnv(gym.Env):
 
         ### COLLISION PREDICTION PENALTY###
         if self.reward_parameters['collision_prediction'] or self.reward_parameters['predictive_obstacle_avoidance']:
-            self._obstacle_locations_pred = self._obstacle_locations  # TODO: how to check if this works
+            self._obstacle_locations_pred = self._obstacle_locations
             for idx_obstacle in range(self.num_obstacles):
                 self._obstacle_locations_pred.update({"{0}".format(idx_obstacle):
                                                           self._obstacle_locations["{0}".format(idx_obstacle)] +
@@ -336,7 +336,7 @@ class GridWorldEnv(gym.Env):
             # Waiting reward
             # start giving reward if the last "waiting_step_number_to_check(=5)" were same
             last_x_positions = list(self._agent_location_history)
-            last_x_positions = last_x_positions[-self.reward_parameters['waiting_step_number_to_check']:]
+            last_x_positions = last_x_positions[-self.reward_parameters['waiting_step_number_to_check']:]  # 5
             if self.reward_parameters['waiting']:
                 if all(abs(value - last_x_positions[-1]) <= self.reward_parameters['movement_tolerance'] for value in last_x_positions):  # Checks if all positions are equal
                     reward_4 += self.reward_parameters['waiting_value']

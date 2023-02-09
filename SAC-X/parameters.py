@@ -5,7 +5,7 @@ env_parameters = {
     'action_step_scaling': 20,  # obstacles are between 0 and 1, this way we get a slower agent
     'obstacle_step_scaling': 5,
     'delta_T': 1,  # scaling velocities w/o changing the -1,1 internal for them in animation
-    'render_fps': 60  # fps for rendering the environment
+    'render_fps': 8  # fps for rendering the environment
 }
 
 hyper_parameters = {

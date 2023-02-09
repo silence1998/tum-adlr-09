@@ -13,10 +13,10 @@ if __name__ == '__main__':
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    m = input("Select normal Model (m) OR \n \
-    Model with pretrain (mp) OR \n \
-    Tests with number (#): ")
-    #m = "1"
+    #m = input("Select normal Model (m) OR \n \
+    #Model with pretrain (mp) OR \n \
+    #Tests with number (#): ")
+    m = "1"
     if m == "m":
         model_path = "model/"
     elif m == "mp":
@@ -45,6 +45,30 @@ if __name__ == '__main__':
         model_path = "test_models/Sa-t9/"
     elif m == "3000":
         model_path = "test_models/3000normaltrain_allfeatures/"
+    elif m == "thc":
+        model_path = "test_models/T-thc/"
+    elif m == "thc1":
+        model_path = "test_models/T-thc1/"
+    elif m == "t0":
+        model_path = "test_models/T-t0/"
+    elif m == "t10":
+        model_path = "test_models/T-t10/"
+    elif m == "t11":
+        model_path = "test_models/T-t11/"
+    elif m == "t12":
+        model_path = "test_models/T-t12/"
+    elif m == "t3":
+        model_path = "test_models/T-t3/"
+    elif m == "t4":
+        model_path = "test_models/T-t4/"
+    elif m == "t5":
+        model_path = "test_models/T-t5/"
+    elif m == "t6":
+        model_path = "test_models/T-t6/"
+    elif m == "t7":
+        model_path = "test_models/T-t7/"
+    elif m == "t9":
+        model_path = "test_models/T-t9/"
 
 
     # Load the model parameters
@@ -89,7 +113,7 @@ if __name__ == '__main__':
     i = 0
     task = 0
     seed = init_seed  # TODO: unseen test set, comment out for envs from training set
-    while i < 50:  # run plot for 10 episodes to see what it learned
+    while i < 200:  # run plot for 10 episodes to see what it learned
         List_Tau = []
         i += 1
         print("Test run: ", str(i))
