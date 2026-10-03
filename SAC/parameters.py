@@ -1,6 +1,7 @@
 env_parameters = {
     'num_obstacles': 5,
-    'env_size': 10  # size of the environment in one dimension (environment is square)
+    'env_size': 10,  # size of the environment in one dimension (environment is square)
+    'max_episode_steps': 100  # FIX: time limit (truncation, not termination); episodes were unbounded before
 }
 
 hyper_parameters = {

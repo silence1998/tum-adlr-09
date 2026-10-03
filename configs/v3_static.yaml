@@ -1,0 +1,15 @@
+# env v3, MAIN level (sparse/'easy' density, chosen 2026-10-02), static obstacles. All fields of EnvV3Config; omitted fields use the dataclass defaults.
+size: 10.0
+n_obs_min: 3
+n_obs_max: 8
+r_min: 0.3
+r_max: 0.6
+min_gap: 0.8
+wall_gap: 0.5
+start_clear: 0.5
+goal_clear: 0.8
+start_goal_min: 5.0
+motion: static
+max_step: 1.0
+goal_radius: 0.5
+max_episode_steps: 100

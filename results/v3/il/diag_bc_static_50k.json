@@ -1,0 +1,38 @@
+{
+ "ckpt": "bc_static_50k.pt",
+ "outcomes": {
+  "goal": 350,
+  "collision": 162,
+  "timeout": 0
+ },
+ "all_steps": {
+  "n": 2835,
+  "l2": 0.08598294109106064,
+  "angle_deg_median": 1.2333698272705078,
+  "frac_angle_gt_45": 0.017989417538046837
+ },
+ "last_step_collision_eps": {
+  "n": 162,
+  "l2": 0.564232349395752,
+  "angle_deg_median": 30.433216094970703,
+  "frac_angle_gt_45": 0.2469135820865631,
+  "expert_speed": 0.7375970482826233,
+  "learner_speed": 0.9531744718551636
+ },
+ "last_step_goal_eps": {
+  "n": 350,
+  "l2": 0.043840017169713974,
+  "angle_deg_median": 1.1649967432022095,
+  "frac_angle_gt_45": 0.0,
+  "expert_speed": 0.8801023364067078,
+  "learner_speed": 0.8783931136131287
+ },
+ "nonlast_steps": {
+  "n": 2323,
+  "l2": 0.058980632573366165,
+  "angle_deg_median": 1.136944055557251,
+  "frac_angle_gt_45": 0.00473525607958436,
+  "expert_speed": 0.9914811253547668,
+  "learner_speed": 0.9939770698547363
+ }
+}

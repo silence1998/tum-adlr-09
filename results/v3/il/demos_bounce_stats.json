@@ -1,0 +1,11 @@
+{
+ "attempted": 50176,
+ "goal": 50165,
+ "collision": 11,
+ "timeout": 0,
+ "initial_plan_fail": 0,
+ "kept_episodes": 50165,
+ "samples": 335377,
+ "time_s": 410.7626259326935,
+ "kept_fraction": 0.9997807716836735
+}

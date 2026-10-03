@@ -1,0 +1,181 @@
+{
+ "astar": {
+  "goal": 1.0,
+  "collision": 0.0,
+  "timeout": 0.0,
+  "steps_goal": 6.615234375,
+  "path_ratio_vs_astar": 1.0,
+  "n_both_goal": 512
+ },
+ "ppo_bounce_s0": {
+  "goal": 0.71484375,
+  "collision": 0.28515625,
+  "timeout": 0.0,
+  "steps_goal": 7.975409836065574,
+  "path_ratio_vs_astar": 1.0027240763373926,
+  "n_both_goal": 366,
+  "ckpt": "checkpoints\\ppo_bounce_s0.pt"
+ },
+ "ppo_bounce_s1": {
+  "goal": 0.681640625,
+  "collision": 0.318359375,
+  "timeout": 0.0,
+  "steps_goal": 8.260744985673352,
+  "path_ratio_vs_astar": 1.0160559524327695,
+  "n_both_goal": 349,
+  "ckpt": "checkpoints\\ppo_bounce_s1.pt"
+ },
+ "sac_bounce_s0": {
+  "goal": 0.99609375,
+  "collision": 0.00390625,
+  "timeout": 0.0,
+  "steps_goal": 7.711764705882353,
+  "path_ratio_vs_astar": 1.1361188685269552,
+  "n_both_goal": 510,
+  "ckpt": "checkpoints\\sac_bounce_s0.pt"
+ },
+ "sac_bounce_s1": {
+  "goal": 0.99609375,
+  "collision": 0.00390625,
+  "timeout": 0.0,
+  "steps_goal": 7.4411764705882355,
+  "path_ratio_vs_astar": 1.1098665863108965,
+  "n_both_goal": 510,
+  "ckpt": "checkpoints\\sac_bounce_s1.pt"
+ },
+ "sacx_bounce_s0": {
+  "goal": 0.994140625,
+  "collision": 0.005859375,
+  "timeout": 0.0,
+  "steps_goal": 7.644400785854617,
+  "path_ratio_vs_astar": 1.1358684399619943,
+  "n_both_goal": 509,
+  "ckpt": "checkpoints\\sacx_bounce_s0.pt"
+ },
+ "sacx_bounce_s1": {
+  "goal": 0.994140625,
+  "collision": 0.005859375,
+  "timeout": 0.0,
+  "steps_goal": 7.893909626719057,
+  "path_ratio_vs_astar": 1.1607994227692506,
+  "n_both_goal": 509,
+  "ckpt": "checkpoints\\sacx_bounce_s1.pt"
+ },
+ "bc_bounce_10k": {
+  "goal": 0.701171875,
+  "collision": 0.298828125,
+  "timeout": 0.0,
+  "steps_goal": 6.579387186629527,
+  "path_ratio_vs_astar": 0.9981300186758248,
+  "n_both_goal": 359,
+  "ckpt": "il\\bc_bounce_10k.pt"
+ },
+ "bc_bounce_10k_h1024": {
+  "goal": 0.705078125,
+  "collision": 0.294921875,
+  "timeout": 0.0,
+  "steps_goal": 6.650969529085873,
+  "path_ratio_vs_astar": 1.0023931587575952,
+  "n_both_goal": 361,
+  "ckpt": "il\\bc_bounce_10k_h1024.pt"
+ },
+ "bc_bounce_10k_s100k": {
+  "goal": 0.716796875,
+  "collision": 0.283203125,
+  "timeout": 0.0,
+  "steps_goal": 6.5340599455040875,
+  "path_ratio_vs_astar": 0.9974081349551793,
+  "n_both_goal": 367,
+  "ckpt": "il\\bc_bounce_10k_s100k.pt"
+ },
+ "bc_bounce_1k": {
+  "goal": 0.671875,
+  "collision": 0.328125,
+  "timeout": 0.0,
+  "steps_goal": 6.895348837209302,
+  "path_ratio_vs_astar": 1.006032602236394,
+  "n_both_goal": 344,
+  "ckpt": "il\\bc_bounce_1k.pt"
+ },
+ "bc_bounce_1k_h1024": {
+  "goal": 0.685546875,
+  "collision": 0.3125,
+  "timeout": 0.001953125,
+  "steps_goal": 7.994301994301995,
+  "path_ratio_vs_astar": 1.0536314763222416,
+  "n_both_goal": 351,
+  "ckpt": "il\\bc_bounce_1k_h1024.pt"
+ },
+ "bc_bounce_1k_s100k": {
+  "goal": 0.671875,
+  "collision": 0.328125,
+  "timeout": 0.0,
+  "steps_goal": 6.895348837209302,
+  "path_ratio_vs_astar": 1.006032602236394,
+  "n_both_goal": 344,
+  "ckpt": "il\\bc_bounce_1k_s100k.pt"
+ },
+ "bc_bounce_50k": {
+  "goal": 0.73046875,
+  "collision": 0.26953125,
+  "timeout": 0.0,
+  "steps_goal": 6.532085561497326,
+  "path_ratio_vs_astar": 0.9985945552713082,
+  "n_both_goal": 374,
+  "ckpt": "il\\bc_bounce_50k.pt"
+ },
+ "bc_bounce_50k_h1024": {
+  "goal": 0.796875,
+  "collision": 0.203125,
+  "timeout": 0.0,
+  "steps_goal": 6.553921568627451,
+  "path_ratio_vs_astar": 0.998136298231938,
+  "n_both_goal": 408,
+  "ckpt": "il\\bc_bounce_50k_h1024.pt"
+ },
+ "bc_bounce_50k_s100k": {
+  "goal": 0.87890625,
+  "collision": 0.12109375,
+  "timeout": 0.0,
+  "steps_goal": 6.664444444444444,
+  "path_ratio_vs_astar": 0.99848374702364,
+  "n_both_goal": 450,
+  "ckpt": "il\\bc_bounce_50k_s100k.pt"
+ },
+ "bc_bounce_50k_s300k": {
+  "goal": 0.87890625,
+  "collision": 0.12109375,
+  "timeout": 0.0,
+  "steps_goal": 6.664444444444444,
+  "path_ratio_vs_astar": 0.99848374702364,
+  "n_both_goal": 450,
+  "ckpt": "il\\bc_bounce_50k_s300k.pt"
+ },
+ "dagger_bounce": {
+  "goal": 0.703125,
+  "collision": 0.296875,
+  "timeout": 0.0,
+  "steps_goal": 6.694444444444445,
+  "path_ratio_vs_astar": 1.0047928951748106,
+  "n_both_goal": 360,
+  "ckpt": "il\\dagger_bounce.pt"
+ },
+ "dagger_bounce_big": {
+  "goal": 0.87109375,
+  "collision": 0.12890625,
+  "timeout": 0.0,
+  "steps_goal": 6.70627802690583,
+  "path_ratio_vs_astar": 1.0012115539478927,
+  "n_both_goal": 446,
+  "ckpt": "il\\dagger_bounce_big.pt"
+ },
+ "dagger_bounce_h1024_big": {
+  "goal": 0.736328125,
+  "collision": 0.263671875,
+  "timeout": 0.0,
+  "steps_goal": 6.588859416445623,
+  "path_ratio_vs_astar": 1.0033234225304035,
+  "n_both_goal": 377,
+  "ckpt": "il\\dagger_bounce_h1024_big.pt"
+ }
+}

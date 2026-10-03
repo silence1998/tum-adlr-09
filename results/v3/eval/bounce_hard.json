@@ -1,0 +1,44 @@
+{
+ "config": "..\\configs\\v3_bounce.yaml",
+ "astar": {
+  "eval_return": 9.627734184265137,
+  "eval_success": 0.998046875,
+  "eval_collision": 0.001953125,
+  "eval_timeout": 0.0,
+  "eval_length": 6.6640625,
+  "n": 512,
+  "plans": 3553,
+  "plan_fail_steps": 0,
+  "initial_plan_fail": 0,
+  "fallback_plans": 134,
+  "safety_overrides": 184,
+  "initial_plan_fail_rate": 0.0,
+  "time_s": 3.3538410663604736,
+  "params": {
+   "res": 0.1,
+   "margin": 0.15,
+   "speed_inflate": 1.0,
+   "safety": true
+  }
+ },
+ "astar_nosafety": {
+  "eval_return": 7.333398342132568,
+  "eval_success": 0.8828125,
+  "eval_collision": 0.1171875,
+  "eval_timeout": 0.0,
+  "eval_length": 6.45703125,
+  "n": 512,
+  "plans": 3686,
+  "plan_fail_steps": 0,
+  "initial_plan_fail": 0,
+  "fallback_plans": 269,
+  "initial_plan_fail_rate": 0.0,
+  "time_s": 3.0298547744750977,
+  "params": {
+   "res": 0.1,
+   "margin": 0.15,
+   "speed_inflate": 1.0,
+   "safety": false
+  }
+ }
+}

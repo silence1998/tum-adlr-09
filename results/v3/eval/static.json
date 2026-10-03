@@ -1,0 +1,23 @@
+{
+ "config": "..\\configs\\v3_static_easy.yaml",
+ "astar": {
+  "eval_return": 9.668848037719727,
+  "eval_success": 1.0,
+  "eval_collision": 0.0,
+  "eval_timeout": 0.0,
+  "eval_length": 6.623046875,
+  "n": 512,
+  "plans": 512,
+  "plan_fail_steps": 0,
+  "initial_plan_fail": 0,
+  "fallback_plans": 0,
+  "initial_plan_fail_rate": 0.0,
+  "time_s": 0.9641785621643066,
+  "params": {
+   "res": 0.1,
+   "margin": 0.15,
+   "speed_inflate": 1.0,
+   "safety": true
+  }
+ }
+}

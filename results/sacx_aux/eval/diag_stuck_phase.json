@@ -1,0 +1,182 @@
+{
+ "sacx_full_s1": {
+  "n_timeout": 19,
+  "eps": [
+   {
+    "layout": 29,
+    "clear_mean_stuck": 3.51,
+    "dist_goal_stuck": 0.56,
+    "net_disp_last50": 0.0,
+    "mean_step_len_last50": 0.0
+   },
+   {
+    "layout": 31,
+    "clear_mean_stuck": 1.87,
+    "dist_goal_stuck": 0.57,
+    "net_disp_last50": 0.0,
+    "mean_step_len_last50": 0.0
+   },
+   {
+    "layout": 49,
+    "clear_mean_stuck": 0.95,
+    "dist_goal_stuck": 3.69,
+    "net_disp_last50": 0.896,
+    "mean_step_len_last50": 0.629
+   },
+   {
+    "layout": 50,
+    "clear_mean_stuck": 0.85,
+    "dist_goal_stuck": 2.52,
+    "net_disp_last50": 0.794,
+    "mean_step_len_last50": 0.794
+   },
+   {
+    "layout": 52,
+    "clear_mean_stuck": 0.93,
+    "dist_goal_stuck": 5.58,
+    "net_disp_last50": 0.319,
+    "mean_step_len_last50": 0.689
+   },
+   {
+    "layout": 99,
+    "clear_mean_stuck": 1.31,
+    "dist_goal_stuck": 4.5,
+    "net_disp_last50": 0.03,
+    "mean_step_len_last50": 0.037
+   },
+   {
+    "layout": 225,
+    "clear_mean_stuck": 1.62,
+    "dist_goal_stuck": 5.02,
+    "net_disp_last50": 0.899,
+    "mean_step_len_last50": 0.899
+   },
+   {
+    "layout": 234,
+    "clear_mean_stuck": 0.71,
+    "dist_goal_stuck": 0.71,
+    "net_disp_last50": 0.398,
+    "mean_step_len_last50": 0.398
+   },
+   {
+    "layout": 236,
+    "clear_mean_stuck": 1.03,
+    "dist_goal_stuck": 5.93,
+    "net_disp_last50": 0.387,
+    "mean_step_len_last50": 0.684
+   },
+   {
+    "layout": 252,
+    "clear_mean_stuck": 0.98,
+    "dist_goal_stuck": 2.34,
+    "net_disp_last50": 0.0,
+    "mean_step_len_last50": 0.0
+   },
+   {
+    "layout": 271,
+    "clear_mean_stuck": 0.57,
+    "dist_goal_stuck": 0.76,
+    "net_disp_last50": 0.0,
+    "mean_step_len_last50": 0.0
+   },
+   {
+    "layout": 286,
+    "clear_mean_stuck": 0.98,
+    "dist_goal_stuck": 4.46,
+    "net_disp_last50": 0.322,
+    "mean_step_len_last50": 0.778
+   },
+   {
+    "layout": 323,
+    "clear_mean_stuck": 3.21,
+    "dist_goal_stuck": 0.68,
+    "net_disp_last50": 0.0,
+    "mean_step_len_last50": 0.0
+   },
+   {
+    "layout": 386,
+    "clear_mean_stuck": 1.26,
+    "dist_goal_stuck": 4.56,
+    "net_disp_last50": 0.131,
+    "mean_step_len_last50": 0.815
+   },
+   {
+    "layout": 400,
+    "clear_mean_stuck": 1.38,
+    "dist_goal_stuck": 3.16,
+    "net_disp_last50": 1.01,
+    "mean_step_len_last50": 0.942
+   },
+   {
+    "layout": 419,
+    "clear_mean_stuck": 0.86,
+    "dist_goal_stuck": 1.29,
+    "net_disp_last50": 0.0,
+    "mean_step_len_last50": 0.0
+   },
+   {
+    "layout": 460,
+    "clear_mean_stuck": 1.9,
+    "dist_goal_stuck": 6.13,
+    "net_disp_last50": 0.542,
+    "mean_step_len_last50": 0.527
+   },
+   {
+    "layout": 485,
+    "clear_mean_stuck": 1.1,
+    "dist_goal_stuck": 2.11,
+    "net_disp_last50": 0.257,
+    "mean_step_len_last50": 0.348
+   },
+   {
+    "layout": 497,
+    "clear_mean_stuck": 1.73,
+    "dist_goal_stuck": 4.03,
+    "net_disp_last50": 0.536,
+    "mean_step_len_last50": 0.779
+   }
+  ],
+  "stuck_phase_mean_clearance": 1.4083160634417282,
+  "frac_stuck_steps_clearance<0.6": 0.15789473684210525,
+  "frac_stuck_steps_clearance<1.0": 0.3726315789473684,
+  "stuck_phase_mean_dist_goal": 3.0826836578469528,
+  "main_action_norm_mean": 0.44511893188996343,
+  "axis_align_mean": 0.7403600017647994,
+  "frac_bimodal_mainQ_stuck": 0.8631578947368421,
+  "median_gap": 0.09100627899169922
+ },
+ "sac_s1": {
+  "n_timeout": 3,
+  "eps": [
+   {
+    "layout": 252,
+    "clear_mean_stuck": 0.67,
+    "dist_goal_stuck": 0.67,
+    "net_disp_last50": 0.152,
+    "mean_step_len_last50": 0.152
+   },
+   {
+    "layout": 460,
+    "clear_mean_stuck": 1.21,
+    "dist_goal_stuck": 0.62,
+    "net_disp_last50": 0.0,
+    "mean_step_len_last50": 0.0
+   },
+   {
+    "layout": 485,
+    "clear_mean_stuck": 0.87,
+    "dist_goal_stuck": 1.88,
+    "net_disp_last50": 0.546,
+    "mean_step_len_last50": 0.579
+   }
+  ],
+  "stuck_phase_mean_clearance": 0.9172371691465377,
+  "frac_stuck_steps_clearance<0.6": 0.04666666666666667,
+  "frac_stuck_steps_clearance<1.0": 0.58,
+  "stuck_phase_mean_dist_goal": 1.0582684906323752,
+  "main_action_norm_mean": 0.24362990140621227,
+  "axis_align_mean": 0.8953460653622946,
+  "frac_bimodal_mainQ_stuck": 0.7666666666666667,
+  "median_gap": 0.2004547119140625
+ }
+}

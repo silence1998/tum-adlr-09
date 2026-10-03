@@ -2,18 +2,34 @@
 import math
 import numpy as np
 
-import gym
-from gym import spaces
-import pygame
+# gym / pygame are only needed for the spaces description and rendering -> optional (FIX: env usable headless)
+try:
+    import gym
+    from gym import spaces
+    _GymEnvBase = gym.Env
+except ImportError:  # pragma: no cover
+    gym, spaces = None, None
+    _GymEnvBase = object
+try:
+    import pygame
+except ImportError:  # pragma: no cover
+    pygame = None
 import parameters
 
 from collections import deque
 
-class GridWorldEnv(gym.Env):
+class GridWorldEnv(_GymEnvBase):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, size=5, num_obstacles=5):
+    def __init__(self, render_mode=None, size=5, num_obstacles=5, max_episode_steps=None):
         self.size = size  # The size of the square grid
+        # FIX: episodes had no time limit. A policy that outputs |a| < 0.25 is rounded to "stand still" forever
+        # (reward 0 > collision -50), so `for t in count()` never terminated. Episodes are now truncated after
+        # max_episode_steps (returned as `truncated`, which must NOT be treated as terminal when bootstrapping).
+        if max_episode_steps is None:
+            max_episode_steps = parameters.env_parameters.get('max_episode_steps', None)
+        self.max_episode_steps = max_episode_steps
+        self._elapsed_steps = 0
         self.window_size = 512  # The size of the PyGame window
         self.num_obstacles = num_obstacles
 
@@ -30,14 +46,14 @@ class GridWorldEnv(gym.Env):
 
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
-        elements = {"agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-                    "target": spaces.Box(0, size - 1, shape=(2,), dtype=int)}
-        for idx_obstacle in range(self.num_obstacles):
-            elements.update({"obstacle_{0}".format(idx_obstacle): spaces.Box(0, size - 1, shape=(2,), dtype=int)})
-        self.observation_space = spaces.Dict(elements)
-        
-        # TODO action space should be continuous now its bounded in [-3, 3]
-        self.action_space = spaces.Discrete(4)  # Continuous 3 see gym examples
+        if spaces is not None:
+            elements = {"agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+                        "target": spaces.Box(0, size - 1, shape=(2,), dtype=int)}
+            for idx_obstacle in range(self.num_obstacles):
+                elements.update({"obstacle_{0}".format(idx_obstacle): spaces.Box(0, size - 1, shape=(2,), dtype=int)})
+            self.observation_space = spaces.Dict(elements)
+            # FIX: the action space is continuous in [-1, 1]^2 (scaled by action_step_scaling and rounded in step())
+            self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
         #Box(low=np.array([-1.0, -2.0]), high=np.array([2.0, 4.0]), dtype=np.float32) - Box(3,) x,y velocity
         #no polar coord as its already encoded
 
@@ -91,12 +107,20 @@ class GridWorldEnv(gym.Env):
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
 
-        super().reset(seed=seed)
+        if gym is not None:
+            super().reset(seed=seed)
+        elif seed is not None or not hasattr(self, 'np_random'):
+            self.np_random = np.random.default_rng(seed)
+        self._elapsed_steps = 0
+        if parameters.reward_parameters['checkpoints']:  # FIX: checkpoint rewards were never re-armed
+            self.checkpoint_reward_given = [False] * (self.reward_parameters['checkpoint_number'] + 1)
+        if parameters.reward_parameters['history']:
+            self._agent_location_history.clear()
 
         # Choose the agent's location uniformly at random
         self._agent_location = self.np_random.integers(0, self.size, size=2, dtype=int)
         if parameters.reward_parameters['history']:
-            self._agent_location_history.extend(self._agent_location)
+            self._agent_location_history.append(tuple(self._agent_location))  # FIX: extend() added x and y separately
 
         # We will sample the target's location randomly until it does not coincide with the agent's location
         self._target_location = self._agent_location
@@ -106,19 +130,16 @@ class GridWorldEnv(gym.Env):
             )
 
         # We will sample the obstacle's location randomly until it does not coincide with the agent's/target's location
+        # FIX: the old overlap check compared against `np.array(dict.values()).any()` (a 0-d object array), i.e. it
+        # never detected obstacle/obstacle overlaps. Now all objects occupy pairwise distinct cells.
         self._obstacle_locations = {}
+        occupied = [tuple(self._agent_location), tuple(self._target_location)]
         for idx_obstacle in range(self.num_obstacles):
-            self._obstacle_locations.update({"{0}".format(idx_obstacle): self._agent_location})
-            while np.array_equal(self._obstacle_locations[str(idx_obstacle)], self._agent_location) \
-                    or np.array_equal(self._obstacle_locations[str(idx_obstacle)], self._target_location):
+            random_location = np.array(self.np_random.integers(0, self.size, size=2, dtype=int))
+            while tuple(random_location) in occupied:
                 random_location = np.array(self.np_random.integers(0, self.size, size=2, dtype=int))
-                _obstacle_locations_array = np.array(self._obstacle_locations.values())
-                if (idx_obstacle != 0) & (np.array_equal(random_location, _obstacle_locations_array.any())):
-                    print(_obstacle_locations_array)
-                    print("\n \n \n \n Collision in random object generation!!! \n \n \n \n")
-                    continue
-                self._obstacle_locations[str(idx_obstacle)] = random_location
-                assert not np.array_equal(random_location, _obstacle_locations_array.any())
+            occupied.append(tuple(random_location))
+            self._obstacle_locations[str(idx_obstacle)] = random_location
         assert len(self._obstacle_locations) == self.num_obstacles
 
         observation = self._get_obs()
@@ -131,13 +152,17 @@ class GridWorldEnv(gym.Env):
 
     def step(self, action_step):
         global penalty_distance_collision
+        # FIX: clip to the action space; unbounded actions (e.g. Gaussian PPO samples) could teleport the agent
+        action_step = np.clip(np.asarray(action_step, dtype=np.float64), -1.0, 1.0)
+        self._elapsed_steps += 1
+        truncated = self.max_episode_steps is not None and self._elapsed_steps >= self.max_episode_steps
         action_step = np.round(
             self.reward_parameters[
                 "action_step_scaling"] * action_step)  # scale action to e.g. [-2, 2] -> reach is 5x5 grid
         previous_position = self._agent_location
         self._agent_location = self._agent_location + action_step
         if parameters.reward_parameters['history']:
-            self._agent_location_history.extend(self._agent_location)
+            self._agent_location_history.append(tuple(self._agent_location))
         self._max_distance = math.sqrt(2) * self.size
 
         ### COLLISION SPARSE REWARD ###
@@ -157,7 +182,7 @@ class GridWorldEnv(gym.Env):
 
             observation = self._get_obs()
             info = self._get_info()
-            return observation, reward, terminated, False, info
+            return observation, reward, terminated, False, info  # terminal -> never truncated
         reward = 0
         ### TARGET SPARSE REWARD ###
         # An episode is done iff the agent has reached the target
@@ -266,7 +291,7 @@ class GridWorldEnv(gym.Env):
         if self.render_mode == "human":
             self._render_frame()
 
-        return observation, reward, terminated, False, info
+        return observation, reward, terminated, bool(truncated and not terminated), info
 
     def render(self):
         if self.render_mode == "rgb_array":

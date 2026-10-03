@@ -1,0 +1,19 @@
+{
+ "method": "BC",
+ "mode": "bounce",
+ "demo_episodes": 1000,
+ "samples": 6708,
+ "steps": 100000,
+ "val_mse": 0.05436192825436592,
+ "train_time_s": 182.63348531723022,
+ "hidden": 1024,
+ "demos": "demos_bounce",
+ "eval": {
+  "eval_return": 2.458007574081421,
+  "eval_success": 0.638671875,
+  "eval_collision": 0.361328125,
+  "eval_timeout": 0.0,
+  "eval_length": 6.30859375,
+  "n": 512
+ }
+}

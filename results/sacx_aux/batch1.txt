@@ -1,0 +1,8 @@
+aux_main 1
+aux_approach 1
+aux_axis 1
+aux_obsaware 1
+aux_full_U 1
+aux_full_xi100 1
+aux_full_scale1 1
+aux_full_seq1 1

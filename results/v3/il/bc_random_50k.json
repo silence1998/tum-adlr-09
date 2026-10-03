@@ -1,0 +1,19 @@
+{
+ "method": "BC",
+ "mode": "random",
+ "demo_episodes": 49388,
+ "samples": 329226,
+ "steps": 20000,
+ "val_mse": 0.014383712783455849,
+ "train_time_s": 72.22071552276611,
+ "hidden": 256,
+ "demos": "demos_random",
+ "eval": {
+  "eval_return": 5.021288871765137,
+  "eval_success": 0.765625,
+  "eval_collision": 0.234375,
+  "eval_timeout": 0.0,
+  "eval_length": 5.82421875,
+  "n": 512
+ }
+}

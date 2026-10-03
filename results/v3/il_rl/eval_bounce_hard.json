@@ -1,0 +1,100 @@
+{
+ "astar": {
+  "goal": 0.998046875,
+  "collision": 0.001953125,
+  "timeout": 0.0,
+  "steps_goal": 6.663405088062622,
+  "path_ratio_vs_astar": 1.0,
+  "n_both_goal": 511
+ },
+ "ppo_bounce_s0": {
+  "goal": 0.6015625,
+  "collision": 0.3984375,
+  "timeout": 0.0,
+  "steps_goal": 7.577922077922078,
+  "path_ratio_vs_astar": 1.000298316789404,
+  "n_both_goal": 308,
+  "ckpt": "checkpoints\\ppo_bounce_s0.pt"
+ },
+ "ppo_bounce_s1": {
+  "goal": 0.61328125,
+  "collision": 0.38671875,
+  "timeout": 0.0,
+  "steps_goal": 7.93312101910828,
+  "path_ratio_vs_astar": 1.0086594679054386,
+  "n_both_goal": 314,
+  "ckpt": "checkpoints\\ppo_bounce_s1.pt"
+ },
+ "sac_bounce_s0": {
+  "goal": 0.98046875,
+  "collision": 0.01953125,
+  "timeout": 0.0,
+  "steps_goal": 8.02390438247012,
+  "path_ratio_vs_astar": 1.174951379708463,
+  "n_both_goal": 501,
+  "ckpt": "checkpoints\\sac_bounce_s0.pt"
+ },
+ "sac_bounce_s1": {
+  "goal": 0.974609375,
+  "collision": 0.025390625,
+  "timeout": 0.0,
+  "steps_goal": 7.68937875751503,
+  "path_ratio_vs_astar": 1.14015178658425,
+  "n_both_goal": 498,
+  "ckpt": "checkpoints\\sac_bounce_s1.pt"
+ },
+ "sacx_bounce_s0": {
+  "goal": 0.978515625,
+  "collision": 0.021484375,
+  "timeout": 0.0,
+  "steps_goal": 7.972055888223553,
+  "path_ratio_vs_astar": 1.1748521790690751,
+  "n_both_goal": 500,
+  "ckpt": "checkpoints\\sacx_bounce_s0.pt"
+ },
+ "sacx_bounce_s1": {
+  "goal": 0.98828125,
+  "collision": 0.01171875,
+  "timeout": 0.0,
+  "steps_goal": 8.703557312252965,
+  "path_ratio_vs_astar": 1.2612586556441703,
+  "n_both_goal": 505,
+  "ckpt": "checkpoints\\sacx_bounce_s1.pt"
+ },
+ "bc_bounce_50k_h1024": {
+  "goal": 0.794921875,
+  "collision": 0.205078125,
+  "timeout": 0.0,
+  "steps_goal": 6.687960687960688,
+  "path_ratio_vs_astar": 1.0013601343508796,
+  "n_both_goal": 407,
+  "ckpt": "il\\bc_bounce_50k_h1024.pt"
+ },
+ "bc_bounce_50k_s300k": {
+  "goal": 0.8515625,
+  "collision": 0.1484375,
+  "timeout": 0.0,
+  "steps_goal": 6.715596330275229,
+  "path_ratio_vs_astar": 1.0017412800387877,
+  "n_both_goal": 436,
+  "ckpt": "il\\bc_bounce_50k_s300k.pt"
+ },
+ "dagger_bounce_big": {
+  "goal": 0.83984375,
+  "collision": 0.16015625,
+  "timeout": 0.0,
+  "steps_goal": 6.725581395348837,
+  "path_ratio_vs_astar": 1.002235001689356,
+  "n_both_goal": 430,
+  "ckpt": "il\\dagger_bounce_big.pt"
+ },
+ "dagger_bounce_h1024_big": {
+  "goal": 0.7265625,
+  "collision": 0.2734375,
+  "timeout": 0.0,
+  "steps_goal": 6.701612903225806,
+  "path_ratio_vs_astar": 1.0040057541056424,
+  "n_both_goal": 372,
+  "ckpt": "il\\dagger_bounce_h1024_big.pt"
+ }
+}

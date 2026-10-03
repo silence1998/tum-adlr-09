@@ -1,0 +1,44 @@
+{
+ "config": "..\\configs\\v3_random_easy.yaml",
+ "astar": {
+  "eval_return": 9.398923873901367,
+  "eval_success": 0.986328125,
+  "eval_collision": 0.013671875,
+  "eval_timeout": 0.0,
+  "eval_length": 6.552734375,
+  "n": 512,
+  "plans": 3453,
+  "plan_fail_steps": 0,
+  "initial_plan_fail": 0,
+  "fallback_plans": 90,
+  "safety_overrides": 109,
+  "initial_plan_fail_rate": 0.0,
+  "time_s": 3.145510673522949,
+  "params": {
+   "res": 0.1,
+   "margin": 0.15,
+   "speed_inflate": 1.0,
+   "safety": true
+  }
+ },
+ "astar_nosafety": {
+  "eval_return": 8.738965034484863,
+  "eval_success": 0.953125,
+  "eval_collision": 0.046875,
+  "eval_timeout": 0.0,
+  "eval_length": 6.470703125,
+  "n": 512,
+  "plans": 3467,
+  "plan_fail_steps": 0,
+  "initial_plan_fail": 0,
+  "fallback_plans": 126,
+  "initial_plan_fail_rate": 0.0,
+  "time_s": 2.9089419841766357,
+  "params": {
+   "res": 0.1,
+   "margin": 0.15,
+   "speed_inflate": 1.0,
+   "safety": false
+  }
+ }
+}

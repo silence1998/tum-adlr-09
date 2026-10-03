@@ -1,0 +1,227 @@
+{
+ "method": "DAgger",
+ "mode": "random",
+ "init_demo_episodes": 1000,
+ "iters": 10,
+ "eps_per_iter": 1000,
+ "expert_labelled_episodes": 11000,
+ "samples": 64980,
+ "time_s": 220.348149061203,
+ "hidden": 256,
+ "iter_steps": 4000,
+ "margin": 0.15,
+ "history": [
+  {
+   "iter": 0,
+   "expert_labelled_episodes": 1000,
+   "samples": 6047,
+   "eval": {
+    "eval_return": 4.857714653015137,
+    "eval_success": 0.7578125,
+    "eval_collision": 0.2421875,
+    "eval_timeout": 0.0,
+    "eval_length": 5.970703125,
+    "n": 512
+   },
+   "time_s": 36.64531993865967
+  },
+  {
+   "iter": 1,
+   "expert_labelled_episodes": 2000,
+   "samples": 12040,
+   "eval": {
+    "eval_return": 4.550878524780273,
+    "eval_success": 0.7421875,
+    "eval_collision": 0.2578125,
+    "eval_timeout": 0.0,
+    "eval_length": 5.857421875,
+    "n": 512
+   },
+   "learner_rollout_outcomes": {
+    "goal": 0.743,
+    "collision": 0.257,
+    "timeout": 0.0
+   },
+   "time_s": 56.725632667541504
+  },
+  {
+   "iter": 2,
+   "expert_labelled_episodes": 3000,
+   "samples": 17910,
+   "eval": {
+    "eval_return": 4.743261337280273,
+    "eval_success": 0.751953125,
+    "eval_collision": 0.248046875,
+    "eval_timeout": 0.0,
+    "eval_length": 5.916015625,
+    "n": 512
+   },
+   "learner_rollout_outcomes": {
+    "goal": 0.736,
+    "collision": 0.264,
+    "timeout": 0.0
+   },
+   "time_s": 75.866694688797
+  },
+  {
+   "iter": 3,
+   "expert_labelled_episodes": 4000,
+   "samples": 23796,
+   "eval": {
+    "eval_return": 4.858886241912842,
+    "eval_success": 0.7578125,
+    "eval_collision": 0.2421875,
+    "eval_timeout": 0.0,
+    "eval_length": 5.947265625,
+    "n": 512
+   },
+   "learner_rollout_outcomes": {
+    "goal": 0.727,
+    "collision": 0.273,
+    "timeout": 0.0
+   },
+   "time_s": 95.39212918281555
+  },
+  {
+   "iter": 4,
+   "expert_labelled_episodes": 5000,
+   "samples": 29738,
+   "eval": {
+    "eval_return": 4.625585556030273,
+    "eval_success": 0.74609375,
+    "eval_collision": 0.25390625,
+    "eval_timeout": 0.0,
+    "eval_length": 5.92578125,
+    "n": 512
+   },
+   "learner_rollout_outcomes": {
+    "goal": 0.75,
+    "collision": 0.25,
+    "timeout": 0.0
+   },
+   "time_s": 114.25855898857117
+  },
+  {
+   "iter": 5,
+   "expert_labelled_episodes": 6000,
+   "samples": 35706,
+   "eval": {
+    "eval_return": 4.89882755279541,
+    "eval_success": 0.759765625,
+    "eval_collision": 0.240234375,
+    "eval_timeout": 0.0,
+    "eval_length": 5.9296875,
+    "n": 512
+   },
+   "learner_rollout_outcomes": {
+    "goal": 0.746,
+    "collision": 0.254,
+    "timeout": 0.0
+   },
+   "time_s": 132.90797972679138
+  },
+  {
+   "iter": 6,
+   "expert_labelled_episodes": 7000,
+   "samples": 41534,
+   "eval": {
+    "eval_return": 4.93603515625,
+    "eval_success": 0.76171875,
+    "eval_collision": 0.23828125,
+    "eval_timeout": 0.0,
+    "eval_length": 5.966796875,
+    "n": 512
+   },
+   "learner_rollout_outcomes": {
+    "goal": 0.735,
+    "collision": 0.265,
+    "timeout": 0.0
+   },
+   "time_s": 150.0489637851715
+  },
+  {
+   "iter": 7,
+   "expert_labelled_episodes": 8000,
+   "samples": 47451,
+   "eval": {
+    "eval_return": 4.783788681030273,
+    "eval_success": 0.75390625,
+    "eval_collision": 0.24609375,
+    "eval_timeout": 0.0,
+    "eval_length": 5.88671875,
+    "n": 512
+   },
+   "learner_rollout_outcomes": {
+    "goal": 0.753,
+    "collision": 0.247,
+    "timeout": 0.0
+   },
+   "time_s": 168.51178336143494
+  },
+  {
+   "iter": 8,
+   "expert_labelled_episodes": 9000,
+   "samples": 53334,
+   "eval": {
+    "eval_return": 4.938183307647705,
+    "eval_success": 0.76171875,
+    "eval_collision": 0.23828125,
+    "eval_timeout": 0.0,
+    "eval_length": 5.923828125,
+    "n": 512
+   },
+   "learner_rollout_outcomes": {
+    "goal": 0.745,
+    "collision": 0.255,
+    "timeout": 0.0
+   },
+   "time_s": 186.97833132743835
+  },
+  {
+   "iter": 9,
+   "expert_labelled_episodes": 10000,
+   "samples": 59070,
+   "eval": {
+    "eval_return": 5.016015529632568,
+    "eval_success": 0.765625,
+    "eval_collision": 0.234375,
+    "eval_timeout": 0.0,
+    "eval_length": 5.9296875,
+    "n": 512
+   },
+   "learner_rollout_outcomes": {
+    "goal": 0.71,
+    "collision": 0.29,
+    "timeout": 0.0
+   },
+   "time_s": 204.03430914878845
+  },
+  {
+   "iter": 10,
+   "expert_labelled_episodes": 11000,
+   "samples": 64980,
+   "eval": {
+    "eval_return": 4.862011909484863,
+    "eval_success": 0.7578125,
+    "eval_collision": 0.2421875,
+    "eval_timeout": 0.0,
+    "eval_length": 5.884765625,
+    "n": 512
+   },
+   "learner_rollout_outcomes": {
+    "goal": 0.746,
+    "collision": 0.254,
+    "timeout": 0.0
+   },
+   "time_s": 220.34415006637573
+  }
+ ],
+ "eval": {
+  "eval_return": 4.862011909484863,
+  "eval_success": 0.7578125,
+  "eval_collision": 0.2421875,
+  "eval_timeout": 0.0,
+  "eval_length": 5.884765625,
+  "n": 512
+ }
+}

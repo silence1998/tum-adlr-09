@@ -1,0 +1,23 @@
+{
+ "config": "..\\configs\\v3_static_step05.yaml",
+ "astar": {
+  "eval_return": 9.364063262939453,
+  "eval_success": 1.0,
+  "eval_collision": 0.0,
+  "eval_timeout": 0.0,
+  "eval_length": 12.71875,
+  "n": 512,
+  "plans": 512,
+  "plan_fail_steps": 0,
+  "initial_plan_fail": 0,
+  "fallback_plans": 0,
+  "initial_plan_fail_rate": 0.0,
+  "time_s": 1.458878755569458,
+  "params": {
+   "res": 0.1,
+   "margin": 0.15,
+   "speed_inflate": 1.0,
+   "safety": true
+  }
+ }
+}

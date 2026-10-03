@@ -1,0 +1,38 @@
+{
+ "ckpt": "dagger_static.pt",
+ "outcomes": {
+  "goal": 372,
+  "collision": 140,
+  "timeout": 0
+ },
+ "all_steps": {
+  "n": 3011,
+  "l2": 0.10697046667337418,
+  "angle_deg_median": 2.6274116039276123,
+  "frac_angle_gt_45": 0.024244436994194984
+ },
+ "last_step_collision_eps": {
+  "n": 140,
+  "l2": 0.4368916153907776,
+  "angle_deg_median": 26.989683151245117,
+  "frac_angle_gt_45": 0.22142857313156128,
+  "expert_speed": 0.7934580445289612,
+  "learner_speed": 0.817698061466217
+ },
+ "last_step_goal_eps": {
+  "n": 372,
+  "l2": 0.08126702904701233,
+  "angle_deg_median": 2.3739681243896484,
+  "frac_angle_gt_45": 0.0,
+  "expert_speed": 0.8732123374938965,
+  "learner_speed": 0.8639816045761108
+ },
+ "nonlast_steps": {
+  "n": 2499,
+  "l2": 0.09231369942426682,
+  "angle_deg_median": 2.498966932296753,
+  "frac_angle_gt_45": 0.016806723549962044,
+  "expert_speed": 0.9738760590553284,
+  "learner_speed": 0.9760421514511108
+ }
+}

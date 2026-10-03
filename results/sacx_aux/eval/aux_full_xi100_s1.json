@@ -1,0 +1,24 @@
+{
+ "ckpt": "E:\\code\\tum-adlr-09-main\\tum-adlr-09-main\\results\\sacx_aux\\checkpoints\\aux_full_xi100_s1.pt",
+ "act": "mean",
+ "tasks": [
+  "reach(main)",
+  "approach",
+  "move+x",
+  "move-x",
+  "move+y",
+  "move-y"
+ ],
+ "scheduler": "Q",
+ "xi": 100,
+ "total_steps": 1000000,
+ "goal": 495,
+ "collision": 6,
+ "timeout": 11,
+ "reversals_per_ep": 1.017578125,
+ "near_obstacle_reversals_per_ep": 0.07421875,
+ "reversals_per_ep_timeout": 34.181819915771484,
+ "path_ratio_goal": 1.246520757675171,
+ "len_goal": 6.224242210388184,
+ "rev_per_ep_goal": 0.28282827138900757
+}

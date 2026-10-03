@@ -1,3 +1,9 @@
+import os as _os, sys as _sys
+# moved to SAC/legacy/v1_original/ on 2026-10-03. model.py and A_star/ live next to this file (sys.path[0]);
+# environment.py / parameters.py stay in SAC/. The working dir is set to SAC/ so the relative output paths
+# (model/, model_pretrain/, tmp/sac/) are the same as before the move.
+_SAC_DIR = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", ".."))
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); _sys.path.insert(1, _SAC_DIR); _os.chdir(_SAC_DIR)
 import torch
 import numpy as np
 from itertools import count

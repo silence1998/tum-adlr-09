@@ -1,0 +1,24 @@
+{
+ "ckpt": "checkpoints/sacx_q_s0_1M.pt",
+ "act": "qmax",
+ "tasks": [
+  "reach(main)",
+  "approach",
+  "move+x",
+  "move-x",
+  "move+y",
+  "move-y"
+ ],
+ "scheduler": "Q",
+ "xi": 20,
+ "total_steps": 1000000,
+ "goal": 464,
+ "collision": 4,
+ "timeout": 44,
+ "reversals_per_ep": 8.248046875,
+ "near_obstacle_reversals_per_ep": 0.421875,
+ "reversals_per_ep_timeout": 92.38636016845703,
+ "path_ratio_goal": 1.3042044639587402,
+ "len_goal": 6.036637783050537,
+ "rev_per_ep_goal": 0.31896552443504333
+}

@@ -1,0 +1,15 @@
+# env v3, HARD level + max_step 0.5 / 150 steps (tuning experiment, not recommended), static obstacles. All fields of EnvV3Config; omitted fields use the dataclass defaults.
+size: 10.0
+n_obs_min: 4
+n_obs_max: 8
+r_min: 0.3
+r_max: 0.8
+min_gap: 0.5
+wall_gap: 0.5
+start_clear: 0.5
+goal_clear: 0.8
+start_goal_min: 5.0
+motion: static
+max_step: 0.5
+goal_radius: 0.5
+max_episode_steps: 150

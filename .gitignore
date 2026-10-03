@@ -1,18 +1,61 @@
-# ignore ALL .log files
-/.idea/
-/pytorch_rl/.idea/
-/pytorch_rl/model/
+# ===== Python / IDE / tooling =====
+__pycache__/
+*.py[cod]
+.idea/
+.vscode/
+.ipynb_checkpoints/
+wandb/
 
+# ===== Model weights, datasets, replay buffers (NOT versioned - regenerate, see README section 4) =====
+*.pt
+*.pth
+*.ckpt
+*.npz
+*.npy
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.safetensors
+**/checkpoints/
+**/replay_buffer*/
+SAC/model/
+SAC/model_pretrain/
+SAC/model_with_astar/
+SAC/tmp/
+SAC-X/model/
+pytorch_rl/model/
+archive/pytorch_rl/model/
+# A* demonstrations for IL (results/v3/il/demos_<mode>.pt, ~90 MB each; demos_*_stats.json is kept)
+results/v3/il/demos_*.pt
 
-# ignore model files
-/SAC/model/
-/SAC-X/model/
-/SAC/model_with_astar/
-SAC/__pycache__/
-SAC/A_star/__pycache__/
-/SAC/wandb/
+# ===== Generated outputs kept out of Git to keep the repo small =====
+# (they exist in the local working copy; regenerate them with the README section 4 commands)
+# GIFs and their metadata
+*.gif
+**/gifs/
+# training / evaluation logs and progress logs (results/*/logs/STATUS.md)
+*.out
+*.err
+*.log
+*.partial
+results/*/logs/
+# per-run training CSVs (the v2 final curves in results/final/runs_1M/ ARE versioned)
+results/*/runs/
+results/runs_v2/
+# development history and archived code (local only)
+results/archive/
+/archive/
+README.old.md
+# result plots: only a few key figures are versioned
+results/**/*.png
+!results/final/plots/comparison_1M.png
+!results/sacx_aux/sacx_aux_comparison.png
+!results/v3/ppo_v3_curves.png
+!results/v3/il_rl/il_rl_curves.png
+!results/v3/il_rl/il_scaling.png
 
-/pytorch_rl/model/
-/SAC/model_pretrain/
+# ===== Nested git clone used for publishing (lives inside the local project folder) =====
+/github/
 
-/SAC/tmp/
+# Note: files larger than ~5 MB must not be committed.

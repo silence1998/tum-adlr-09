@@ -1,0 +1,21 @@
+{
+ "ckpt": "E:\\code\\tum-adlr-09-main\\tum-adlr-09-main\\results\\sacx_aux\\checkpoints\\aux_obsaware_s1.pt",
+ "act": "sample",
+ "tasks": [
+  "reach(main)",
+  "safe_progress",
+  "clearance"
+ ],
+ "scheduler": "Q",
+ "xi": 20,
+ "total_steps": 1000000,
+ "goal": 506,
+ "collision": 3,
+ "timeout": 3,
+ "reversals_per_ep": 0.779296875,
+ "near_obstacle_reversals_per_ep": 0.109375,
+ "reversals_per_ep_timeout": 68.66666412353516,
+ "path_ratio_goal": 1.2507972717285156,
+ "len_goal": 6.541501998901367,
+ "rev_per_ep_goal": 0.373517781496048
+}

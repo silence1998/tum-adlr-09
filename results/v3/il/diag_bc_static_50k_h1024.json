@@ -1,0 +1,38 @@
+{
+ "ckpt": "bc_static_50k_h1024.pt",
+ "outcomes": {
+  "goal": 437,
+  "collision": 75,
+  "timeout": 0
+ },
+ "all_steps": {
+  "n": 3193,
+  "l2": 0.07389939576387405,
+  "angle_deg_median": 1.215792179107666,
+  "frac_angle_gt_45": 0.016598809510469437
+ },
+ "last_step_collision_eps": {
+  "n": 75,
+  "l2": 0.4345381557941437,
+  "angle_deg_median": 23.787750244140625,
+  "frac_angle_gt_45": 0.1066666692495346,
+  "expert_speed": 0.9111238718032837,
+  "learner_speed": 0.8707252740859985
+ },
+ "last_step_goal_eps": {
+  "n": 437,
+  "l2": 0.034845154732465744,
+  "angle_deg_median": 1.093427300453186,
+  "frac_angle_gt_45": 0.002288329415023327,
+  "expert_speed": 0.8901822566986084,
+  "learner_speed": 0.8878173232078552
+ },
+ "nonlast_steps": {
+  "n": 2681,
+  "l2": 0.07017645239830017,
+  "angle_deg_median": 1.1932098865509033,
+  "frac_angle_gt_45": 0.016411786898970604,
+  "expert_speed": 0.9692183136940002,
+  "learner_speed": 0.9790431261062622
+ }
+}

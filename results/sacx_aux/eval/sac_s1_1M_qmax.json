@@ -1,0 +1,19 @@
+{
+ "ckpt": "checkpoints/sac_s1_1M.pt",
+ "act": "qmax",
+ "tasks": [
+  "reach(main)"
+ ],
+ "scheduler": "Q",
+ "xi": 20,
+ "total_steps": 1000000,
+ "goal": 497,
+ "collision": 6,
+ "timeout": 9,
+ "reversals_per_ep": 1.814453125,
+ "near_obstacle_reversals_per_ep": 0.291015625,
+ "reversals_per_ep_timeout": 94.55555725097656,
+ "path_ratio_goal": 1.2798000574111938,
+ "len_goal": 5.8993964195251465,
+ "rev_per_ep_goal": 0.1488933563232422
+}

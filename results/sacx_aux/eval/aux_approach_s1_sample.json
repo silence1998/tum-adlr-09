@@ -1,0 +1,20 @@
+{
+ "ckpt": "E:\\code\\tum-adlr-09-main\\tum-adlr-09-main\\results\\sacx_aux\\checkpoints\\aux_approach_s1.pt",
+ "act": "sample",
+ "tasks": [
+  "reach(main)",
+  "approach"
+ ],
+ "scheduler": "Q",
+ "xi": 20,
+ "total_steps": 1000000,
+ "goal": 506,
+ "collision": 6,
+ "timeout": 0,
+ "reversals_per_ep": 0.216796875,
+ "near_obstacle_reversals_per_ep": 0.083984375,
+ "reversals_per_ep_timeout": null,
+ "path_ratio_goal": 1.253953456878662,
+ "len_goal": 6.104743003845215,
+ "rev_per_ep_goal": 0.19565217196941376
+}
